@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "510792598386",
+    "project_id": "anak-app",
+    "storage_bucket": "anak-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510792598386:android:89a81105ba4e66c75c93eb",
+        "android_client_info": {
+          "package_name": "com.anakapp.anak_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "510792598386-k5rbe2rrk56vjn9ir76ci7nkssasdnp8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anakapp.anak_app",
+            "certificate_hash": "66246976e8ee222c0e1c7cf49a2bef019cceb546"
+          }
+        },
+        {
+          "client_id": "510792598386-m4c8993mdg4qvnad51lr1ba8h3a5oir1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0Qg-vtyQewPpqjxypDbxl-yeFQ2jpbxE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510792598386-m4c8993mdg4qvnad51lr1ba8h3a5oir1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "510792598386-291kb0vobsdgf26dqh6hho1a2ddgad8a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.anakapp.anakApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

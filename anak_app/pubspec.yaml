@@ -1,0 +1,58 @@
+name: zikola
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  intl: ^0.20.2
+  fl_chart: ^1.2.0
+  shared_preferences: ^2.5.5
+  firebase_core: ^4.6.0
+  firebase_auth: ^6.3.0
+  cloud_firestore: ^6.2.0
+  google_sign_in: 6.2.1
+  image_picker: ^1.2.1
+  firebase_storage: ^13.2.0
+  file_picker: ^8.3.7
+  audioplayers: ^5.2.1
+  http: ^1.2.1
+  flutter_dotenv: ^5.2.1
+  flutter_markdown: ^0.7.7+1
+  connectivity_plus: ^6.1.4
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  flutter_timezone: ^5.1.0
+  firebase_messaging: ^16.4.3
+  url_launcher: ^6.3.2
+  flutter_webrtc: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - .env
+    - assets/images/
+    - assets/audio/bgm/
+    - assets/audio/sfx/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  remove_alpha_ios: true

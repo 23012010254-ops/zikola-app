@@ -1,0 +1,1 @@
+Backup of TipsScreen.tsx content - removed as it's no longer needed in the app routing

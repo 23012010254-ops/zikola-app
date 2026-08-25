@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Users collection and all nested subcollections (data, notifications, children, notes, reports, emr, assessments, tests)
+    match /users/{userId} {
+      allow read, write: if true;
+      
+      match /{allChildren=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // Doctors collection
+    match /doctors/{doctorId} {
+      allow read, write: if true;
+    }
+
+    // Doctor Credentials collection (for web portal login/register)
+    match /doctor_credentials/{credId} {
+      allow read, write: if true;
+    }
+
+    // Chats collection and all subcollections (messages, webrtc, doctor_candidates, patient_candidates)
+    match /chats/{chatId} {
+      allow read, write: if true;
+      
+      match /{allChatSubcollections=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // Appointments collection (for scheduled consultation sessions)
+    match /appointments/{appointmentId} {
+      allow read, write: if true;
+    }
+
+    // Community posts
+    match /community_posts/{postId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+      
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create, update, delete: if true;
+      }
+    }
+
+    // Payments collection
+    match /payments/{paymentId} {
+      allow read, write: if true;
+    }
+
+    // Speed Draw Rooms collection
+    match /speed_draw_rooms/{roomId} {
+      allow read, write: if true;
+    }
+  }
+}

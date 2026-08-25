@@ -1,0 +1,752 @@
+# 🧠 Rancangan Psikologi Asesmen ANAK — Game-Based Developmental Assessment
+
+> Platform asesmen perkembangan anak berbasis game yang tervalidasi secara psikologis, grounded in **Cattell-Horn-Carroll (CHC) Theory**, **Developmental Psychology**, dan **Game-Based Assessment (GBA) Research**.
+
+---
+
+## 1. Landasan Teori & Kerangka Psikologis
+
+### 1.1 Teori CHC (Cattell-Horn-Carroll)
+
+Teori CHC adalah framework paling komprehensif dan diterima secara luas untuk memahami kemampuan kognitif manusia. Framework ini digunakan oleh instrumen standar seperti **WISC-V** dan **Woodcock-Johnson V**.
+
+Kita akan memetakan setiap game ke konstruk CHC yang relevan:
+
+| Konstruk CHC | Kode | Definisi | Game yang Mengukur |
+|---|---|---|---|
+| **Fluid Reasoning (Gf)** | Gf | Penalaran logis dengan informasi baru | Alien Shooter, Desert Road Logic, Number Sequence |
+| **Crystallized Knowledge (Gc)** | Gc | Pengetahuan bahasa & kosakata | Word Puzzle, Spell Bee, Linguistic Test |
+| **Short-Term Memory (Gsm)** | Gsm | Memori jangka pendek | Memory Card, Number Memory |
+| **Working Memory (Gwm)** | Gwm | Manipulasi informasi dalam memori aktif | Sequence Memory, Pattern Recognition |
+| **Processing Speed (Gs)** | Gs | Kecepatan pemrosesan informasi | Alien Shooter (reaction time), Shape Sorting |
+| **Visual Processing (Gv)** | Gv | Pemrosesan spasial-visual | Mirror Pattern, Puzzle Game, Coloring |
+| **Long-Term Storage & Retrieval (Glr)** | Glr | Penyimpanan & pengambilan informasi | Story Builder, Linguistic Test |
+
+### 1.2 Catatan Kritis: Tes Kepribadian Anak
+
+> [!WARNING]
+> **MBTI TIDAK VALID untuk anak-anak.** Riset psikometrik menunjukkan:
+> - Kepribadian anak masih dinamis dan belum terbentuk solid
+> - MBTI memiliki reliability rendah (test-retest inconsistency)
+> - Risiko "fixed mindset" jika anak diberi label tipe
+
+**Rekomendasi:** Ubah framing dari "MBTI/Tipe Kepribadian" menjadi **"Profil Temperamen & Kecenderungan Sosial-Emosional"** yang mengukur:
+- **Regulasi Emosi** — kemampuan mengenali & mengelola emosi
+- **Kompetensi Sosial** — kecenderungan berinteraksi & empati
+- **Karakter & Nilai** — sikap tanggung jawab, kejujuran, keberanian
+
+Ini lebih sesuai dengan pendekatan **SEL (Social-Emotional Learning)** yang tervalidasi untuk anak.
+
+---
+
+## 2. Pemetaan Game → Konstruk Psikologis
+
+### 2.1 Domain Kognitif
+
+```mermaid
+graph TD
+    A[🧮 KOGNITIF] --> B[Fluid Reasoning Gf]
+    A --> C[Working Memory Gwm]
+    A --> D[Processing Speed Gs]
+    A --> E[Visual Processing Gv]
+    
+    B --> B1[Alien Shooter - Logika Matematika]
+    B --> B2[Desert Road - Penalaran Logis]
+    B --> B3[Number Sequence - Pola Numerik]
+    B --> B4[Desert Tank - Logika Abstrak]
+    
+    C --> C1[Sequence Memory - Memori Urutan]
+    C --> C2[Number Memory - Digit Span]
+    C --> C3[Pattern Recognition - Pola Visual]
+    
+    D --> D1[Alien Shooter - Kecepatan Respon]
+    D --> D2[Shape Sorting - Kategori Cepat]
+    
+    E --> E1[Mirror Pattern - Spatial Reasoning]
+    E --> E2[Puzzle Game - Konstruksi Visual]
+    E --> E3[Memory Card - Visual Matching]
+```
+
+#### Game 1: Alien Shooter (`alien_shooter_game.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Fluid Reasoning (Gf) — Matematika & Logika |
+| **Konstruk Sekunder** | Processing Speed (Gs) — Reaction Time |
+| **Yang Diukur** | Kemampuan menghitung cepat (penjumlahan, pengurangan, perkalian, pecahan) di bawah tekanan waktu |
+| **Paralel Tes Standar** | WISC-V Arithmetic subtest, WJ-V Calculation |
+| **Metrik Kritis** | `accuracy`, `avgResponseTime`, `errorByType` (fraction vs addition), `levelProgression` |
+| **Interpretasi** | Akurasi tinggi + waktu respon cepat = Gf & Gs kuat. Error tinggi di pecahan tapi baik di penjumlahan = gap spesifik di operasi aritmatika kompleks |
+
+#### Game 2: Memory Card (`memory_game_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Short-Term Memory (Gsm) — Visual Memory |
+| **Konstruk Sekunder** | Visual Processing (Gv) |
+| **Yang Diukur** | Kapasitas memori visual jangka pendek, kemampuan encoding & recall pasangan visual |
+| **Paralel Tes Standar** | WISC-V Symbol Search, WJ-V Visual Matching |
+| **Metrik Kritis** | `pairsFound`, `movesUsed`, `efficiency` (pairs/moves ratio), `timeToComplete`, `errorPatternAnalysis` |
+| **Interpretasi** | Efisiensi tinggi = memori visual kuat. Banyak repeat visit ke kartu yang sama = masalah encoding |
+
+#### Game 3: Pattern Recognition (`pattern_recognition_game_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Working Memory (Gwm) — Pattern Analysis |
+| **Konstruk Sekunder** | Fluid Reasoning (Gf) — Inductive Reasoning |
+| **Yang Diukur** | Kemampuan mengenali pola visual (bentuk, warna, ukuran, rotasi) dan membuat prediksi |
+| **Paralel Tes Standar** | WISC-V Matrix Reasoning, Raven's Progressive Matrices |
+| **Metrik Kritis** | `accuracyByPatternType` (shape/color/size/rotation), `hintsUsed`, `levelReached`, `avgTimePerProblem` |
+| **Interpretasi** | Berhasil di shape tapi gagal di rotation = kemampuan spatial belum matang. Akurasi menurun di level tinggi = batas kompleksitas pola |
+
+#### Game 4: Sequence Memory (`sequence_memory_game.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Working Memory (Gwm) — Sequential Memory |
+| **Yang Diukur** | Kapasitas memori urutan (seperti Corsi Block Test) |
+| **Paralel Tes Standar** | WISC-V Digit Span (Forward), Corsi Block-Tapping |
+| **Metrik Kritis** | `maxSequenceLength`, `accuracyByLength`, `responseLatency`, `errorPosition` |
+| **Interpretasi** | Max sequence 5+ = memori urutan baik (norma usia 6-8). Error di posisi tengah = masalah rehearsal. Error di akhir = decay |
+
+#### Game 5: Number Memory (`number_memory_game.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Short-Term Memory (Gsm) — Digit Span |
+| **Yang Diukur** | Kapasitas digit span (berapa digit yang bisa diingat) |
+| **Paralel Tes Standar** | WISC-V Digit Span, WJ-V Numbers Reversed |
+| **Metrik Kritis** | `maxDigitRecalled`, `accuracyByDigitCount`, `responseTime`, `errorType` (transposition vs omission) |
+| **Interpretasi** | Digit span 4-5 untuk usia 5-7, 6-7 untuk usia 8-10. Transposition error = encoding baik tapi retrieval lemah |
+
+#### Game 6: Number Sequence (`number_sequence_game_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Fluid Reasoning (Gf) — Inductive Reasoning |
+| **Yang Diukur** | Kemampuan mengenali pola numerik dan memprediksi elemen berikutnya |
+| **Paralel Tes Standar** | WJ-V Analysis-Synthesis, Number Series |
+| **Metrik Kritis** | `accuracyByPatternType` (addition/fibonacci/square), `hintsUsed`, `levelReached`, `timePerProblem` |
+| **Interpretasi** | Berhasil di penjumlahan tapi gagal di fibonacci = penalaran induktif masih berkembang |
+
+#### Game 7: Desert Road Logic (`desert_road_logic_game.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Fluid Reasoning (Gf) — Logical Reasoning |
+| **Yang Diukur** | Penalaran logis, analogi, sebab-akibat, klasifikasi |
+| **Metrik Kritis** | `accuracyByType` (logic/pattern/abstract/sequence), `levelReached`, `avgResponseTime` |
+
+#### Game 8: Shape Sorting (`shape_sorting_game.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Processing Speed (Gs) — Categorization Speed |
+| **Konstruk Sekunder** | Fluid Reasoning (Gf) — Classification |
+| **Yang Diukur** | Kecepatan klasifikasi objek berdasarkan atribut (bentuk, warna, ukuran, pola) |
+| **Metrik Kritis** | `itemsPerMinute`, `accuracyByCategory`, `streak`, `levelReached` |
+
+#### Game 9: Mirror Pattern (`mirror_pattern_game.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Visual Processing (Gv) — Spatial Reasoning |
+| **Yang Diukur** | Kemampuan transformasi visual (refleksi vertikal, horizontal, diagonal) |
+| **Metrik Kritis** | `accuracyByMirrorType`, `levelReached`, `avgResponseTime` |
+
+#### Game 10: Puzzle Game (`puzzle_game_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk Utama** | Visual Processing (Gv) — Spatial Construction |
+| **Yang Diukur** | Kemampuan konstruksi spasial, part-whole relationships |
+| **Metrik Kritis** | `completionTime`, `wrongPlacements`, `combo`, `piecesPerMinute` |
+
+---
+
+### 2.2 Domain Linguistik
+
+```mermaid
+graph TD
+    A[📖 LINGUISTIK] --> B[Receptive Language]
+    A --> C[Expressive Language]
+    A --> D[Phonemic Awareness]
+    
+    B --> B1[Linguistic Test - Pemahaman Bahasa]
+    B --> B2[Word Puzzle - Kosakata Reseptif]
+    
+    C --> C1[Story Builder - Struktur Kalimat]
+    C --> C2[Spell Bee - Ejaan Ekspresif]
+    
+    D --> D1[Word Puzzle - Fonemik]
+    D --> D2[Spell Bee - Decoding]
+```
+
+#### Game 11: Linguistic Test (`linguistic_test_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk** | Crystallized Knowledge (Gc) — Language Comprehension |
+| **Yang Diukur** | Pemahaman bahasa reseptif, kosakata, tata bahasa |
+| **Metrik Kritis** | `domainAccuracy` (receptive/expressive/phonemic), `avgResponseTime`, `errorDistribution` |
+
+#### Game 12: Story Builder (`story_builder_game.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk** | Long-Term Retrieval (Glr) — Expressive Language |
+| **Yang Diukur** | Kemampuan menyusun kalimat, tata bahasa ekspresif, pengetahuan sintaksis |
+| **Metrik Kritis** | `sentenceAccuracy`, `timePerSentence`, `errorType`, `levelProgression` |
+
+#### Game 13: Word Puzzle (`word_puzzle_game_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk** | Gc — Vocabulary, Phonemic Awareness |
+| **Yang Diukur** | Kosakata, kesadaran fonemik, decoding huruf |
+| **Metrik Kritis** | `wordsCompleted`, `errorsPerWord`, `avgTimePerWord`, `hintUsage` |
+
+#### Game 14: Spell Bee (`spell_bee_game_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk** | Gc — Spelling, Phonemic Encoding |
+| **Yang Diukur** | Ejaan, encoding fonemik ke grafofonemik |
+| **Metrik Kritis** | `wordsSpelled`, `accuracy`, `livesLeft`, `timePerWord` |
+
+---
+
+### 2.3 Domain Motorik
+
+#### Game 15: Motor Test (`motor_test_game_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk** | Pengetahuan Motorik |
+| **Yang Diukur** | Pengetahuan anak tentang aktivitas motorik (bukan motorik aktual) |
+| **Metrik Kritis** | `accuracy`, `timeSpent`, `livesRemaining` |
+
+> [!IMPORTANT]
+> **Limitasi:** Game motorik saat ini berbasis quiz/pengetahuan, BUKAN pengukuran motorik langsung. Untuk asesmen motorik yang valid, dibutuhkan:
+> - **Coloring Game** → sebagai proksi motorik halus (fine motor) — mengukur presisi goresan
+> - **Touch-based games** → waktu reaksi tap, presisi drag & drop
+> 
+> Rekomendasi: **Reframing** — Motor Test menilai "Pengetahuan Motorik", dan Coloring Game menilai "Motorik Halus"
+
+#### Game 16: Coloring Game (`coloring_game_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk** | Fine Motor Skills — Motorik Halus |
+| **Yang Diukur** | Koordinasi tangan-mata, presisi goresan, kontrol jari |
+| **Metrik Kritis (saat ini belum ada, perlu ditambahkan)** | `strokePrecision` (deviasi dari guide dots), `lineSmoothness`, `colorVariety`, `completionTime` |
+
+---
+
+### 2.4 Domain Sosial-Emosional (Bukan MBTI)
+
+#### Game 17: Personality Test (`personality_test_screen.dart`)
+| Aspek | Detail |
+|---|---|
+| **Konstruk** | Social-Emotional Competence (SEL Framework) |
+| **Yang Diukur** | Kecenderungan sosial, regulasi emosi, karakter/nilai |
+| **Metrik Kritis** | `socialScore`, `emotionalScore`, `characterScore`, `responseConsistency` |
+| **Interpretasi** | Ini BUKAN diagnosis, melainkan indikasi kecenderungan yang bisa berubah |
+
+---
+
+## 3. Metrik Asesmen & Scoring Formula
+
+### 3.1 Universal Metrics (Semua Game)
+
+Setiap game HARUS mengumpulkan data berikut:
+
+```json
+{
+  "sessionMeta": {
+    "gameId": "alienShooter",
+    "childAge": 7,
+    "childGender": "male",
+    "sessionDate": "2026-04-21T10:30:00Z",
+    "totalDuration": 180,
+    "deviceType": "tablet"
+  },
+  "performanceCore": {
+    "totalItems": 20,
+    "correctAnswers": 15,
+    "incorrectAnswers": 5,
+    "accuracy": 0.75,
+    "itemsPerMinute": 6.67,
+    "averageResponseTimeMs": 3200,
+    "medianResponseTimeMs": 2800,
+    "fastestResponseTimeMs": 1200,
+    "slowestResponseTimeMs": 8500
+  },
+  "progressionMetrics": {
+    "maxLevelReached": 4,
+    "totalLevelsAvailable": 5,
+    "levelProgressionRate": 0.8,
+    "hintsUsed": 2,
+    "streakMax": 7
+  },
+  "errorAnalysis": {
+    "totalErrors": 5,
+    "errorTypes": {
+      "computational": 2,
+      "conceptual": 2,
+      "careless": 1
+    },
+    "errorDistributionByLevel": {
+      "1": 0, "2": 1, "3": 2, "4": 2
+    },
+    "selfCorrectionRate": 0.2
+  },
+  "behavioralIndicators": {
+    "pauseBeforeAnswer": true,
+    "consistencyScore": 0.85,
+    "fatigueIndicator": false,
+    "improvementTrend": "ascending"
+  }
+}
+```
+
+### 3.2 Composite Score Formula
+
+Setiap game menghasilkan **Assessment Score (0-100)** dengan formula weighted:
+
+```
+AssessmentScore = (Accuracy × 0.35) + (Speed × 0.20) + (Progression × 0.25) + (Efficiency × 0.20)
+
+dimana:
+- Accuracy = (correct / total) × 100
+- Speed = max(0, 100 - (avgResponseTime - idealTime) / idealTime × 50)
+- Progression = (maxLevel / totalLevels) × 100
+- Efficiency = max(0, 100 - (hints × 5) - (errors × 3))
+```
+
+### 3.3 Domain Composite Score
+
+Setiap domain (Kognitif, Linguistik, dll) menghasilkan composite score dari game-game terkait:
+
+```
+CognitiveComposite = 
+  (AlienShooter × 0.20) +     // Gf - Math
+  (PatternRecog × 0.15) +     // Gwm - Pattern  
+  (MemoryCard × 0.15) +       // Gsm - Visual Memory
+  (SequenceMemory × 0.10) +   // Gwm - Sequential
+  (NumberMemory × 0.10) +     // Gsm - Digit Span
+  (NumberSequence × 0.10) +   // Gf - Inductive
+  (DesertRoad × 0.10) +       // Gf - Logic
+  (ShapeSorting × 0.05) +     // Gs - Speed
+  (MirrorPattern × 0.05)      // Gv - Spatial
+```
+
+```
+LinguisticComposite =
+  (LinguisticTest × 0.35) +   // Gc - Comprehension
+  (StoryBuilder × 0.25) +     // Glr - Expression
+  (WordPuzzle × 0.25) +       // Gc - Vocabulary
+  (SpellBee × 0.15)           // Gc - Spelling
+```
+
+---
+
+## 4. Norma Usia & Interpretasi
+
+### 4.1 Referensi Normatif
+
+> [!NOTE]
+> Norma ini berdasarkan literatur perkembangan anak (CDC Milestones, WISC-V normative data). Untuk validasi penuh dibutuhkan studi normatif dengan populasi Indonesia.
+
+| Metrik | Usia 4-5 | Usia 6-7 | Usia 8-9 | Usia 10-12 |
+|---|---|---|---|---|
+| **Digit Span** | 3-4 digit | 4-5 digit | 5-6 digit | 6-7 digit |
+| **Sequence Memory** | 3-4 items | 4-5 items | 5-6 items | 6-8 items |
+| **Pattern Complexity** | 2 atribut | 3 atribut | 4 atribut | Multi-layer |
+| **Math Operations** | +/- sederhana | +/- lanjut | ×/÷ dasar | Pecahan |
+| **Kosakata Reseptif** | 3000+ kata | 5000+ kata | 8000+ kata | 12000+ kata |
+| **Processing Speed** | Lambat, ~5-8s | Sedang, ~3-5s | Cepat, ~2-3s | Sangat cepat, ~1-2s |
+
+### 4.2 Klassifikasi Performa
+
+| Skor Komposit | Klasifikasi | Interpretasi |
+|---|---|---|
+| 90-100 | **Sangat Baik** | Di atas rata-rata usia, berpotensi gifted |
+| 75-89 | **Baik** | Sesuai harapan, perkembangan optimal |
+| 60-74 | **Cukup** | Perkembangan normal, perlu stimulasi tambahan |
+| 40-59 | **Perlu Perhatian** | Di bawah rata-rata, rekomendasi stimulasi intensif |
+| 0-39 | **Perlu Evaluasi Lanjut** | Disarankan konsultasi profesional |
+
+---
+
+## 5. Skema Data JSON untuk AI Processing
+
+### 5.1 Comprehensive Assessment Payload
+
+Ini adalah format data yang akan dikirim ke AI untuk analisis:
+
+```json
+{
+  "childProfile": {
+    "age": 7,
+    "gender": "male",
+    "name": "Rian",
+    "assessmentDate": "2026-04-21"
+  },
+  
+  "cognitiveProfile": {
+    "compositeScore": 78,
+    "classification": "Baik",
+    "subdomains": {
+      "fluidReasoning": {
+        "score": 82,
+        "games": {
+          "alienShooter": {
+            "accuracy": 0.80,
+            "avgResponseTimeMs": 3200,
+            "maxLevel": 4,
+            "errorsByType": {"addition": 1, "fraction": 3, "multiplication": 1},
+            "itemsPerMinute": 5.2
+          },
+          "desertRoadLogic": {
+            "accuracy": 0.75,
+            "avgResponseTimeMs": 4500,
+            "levelReached": 4,
+            "accuracyByType": {"logic": 0.90, "pattern": 0.80, "abstract": 0.60, "sequence": 0.70}
+          },
+          "numberSequence": {
+            "accuracy": 0.73,
+            "accuracyByPattern": {"addition": 0.90, "fibonacci": 0.50, "square": 0.40},
+            "hintsUsed": 3,
+            "levelReached": 8
+          }
+        }
+      },
+      "workingMemory": {
+        "score": 75,
+        "games": {
+          "sequenceMemory": {
+            "maxSequenceLength": 5,
+            "accuracy": 0.70,
+            "errorPositions": {"early": 1, "middle": 3, "late": 2}
+          },
+          "numberMemory": {
+            "maxDigitRecalled": 5,
+            "accuracy": 0.72,
+            "errorTypes": {"transposition": 3, "omission": 2}
+          },
+          "patternRecognition": {
+            "accuracy": 0.78,
+            "accuracyByType": {"shape": 0.90, "color": 0.85, "size": 0.70, "rotation": 0.55},
+            "hintsUsed": 2
+          }
+        }
+      },
+      "processingSpeed": {
+        "score": 70,
+        "games": {
+          "alienShooter_speed": {
+            "avgResponseTimeMs": 3200,
+            "medianResponseTimeMs": 2800,
+            "responseTrend": "slowing"
+          },
+          "shapeSorting": {
+            "itemsPerMinute": 4.5,
+            "accuracyUnderPressure": 0.72,
+            "streak": 8
+          }
+        }
+      },
+      "visualProcessing": {
+        "score": 80,
+        "games": {
+          "mirrorPattern": {
+            "accuracy": 0.82,
+            "accuracyByType": {"vertical": 0.95, "horizontal": 0.80, "diagonal": 0.60}
+          },
+          "memoryCard": {
+            "efficiency": 0.65,
+            "movesUsed": 24,
+            "pairsFound": 8,
+            "timeSeconds": 120
+          }
+        }
+      }
+    }
+  },
+  
+  "linguisticProfile": {
+    "compositeScore": 72,
+    "classification": "Cukup",
+    "subdomains": {
+      "receptiveLanguage": {
+        "score": 78,
+        "games": {
+          "linguisticTest": {
+            "accuracy": 0.78,
+            "domainAccuracy": {"receptive": 0.85, "expressive": 0.72, "phonemic": 0.65}
+          }
+        }
+      },
+      "expressiveLanguage": {
+        "score": 68,
+        "games": {
+          "storyBuilder": {
+            "sentenceAccuracy": 0.68,
+            "avgTimePerSentence": 12.5,
+            "errorsInGrammar": 4
+          }
+        }
+      },
+      "phonemicAwareness": {
+        "score": 65,
+        "games": {
+          "wordPuzzle": {
+            "wordsCompleted": 8,
+            "errorsPerWord": 1.5,
+            "avgTimePerWord": 15.2
+          },
+          "spellBee": {
+            "wordsSpelled": 5,
+            "accuracy": 0.71,
+            "livesLeft": 1
+          }
+        }
+      }
+    }
+  },
+  
+  "socialEmotionalProfile": {
+    "compositeScore": 73,
+    "classification": "Cukup",
+    "subdomains": {
+      "socialCompetence": {"score": 78, "label": "Baik"},
+      "emotionalRegulation": {"score": 65, "label": "Cukup"},
+      "characterValues": {"score": 75, "label": "Baik"}
+    },
+    "responseConsistency": 0.82
+  },
+  
+  "motorProfile": {
+    "compositeScore": 70,
+    "classification": "Cukup",
+    "subdomains": {
+      "motorKnowledge": {"score": 75, "accuracy": 0.75},
+      "fineMotor": {"score": 65, "note": "Data terbatas - berdasarkan coloring game"}
+    }
+  },
+  
+  "crossDomainAnalysis": {
+    "strongestDomain": "Kognitif (Fluid Reasoning)",
+    "weakestDomain": "Linguistik (Fonemik)",
+    "processingSpeedIndex": "Sedang",
+    "engagementLevel": "Tinggi",
+    "fatigueDetected": false,
+    "overallDevelopmentTrend": "Sesuai Usia"
+  },
+  
+  "historicalComparison": {
+    "previousSessions": 3,
+    "improvementRate": 0.12,
+    "consistencyIndex": 0.78
+  }
+}
+```
+
+---
+
+## 6. AI Prompt Engineering — Laporan untuk Orangtua
+
+### 6.1 System Prompt untuk AI Analysis
+
+```
+Kamu adalah seorang psikolog anak profesional yang ramah dan suportif. Kamu akan menerima data asesmen perkembangan anak dari platform game-based assessment "ANAK".
+
+PENTING:
+1. Gunakan bahasa Indonesia yang hangat, mudah dipahami orangtua awam
+2. JANGAN pernah menggunakan terminologi klinis yang mengkhawatirkan (retardasi, disorder, abnormal)
+3. JANGAN memberikan diagnosis — kamu hanya memberikan OBSERVASI dan SARAN
+4. Selalu frame secara positif: "Rian menunjukkan kekuatan di..." bukan "Rian lemah di..."
+5. Selalu akhiri dengan saran aktivitas konkret yang bisa dilakukan di rumah
+6. Jika skor sangat rendah (<40), sarankan konsultasi profesional dengan cara yang tidak mengkhawatirkan
+
+FORMAT LAPORAN:
+1. Sapaan hangat kepada orangtua
+2. Ringkasan Profil Anak (2-3 kalimat positif)
+3. Kekuatan Utama (2-3 area terkuat + penjelasan)
+4. Area yang Bisa Dikembangkan (2-3 area + cara mengembangkan)
+5. Rekomendasi Aktivitas Harian (3-5 aktivitas konkret)
+6. Milestone Berikutnya (apa yang bisa dicapai dalam 1-2 bulan)
+7. Catatan Penutup yang Menyemangati
+
+CONTOH OUTPUT:
+---
+Halo Mama/Papa Rian! 👋
+
+✨ **Kabar Baik:** Rian menunjukkan perkembangan yang sangat positif! Secara keseluruhan, kemampuannya berada di jalur yang sangat baik untuk usianya (7 tahun).
+
+🌟 **Kekuatan Utama Rian:**
+• **Logika Matematika (Skor: 82/100)** — Rian sangat pandai menyelesaikan soal hitung-hitungan! Ia bisa menghitung dengan cepat dan akurat, terutama dalam penjumlahan dan pengurangan.
+• **Memori Visual (Skor: 80/100)** — Rian punya ingatan visual yang hebat, seperti mengingat posisi kartu-kartu dengan baik.
+
+📈 **Area yang Bisa Dikembangkan:**
+• **Kosakata & Membaca (Skor: 65/100)** — Rian sudah punya dasar bahasa yang baik, tapi kosa katanya bisa diperkaya lebih luas lagi.
+  → *Coba ajak Rian membaca buku cerita 15 menit sebelum tidur dan diskusikan kata-kata baru*
+
+🏠 **Aktivitas yang Bisa Dilakukan di Rumah:**
+1. 📖 Membaca buku cerita bersama 15 menit/hari
+2. 🧩 Main teka-teki silang anak bersama
+3. 🎨 Menggambar sambil bercerita tentang gambarnya
+---
+```
+
+### 6.2 Prompt Template untuk Tiap Domain
+
+```
+Berdasarkan data berikut, berikan analisis singkat (maks 3 paragraf) tentang aspek {domain} anak:
+
+Data Asesmen:
+{json_data}
+
+Norma Usia Referensi:
+- Usia {age} tahun: {age_norm}
+
+Fokus analisis:
+1. Bandingkan performa dengan norma usia
+2. Identifikasi pola kekuatan dan area pengembangan
+3. Berikan 2-3 saran aktivitas spesifik
+
+Gunakan bahasa Indonesia yang hangat dan mudah dipahami.
+```
+
+---
+
+## 7. Proposed Changes — Implementasi Teknis
+
+### 7.1 Perubahan Model Data
+
+#### [MODIFY] [game_assessment.dart](file:///c:/Users/ThinkPad/Downloads/ANAK%20Mobile%20App%20UI/anak_app/lib/models/game_assessment.dart)
+
+Tambahkan field baru ke `GameSession` untuk data asesmen lebih granular:
+
+```diff
+class GameSession {
+  final int score;
+  final int timeSpent;
+  final int errors;
+  final int totalItems;
+  final String date;
++ final int correctAnswers;
++ final int avgResponseTimeMs;
++ final int maxLevel;
++ final int hintsUsed;
++ final Map<String, dynamic>? detailedMetrics;
++ final Map<String, double>? subdomainScores;
+}
+```
+
+Tambahkan game baru ke `AllGameAssessments`:
+
+```diff
+class AllGameAssessments {
+  // ...existing...
++ GameAssessment shapeSortingGame;
++ GameAssessment mirrorPatternGame;
++ GameAssessment puzzleGame;
++ GameAssessment spellBeeGame;
++ GameAssessment coloringGame;
+}
+```
+
+---
+
+#### [MODIFY] [test_result.dart](file:///c:/Users/ThinkPad/Downloads/ANAK%20Mobile%20App%20UI/anak_app/lib/models/test_result.dart)
+
+Refactor `TestResults` untuk menyimpan composite scores per konstruk CHC:
+
+```diff
+class CognitiveResult {
+  // ...existing...
++ double fluidReasoningScore;
++ double workingMemoryScore;  
++ double processingSpeedScore;
++ double visualProcessingScore;
++ Map<String, dynamic>? gameBreakdown;
+}
+```
+
+---
+
+### 7.2 Perubahan Game Screens
+
+> [!IMPORTANT]
+> Setiap game screen perlu diupdate agar mengumpulkan metrik yang lebih granular. Berikut prioritas perubahan:
+
+#### Prioritas Tinggi (Core Assessment Games):
+
+1. **[MODIFY] Alien Shooter** — Tambahkan per-item response time tracking, error categorization by operation type
+2. **[MODIFY] Sequence Memory** — Tambahkan error position tracking, max sequence validation
+3. **[MODIFY] Number Memory** — Tambahkan error type analysis (transposition vs omission)
+4. **[MODIFY] Pattern Recognition** — Tambahkan accuracy breakdown by pattern type
+
+#### Prioritas Sedang (Supporting Games):
+
+5. **[MODIFY] Linguistic Test** — Sudah cukup baik, perlu standarisasi output format
+6. **[MODIFY] Story Builder** — Tambahkan per-sentence timing
+7. **[MODIFY] Word Puzzle** — Tambahkan per-word timing dan error tracking
+
+#### Prioritas Rendah (Fun Games dengan data bonus):
+
+8. **[MODIFY] Coloring Game** — Tambahkan stroke precision metrics
+9. **[MODIFY] Spell Bee** — Tambahkan assessment data submission
+10. **[MODIFY] Puzzle Game** — Tambahkan assessment data submission
+
+---
+
+### 7.3 Komponen Baru
+
+#### [NEW] `lib/services/assessment_engine.dart`
+
+Engine sentral yang:
+- Menghitung composite scores per domain
+- Menerapkan norma usia
+- Menghasilkan klasifikasi performa
+- Memformat data JSON untuk AI
+
+#### [NEW] `lib/services/ai_report_service.dart`
+
+Service yang:
+- Menerima assessment data dari `assessment_engine`
+- Mengirim ke API AI (OpenAI/Claude)
+- Mem-parse response AI menjadi laporan terstruktur
+- Menyimpan laporan ke Firestore
+
+#### [MODIFY] [progress_screen.dart](file:///c:/Users/ThinkPad/Downloads/ANAK%20Mobile%20App%20UI/anak_app/lib/screens/progress_screen.dart)
+
+Update untuk:
+- Menampilkan skor CHC per subdomain (bukan hanya percentage generik)
+- Menampilkan laporan AI yang dipersonalisasi
+- Menampilkan grafik radar per konstruk
+- Menampilkan perbandingan norma usia
+
+---
+
+## 8. Verification Plan
+
+### Automated Tests
+- Unit test untuk `AssessmentEngine` — verifikasi formula scoring
+- Unit test untuk data serialization (JSON round-trip)
+- Widget test untuk memastikan game screens mengirim data yang benar
+
+### Manual Verification
+- Play-through setiap game dan verifikasi data yang dikirim ke `AppState`
+- Verifikasi AI prompt menghasilkan laporan yang sesuai
+- Review oleh domain expert (psikolog anak) jika memungkinkan
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **1. API AI yang akan digunakan?**
+> Apakah akan menggunakan OpenAI (GPT-4), Claude (Anthropic), atau Gemini? Ini mempengaruhi implementasi `ai_report_service.dart`.
+
+> [!IMPORTANT]
+> **2. Scope implementasi pertama?**
+> Apakah kita mulai dengan:
+> - **Opsi A:** Implementasi full — semua perubahan model + semua game + AI integration
+> - **Opsi B:** Incremental — mulai dari `AssessmentEngine` + update 3-4 game core + hardcoded AI responses dulu
+> - **Opsi C:** Data-first — fokus upgrade data collection di semua game dulu, AI integration belakangan
+
+> [!WARNING]
+> **3. Tes Kepribadian:**
+> Apakah kamu okay untuk mengubah framing dari "MBTI" menjadi "Profil Sosial-Emosional"? Ini krusial untuk validitas ilmiah.
+
+> [!NOTE]
+> **4. Coloring Game sebagai asesmen motorik halus:**
+> Untuk mengukur presisi goresan secara algoritmik, kita perlu menambahkan logika yang cukup kompleks (deviasi dari guide dots, smoothness analysis). Apakah ini prioritas atau cukup sebagai "fun activity" saja?

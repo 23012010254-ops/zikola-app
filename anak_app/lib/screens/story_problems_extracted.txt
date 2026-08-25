@@ -1,0 +1,72 @@
+  final Map<String, List<Map<String, dynamic>>> _storyProblemsRaw = {
+    'id': [
+      // Level 1
+      {'words': ['makan', 'Saya', 'nasi'], 'correctOrder': [1, 0, 2], 'correctSentence': 'Saya makan nasi', 'hint': 'Mulai dengan siapa yang melakukan', 'level': 1, 'domain': 'Struktur Kalimat', 'emoji': '🍚'},
+      {'words': ['bermain', 'Adik', 'bola'], 'correctOrder': [1, 0, 2], 'correctSentence': 'Adik bermain bola', 'hint': 'Siapa + apa yang dilakukan + objek', 'level': 1, 'domain': 'Struktur Kalimat', 'emoji': '⚽'},
+      {'words': ['membaca', 'Ibu', 'buku'], 'correctOrder': [1, 0, 2], 'correctSentence': 'Ibu membaca buku', 'hint': 'Mulai dengan subjeknya', 'level': 1, 'domain': 'Struktur Kalimat', 'emoji': '📚'},
+      {'words': ['minum', 'Adik', 'susu'], 'correctOrder': [1, 0, 2], 'correctSentence': 'Adik minum susu', 'hint': 'Siapa yang haus?', 'level': 1, 'domain': 'Struktur Kalimat', 'emoji': '🥛'},
+      // Level 2
+      {'words': ['di', 'Kucing', 'tidur', 'kursi'], 'correctOrder': [1, 2, 0, 3], 'correctSentence': 'Kucing tidur di kursi', 'hint': 'Subjek + kata kerja + lokasi', 'level': 2, 'domain': 'Kalimat Lengkap', 'emoji': '🐱'},
+      {'words': ['di', 'Burung', 'terbang', 'langit'], 'correctOrder': [1, 2, 0, 3], 'correctSentence': 'Burung terbang di langit', 'hint': 'Lokasi diletakkan di akhir', 'level': 2, 'domain': 'Kalimat Lengkap', 'emoji': '🐦'},
+      {'words': ['dengan', 'Kami', 'bermain', 'senang'], 'correctOrder': [1, 2, 0, 3], 'correctSentence': 'Kami bermain dengan senang', 'hint': 'Gunakan kata keterangan perasaan', 'level': 2, 'domain': 'Kalimat Lengkap', 'emoji': '😊'},
+      // Level 3
+      {'words': ['Ayah', 'mobil', 'ke', 'menyetir', 'mal'], 'correctOrder': [0, 3, 1, 2, 4], 'correctSentence': 'Ayah menyetir mobil ke mal', 'hint': 'Subjek + kerja + objek + tujuan', 'level': 3, 'domain': 'Kalimat Lengkap', 'emoji': '🚗'},
+      {'words': ['sangat', 'Bunga', 'itu', 'merah', 'harum'], 'correctOrder': [1, 3, 2, 0, 4], 'correctSentence': 'Bunga merah itu sangat harum', 'hint': 'Sifat benda diletakkan di akhir', 'level': 3, 'domain': 'Kalimat Lengkap', 'emoji': '🌹'},
+      {'words': ['di', 'Kupu-kupu', 'terbang', 'taman', 'bunga'], 'correctOrder': [1, 2, 0, 3, 4], 'correctSentence': 'Kupu-kupu terbang di taman bunga', 'hint': 'Subjek + kerja + lokasi spesifik', 'level': 3, 'domain': 'Kalimat Lengkap', 'emoji': '🦋'},
+      // Level 4
+      {'words': ['karena', 'senang', 'Aku', 'lomba', 'menang'], 'correctOrder': [2, 1, 0, 4, 3], 'correctSentence': 'Aku senang karena menang lomba', 'hint': 'Hubungkan alasan dengan "karena"', 'level': 4, 'domain': 'Kalimat Kompleks', 'emoji': '🏆'},
+      {'words': ['panjang', 'Gajah', 'sangat', 'yang', 'belalai', 'memiliki'], 'correctOrder': [1, 5, 4, 3, 2, 0], 'correctSentence': 'Gajah memiliki belalai yang sangat panjang', 'hint': 'Deskripsikan fisik gajah', 'level': 4, 'domain': 'Kalimat Kompleks', 'emoji': '🐘'},
+      {'words': ['masak', 'Ibu', 'sambil', 'di', 'dapur', 'bernyanyi'], 'correctOrder': [1, 0, 3, 4, 2, 5], 'correctSentence': 'Ibu masak di dapur sambil bernyanyi', 'hint': 'Dua kegiatan sekaligus', 'level': 4, 'domain': 'Kalimat Kompleks', 'emoji': '🍳'},
+      // Level 5
+      {'words': ['menyapu', 'Setiap', 'pagi', 'saya', 'ibu', 'membantu', 'lantai'], 'correctOrder': [1, 2, 3, 5, 4, 0, 6], 'correctSentence': 'Setiap pagi saya membantu ibu menyapu lantai', 'hint': 'Keterangan waktu diletakkan di awal', 'level': 5, 'domain': 'Keterangan Waktu', 'emoji': '🧹'},
+      {'words': ['kecil', 'Kucing', 'itu', 'suka', 'mengejar', 'putih', 'tikus'], 'correctOrder': [1, 5, 2, 3, 4, 6, 0], 'correctSentence': 'Kucing putih itu suka mengejar tikus kecil', 'hint': 'Subjek + sifat + kesukaan + objek', 'level': 5, 'domain': 'Keterangan Waktu', 'emoji': '🐭'},
+      {'words': ['belajar', 'Kakak', 'matematika', 'giat', 'dengan', 'di', 'kamar'], 'correctOrder': [1, 0, 2, 4, 3, 5, 6], 'correctSentence': 'Kakak belajar matematika dengan giat di kamar', 'hint': 'Siapa + apa + bagaimana + di mana', 'level': 5, 'domain': 'Keterangan Waktu', 'emoji': '📝'},
+      // Level 6
+      {'words': ['kantor', 'Ayah', 'pulang', 'dari', 'membawa', 'buah', 'tangan', 'manis'], 'correctOrder': [1, 2, 3, 0, 4, 5, 6, 7], 'correctSentence': 'Ayah pulang dari kantor membawa buah tangan manis', 'hint': 'Subjek + asal + membawa sesuatu', 'level': 6, 'domain': 'Struktur Kalimat Majemuk', 'emoji': '🎁'},
+      {'words': ['bernyanyi', 'Burung', 'pipit', 'dengan', 'sangat', 'merdu', 'sekali'], 'correctOrder': [1, 2, 0, 3, 4, 5, 6], 'correctSentence': 'Burung pipit bernyanyi dengan sangat merdu sekali', 'hint': 'Burung + bernyanyi + kualitas suara', 'level': 6, 'domain': 'Struktur Kalimat Majemuk', 'emoji': '🎶'},
+      {'words': ['menggambar', 'Adik', 'senang', 'pemandangan', 'gunung', 'yang', 'indah'], 'correctOrder': [1, 2, 0, 3, 4, 5, 6], 'correctSentence': 'Adik senang menggambar pemandangan gunung yang indah', 'hint': 'Siapa + perasaan + menggambar apa', 'level': 6, 'domain': 'Struktur Kalimat Majemuk', 'emoji': '🎨'},
+      // Level 7
+      {'words': ['pantai', 'Kemarin', 'sore', 'kami', 'sekeluarga', 'pergi', 'piknik', 'ke'], 'correctOrder': [1, 2, 3, 4, 5, 6, 7, 0], 'correctSentence': 'Kemarin sore kami sekeluarga pergi piknik ke pantai', 'hint': 'Keterangan waktu + subjek majemuk + tujuan', 'level': 7, 'domain': 'Narasi Lengkap', 'emoji': '🏖️'},
+      {'words': ['menyiram', 'Kakak', 'tanaman', 'hias', 'di', 'halaman', 'rumah', 'sore', 'hari'], 'correctOrder': [1, 0, 2, 3, 4, 5, 6, 7, 8], 'correctSentence': 'Kakak menyiram tanaman hias di halaman rumah sore hari', 'hint': 'Siapa + menyiram apa + di mana + kapan', 'level': 7, 'domain': 'Narasi Lengkap', 'emoji': '🪴'},
+      {'words': ['mengerjakan', 'Siswa', 'kelas', 'lima', 'sedang', 'ujian', 'dengan', 'sangat', 'tenang'], 'correctOrder': [1, 2, 3, 4, 0, 5, 6, 7, 8], 'correctSentence': 'Siswa kelas lima sedang mengerjakan ujian dengan sangat tenang', 'hint': 'Subjek + sedang melakukan apa + keterangan', 'level': 7, 'domain': 'Narasi Lengkap', 'emoji': '✍️'},
+      // Level 8
+      {'words': ['sarapan', 'Ibu', 'memasak', 'nasi', 'goreng', 'spesial', 'untuk', 'kami', 'sekeluarga'], 'correctOrder': [1, 2, 3, 4, 5, 6, 0, 7, 8], 'correctSentence': 'Ibu memasak nasi goreng spesial untuk sarapan kami sekeluarga', 'hint': 'Siapa + memasak apa + untuk tujuan apa', 'level': 8, 'domain': 'Narasi Kompleks', 'emoji': '🍳'},
+      {'words': ['perpus', 'Buku', 'cerita', 'yang', 'dipinjam', 'dari', 'perpustakaan', 'sangat', 'seru', 'dibaca'], 'correctOrder': [1, 2, 3, 4, 5, 6, 7, 8, 9], 'correctSentence': 'Buku cerita yang dipinjam dari perpustakaan sangat seru dibaca', 'hint': 'Buku apa + dari mana + rasanya bagaimana', 'level': 8, 'domain': 'Narasi Kompleks', 'emoji': '📚'},
+      {'words': ['pacu', 'Pesawat', 'terbang', 'meluncur', 'dengan', 'sangat', 'cepat', 'di', 'landasan'], 'correctOrder': [1, 2, 3, 4, 5, 6, 7, 8, 0], 'correctSentence': 'Pesawat terbang meluncur dengan sangat cepat di landasan pacu', 'hint': 'Apa + meluncur + bagaimana + di mana', 'level': 8, 'domain': 'Narasi Kompleks', 'emoji': '✈️'},
+    ],
+    'en': [
+      // Level 1
+      {'words': ['eat', 'I', 'rice'], 'correctOrder': [1, 0, 2], 'correctSentence': 'I eat rice', 'hint': 'Who is doing the action?', 'level': 1, 'domain': 'Sentence Structure', 'emoji': '🍚'},
+      {'words': ['plays', 'Boy', 'ball'], 'correctOrder': [1, 0, 2], 'correctSentence': 'Boy plays ball', 'hint': 'Subject + verb + object', 'level': 1, 'domain': 'Sentence Structure', 'emoji': '⚽'},
+      {'words': ['book', 'reads', 'Teacher'], 'correctOrder': [2, 1, 0], 'correctSentence': 'Teacher reads book', 'hint': 'Start with the person', 'level': 1, 'domain': 'Sentence Structure', 'emoji': '📚'},
+      {'words': ['milk', 'drinks', 'Cat'], 'correctOrder': [2, 1, 0], 'correctSentence': 'Cat drinks milk', 'hint': 'Who is drinking?', 'level': 1, 'domain': 'Sentence Structure', 'emoji': '🥛'},
+      // Level 2
+      {'words': ['drinks', 'The', 'cat', 'milk'], 'correctOrder': [1, 2, 0, 3], 'correctSentence': 'The cat drinks milk', 'hint': 'Subject + action + target', 'level': 2, 'domain': 'Simple Sentence', 'emoji': '🐱'},
+      {'words': ['loudly', 'The', 'dog', 'barks'], 'correctOrder': [1, 2, 3, 0], 'correctSentence': 'The dog barks loudly', 'hint': 'Subject + verb + description', 'level': 2, 'domain': 'Simple Sentence', 'emoji': '🐕'},
+      {'words': ['in', 'Birds', 'fly', 'sky'], 'correctOrder': [1, 2, 0, 3], 'correctSentence': 'Birds fly in sky', 'hint': 'Subject + verb + location', 'level': 2, 'domain': 'Simple Sentence', 'emoji': '🐦'},
+      // Level 3
+      {'words': ['play', 'We', 'with', 'joy'], 'correctOrder': [1, 0, 2, 3], 'correctSentence': 'We play with joy', 'hint': 'Who + action + how', 'level': 3, 'domain': 'Prepositional Phrase', 'emoji': '😊'},
+      {'words': ['car', 'Father', 'drives', 'red'], 'correctOrder': [1, 2, 3, 0], 'correctSentence': 'Father drives red car', 'hint': 'Subject + action + color + object', 'level': 3, 'domain': 'Prepositional Phrase', 'emoji': '🚗'},
+      {'words': ['song', 'She', 'sings', 'sweet'], 'correctOrder': [1, 2, 3, 0], 'correctSentence': 'She sings sweet song', 'hint': 'Subject + action + description + object', 'level': 3, 'domain': 'Prepositional Phrase', 'emoji': '🎵'},
+      // Level 4
+      {'words': ['yesterday', 'He', 'went', 'to', 'the', 'zoo'], 'correctOrder': [1, 2, 3, 4, 5, 0], 'correctSentence': 'He went to the zoo yesterday', 'hint': 'Time description is at the end', 'level': 4, 'domain': 'Keterangan Waktu', 'emoji': '🦁'},
+      {'words': ['eat', 'I', 'like', 'to', 'chocolate', 'ice', 'cream'], 'correctOrder': [1, 2, 3, 0, 4, 5, 6], 'correctSentence': 'I like to eat chocolate ice cream', 'hint': 'I like + action + food type', 'level': 4, 'domain': 'Keterangan Waktu', 'emoji': '🍦'},
+      {'words': ['high', 'The', 'green', 'frog', 'jumps', 'very'], 'correctOrder': [1, 2, 3, 4, 5, 0], 'correctSentence': 'The green frog jumps very high', 'hint': 'Subject + description + action + height', 'level': 4, 'domain': 'Keterangan Waktu', 'emoji': '🐸'},
+      // Level 5
+      {'words': ['in', 'My', 'brother', 'plays', 'soccer', 'the', 'afternoon'], 'correctOrder': [1, 2, 3, 4, 0, 5, 6], 'correctSentence': 'My brother plays soccer in the afternoon', 'hint': 'Who + action + sports + time', 'level': 5, 'domain': 'Complex Sentence', 'emoji': '⚽'},
+      {'words': ['study', 'They', 'science', 'in', 'the', 'classroom', 'today'], 'correctOrder': [1, 0, 2, 3, 4, 5, 6], 'correctSentence': 'They study science in the classroom today', 'hint': 'Subject + study what + where + when', 'level': 5, 'domain': 'Complex Sentence', 'emoji': '🧪'},
+      {'words': ['elephant', 'The', 'big', 'has', 'a', 'long', 'trunk'], 'correctOrder': [1, 2, 0, 3, 4, 5, 6], 'correctSentence': 'The big elephant has a long trunk', 'hint': 'Subject + size + has + property', 'level': 5, 'domain': 'Complex Sentence', 'emoji': '🐘'},
+      // Level 6
+      {'words': ['hands', 'We', 'must', 'wash', 'our', 'before', 'eating', 'food'], 'correctOrder': [1, 2, 3, 4, 0, 5, 6, 7], 'correctSentence': 'We must wash our hands before eating food', 'hint': 'Advice + action + when', 'level': 6, 'domain': 'Modal Sentence', 'emoji': '🧼'},
+      {'words': ['story', 'She', 'wrote', 'a', 'beautiful', 'about', 'her', 'dog'], 'correctOrder': [1, 2, 3, 4, 0, 5, 6, 7], 'correctSentence': 'She wrote a beautiful story about her dog', 'hint': 'Who + action + writing type + topic', 'level': 6, 'domain': 'Modal Sentence', 'emoji': '📝'},
+      {'words': ['dinner', 'My', 'mother', 'cooks', 'delicious', 'for', 'us', 'today'], 'correctOrder': [1, 2, 3, 4, 0, 5, 6, 7], 'correctSentence': 'My mother cooks delicious dinner for us today', 'hint': 'Who + action + food + for whom + when', 'level': 6, 'domain': 'Modal Sentence', 'emoji': '🥘'},
+      // Level 7
+      {'words': ['books', 'The', 'students', 'read', 'history', 'in', 'the', 'library'], 'correctOrder': [1, 2, 3, 4, 0, 5, 6, 7], 'correctSentence': 'The students read history books in the library', 'hint': 'Subject + action + books + where', 'level': 7, 'domain': 'Complex Phrase', 'emoji': '📖'},
+      {'words': ['outside', 'He', 'lost', 'his', 'black', 'keys', 'while', 'playing'], 'correctOrder': [1, 2, 3, 4, 5, 6, 7, 0], 'correctSentence': 'He lost his black keys while playing outside', 'hint': 'Action + what was lost + when', 'level': 7, 'domain': 'Complex Phrase', 'emoji': '🔑'},
+      {'words': ['yesterday', 'The', 'little', 'girl', 'wore', 'a', 'pretty', 'dress'], 'correctOrder': [1, 2, 3, 4, 5, 6, 7, 0], 'correctSentence': 'The little girl wore a pretty dress yesterday', 'hint': 'Subject + verb + object description + time', 'level': 7, 'domain': 'Complex Phrase', 'emoji': '👗'},
+      // Level 8
+      {'words': ['present', 'Grandfather', 'bought', 'a', 'new', 'bicycle', 'for', 'my', 'birthday'], 'correctOrder': [1, 2, 3, 4, 5, 6, 7, 8, 0], 'correctSentence': 'Grandfather bought a new bicycle for my birthday present', 'hint': 'Subject + action + object + purpose', 'level': 8, 'domain': 'Advanced Narrative', 'emoji': '🚲'},
+      {'words': ['useful', 'Learning', 'a', 'new', 'language', 'is', 'very', 'for', 'everyone'], 'correctOrder': [1, 2, 3, 4, 5, 6, 0, 7, 8], 'correctSentence': 'Learning a new language is very useful for everyone', 'hint': 'Subject + is + property + for whom', 'level': 8, 'domain': 'Advanced Narrative', 'emoji': '🗣️'},
+      {'words': ['sun', 'Eight', 'planets', 'in', 'solar', 'system', 'move', 'around', 'the'], 'correctOrder': [1, 2, 3, 4, 5, 6, 7, 8, 0], 'correctSentence': 'Eight planets in solar system move around the sun', 'hint': 'Subject + location + action + target', 'level': 8, 'domain': 'Advanced Narrative', 'emoji': '🪐'},
+    ]
+  };
