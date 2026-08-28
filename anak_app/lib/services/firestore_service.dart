@@ -1098,4 +1098,30 @@ class FirestoreService {
       debugPrint('Error deleting child profile: $e');
     }
   }
+  // Delete User Data Permanently (Google Play Policy Compliance)
+  Future<void> deleteUserData(String uid) async {
+    try {
+      final batch = _db.batch();
+      final userRef = _db.collection('users').doc(uid);
+
+      final notes = await userRef.collection('notes').get();
+      for (var d in notes.docs) batch.delete(d.reference);
+
+      final emr = await userRef.collection('emr').get();
+      for (var d in emr.docs) batch.delete(d.reference);
+
+      final children = await userRef.collection('children').get();
+      for (var d in children.docs) batch.delete(d.reference);
+
+      final notifications = await userRef.collection('notifications').get();
+      for (var d in notifications.docs) batch.delete(d.reference);
+
+      batch.delete(userRef);
+      await batch.commit();
+      debugPrint('[FirestoreService] All data deleted for user: ' + uid);
+    } catch (e) {
+      debugPrint('Error deleting user data: $e');
+    }
+  }
+
 }

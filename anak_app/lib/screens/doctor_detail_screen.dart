@@ -259,20 +259,20 @@ class DoctorDetailScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Price Section
+            // Status Section (Payment Removed for Store Approval)
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Biaya Konsultasi', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8))),
+                  const Text('Sesi Telekonsultasi', style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
                   const SizedBox(height: 2),
-                  Text(
-                    'Rp ${AppState.formatCurrency(price)}',
-                    style: const TextStyle(
-                      fontSize: 22,
+                  const Text(
+                    'Layanan Gratis',
+                    style: TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF9333EA), // Updated to match redesign
+                      color: Color(0xFF10B981),
                     ),
                   ),
                 ],
@@ -301,14 +301,24 @@ class DoctorDetailScreen extends StatelessWidget {
                             return;
                           }
 
-                          final hasActive = await ChatNotificationService.hasActiveSession(chatId);
-                          if (!context.mounted) return;
-
-                          if (hasActive) {
-                            Navigator.pushNamed(context, '/chat', arguments: doc);
-                          } else {
-                            Navigator.pushNamed(context, '/payment', arguments: doc);
+                          // Auto-create chat session if needed without payment barrier
+                          final docRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+                          final docSnap = await docRef.get();
+                          if (!docSnap.exists) {
+                            await docRef.set({
+                              'doctorId': doc['id'],
+                              'buyerId': userId,
+                              'doctorName': doc['name'] ?? 'Dokter Zikola',
+                              'doctorImage': doc['image'] ?? '',
+                              'specialty': doc['specialty'] ?? '',
+                              'createdAt': FieldValue.serverTimestamp(),
+                              'expiresAt': Timestamp.fromDate(DateTime.now().add(const Duration(minutes: 30))),
+                              'status': 'active',
+                            }, SetOptions(merge: true));
                           }
+
+                          if (!context.mounted) return;
+                          Navigator.pushNamed(context, '/chat', arguments: doc);
                         }
                       : null,
                   child: Text(

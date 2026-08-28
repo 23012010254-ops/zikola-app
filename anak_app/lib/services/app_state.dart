@@ -1651,4 +1651,30 @@ class AppState extends ChangeNotifier {
     _screenTimeTimer?.cancel();
     super.dispose();
   }
+  // Delete Account and Entire Data Permanently (Google Play Compliance)
+  Future<bool> deleteUserAccount() async {
+    final targetUid = _uid;
+    final currentUser = FirebaseAuth.instance.currentUser;
+    try {
+      if (targetUid != null) {
+        await _firestore.deleteUserData(targetUid);
+      }
+      _prefs ??= await SharedPreferences.getInstance();
+      await _prefs!.clear();
+      if (currentUser != null) {
+        try {
+          await currentUser.delete();
+        } catch (e) {
+          debugPrint('Auth delete error: $e');
+        }
+      }
+      logout();
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting user account: $e');
+      logout();
+      return false;
+    }
+  }
+
 }

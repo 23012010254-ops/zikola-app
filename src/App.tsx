@@ -1,3 +1,5 @@
+import PrivacyPolicy from './components/PrivacyPolicy';
+import DeleteAccountRequest from './components/DeleteAccountRequest';
 import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import DoctorDashboard from './components/DoctorDashboard';
 import DoctorLogin from './components/DoctorLogin';
@@ -153,6 +155,15 @@ function App() {
     setCurrentView('dashboard');
     setTimeout(() => setShowSuccessMessage(false), 5000);
   };
+
+  // Route checks for Google Play Policy Pages
+  const path = window.location.pathname.toLowerCase();
+  if (path === '/privacy' || path === '/privacy-policy') {
+    return <PrivacyPolicy />;
+  }
+  if (path === '/delete-account' || path === '/delete-data') {
+    return <DeleteAccountRequest />;
+  }
 
   if (currentView === 'register') {
     return (

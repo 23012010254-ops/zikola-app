@@ -1,3 +1,4 @@
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -899,6 +900,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 12),
 
+                          // Kebijakan Privasi (Google Play Compliance)
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.privacy_tip_outlined,
+                            iconBg: const Color(0xFFEFF6FF), // blue-50
+                            iconColor: const Color(0xFF2563EB), // blue-600
+                            title: 'Kebijakan Privasi 🛡️',
+                            subtitle: 'Ketentuan privasi & perlindungan data anak',
+                            onTap: () async {
+                              final Uri url = Uri.parse('https://anak-app.web.app/privacy');
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Kunjungi https://anak-app.web.app/privacy')),
+                                );
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Hapus Akun & Data (Google Play Policy Mandate)
+                          _buildMenuItem(
+                            context,
+                            icon: Icons.delete_forever_rounded,
+                            iconBg: const Color(0xFFFFF1F2), // rose-50
+                            iconColor: const Color(0xFFE11D48), // rose-600
+                            title: 'Hapus Akun & Data 🗑️',
+                            subtitle: 'Hapus akun dan seluruh data secara permanen',
+                            onTap: () => _showDeleteAccountConfirmation(context),
+                          ),
+                          const SizedBox(height: 12),
+
                           _buildMenuItem(
                             context,
                             icon: Icons.logout,
@@ -1602,4 +1636,61 @@ class _ShiningStickerSlotState extends State<ShiningStickerSlot> with SingleTick
       default: return const Color(0xFFE2E8F0);
     }
   }
+
+  void _showDeleteAccountConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFE11D48), size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Hapus Akun & Data?',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Tindakan ini bersifat permanen.\n\nSeluruh data profil anak, stiker, riwayat rekam medis (EMR), dan hasil tes akan dihapus secara menyeluruh dari server Zikola sesuai kebijakan privasi Google Play.',
+          style: TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final appState = Provider.of<AppState>(context, listen: false);
+              final success = await appState.deleteUserAccount();
+              if (context.mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Akun dan seluruh data Anda telah berhasil dihapus permanen. ✅'),
+                      backgroundColor: Color(0xFF059669),
+                    ),
+                  );
+                }
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE11D48),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Ya, Hapus Permanen', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
