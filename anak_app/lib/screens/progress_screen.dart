@@ -12,6 +12,7 @@ import 'dart:convert';
 import '../services/app_state.dart';
 import '../services/ai_report_service.dart';
 import '../services/assessment_engine.dart';
+import '../models/child_profile.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_bottom_nav.dart';
 

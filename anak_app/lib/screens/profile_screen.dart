@@ -1431,6 +1431,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
     );
   }
+
+  void _showDeleteAccountConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFE11D48), size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Hapus Akun & Data?',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'Tindakan ini bersifat permanen.\n\nSeluruh data profil anak, stiker, riwayat rekam medis (EMR), dan hasil tes akan dihapus secara menyeluruh dari server Zikola sesuai kebijakan privasi Google Play.',
+          style: TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final appState = Provider.of<AppState>(context, listen: false);
+              final success = await appState.deleteUserAccount();
+              if (context.mounted) {
+                if (success) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Akun dan seluruh data Anda telah berhasil dihapus permanen. ✅'),
+                      backgroundColor: Color(0xFF059669),
+                    ),
+                  );
+                }
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE11D48),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Ya, Hapus Permanen', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class ShiningStickerSlot extends StatefulWidget {
@@ -1636,61 +1692,4 @@ class _ShiningStickerSlotState extends State<ShiningStickerSlot> with SingleTick
       default: return const Color(0xFFE2E8F0);
     }
   }
-
-  void _showDeleteAccountConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Color(0xFFE11D48), size: 28),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Hapus Akun & Data?',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A)),
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'Tindakan ini bersifat permanen.\n\nSeluruh data profil anak, stiker, riwayat rekam medis (EMR), dan hasil tes akan dihapus secara menyeluruh dari server Zikola sesuai kebijakan privasi Google Play.',
-          style: TextStyle(fontSize: 12, color: Color(0xFF475569), height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final appState = Provider.of<AppState>(context, listen: false);
-              final success = await appState.deleteUserAccount();
-              if (context.mounted) {
-                if (success) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Akun dan seluruh data Anda telah berhasil dihapus permanen. ✅'),
-                      backgroundColor: Color(0xFF059669),
-                    ),
-                  );
-                }
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE11D48),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Ya, Hapus Permanen', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-          ),
-        ],
-      ),
-    );
-  }
-
 }

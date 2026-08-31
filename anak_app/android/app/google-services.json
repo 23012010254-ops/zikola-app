@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "510792598386-cjhk9umcj9auuqulr9sla1egcmnebl59.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anakapp.anak_app",
+            "certificate_hash": "383f32df22d1628dc7a95016933a81e94ffbc8c5"
+          }
+        },
+        {
           "client_id": "510792598386-k5rbe2rrk56vjn9ir76ci7nkssasdnp8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.anakapp.anak_app",
             "certificate_hash": "66246976e8ee222c0e1c7cf49a2bef019cceb546"
+          }
+        },
+        {
+          "client_id": "510792598386-vb311f7ptgri3o2vnrvjpf4rkbojac7g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anakapp.anak_app",
+            "certificate_hash": "dcd77b0ea1475374a16484a41add0c3464f6f067"
           }
         },
         {
