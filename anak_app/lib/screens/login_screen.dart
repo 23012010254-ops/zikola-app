@@ -138,8 +138,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login Google dibatalkan atau gagal. Silakan coba lagi.'),
+          SnackBar(
+            content: Text(authService.lastGoogleError ?? 'Login Google dibatalkan atau gagal. Silakan coba lagi.'),
             backgroundColor: Colors.orange,
           ),
         );

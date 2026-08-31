@@ -40,8 +40,11 @@ class AuthService {
     }
   }
 
+  String? lastGoogleError;
+
   /// Perform Google Sign In
   Future<bool> signInWithGoogle() async {
+    lastGoogleError = null;
     try {
       // Force sign out first to clear any stuck internal state or cached invalid sessions.
       try {
@@ -51,7 +54,7 @@ class AuthService {
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        // The user canceled the sign-in
+        lastGoogleError = 'Login dibatalkan oleh pengguna.';
         return false;
       }
 
@@ -68,10 +71,12 @@ class AuthService {
       await _auth.signInWithCredential(credential);
       return true;
     } on FirebaseAuthException catch (e) {
-      debugPrint('Firebase Google Sign-In Error: ${e.message}');
+      lastGoogleError = 'Firebase Error: [${e.code}] ${e.message}';
+      debugPrint(lastGoogleError);
       return false;
     } catch (e) {
-      debugPrint('General Google Sign-In Error: $e');
+      lastGoogleError = 'Google Sign-In Error: $e';
+      debugPrint(lastGoogleError);
       return false;
     }
   }
