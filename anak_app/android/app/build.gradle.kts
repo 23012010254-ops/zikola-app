@@ -42,22 +42,16 @@ android {
 
     signingConfigs {
         create("release") {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
-            }
+            keyAlias = "upload"
+            keyPassword = "zikola12345"
+            storeFile = rootProject.file("upload-keystore.jks")
+            storePassword = "zikola12345"
         }
     }
 
     buildTypes {
         release {
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             isShrinkResources = false
         }
