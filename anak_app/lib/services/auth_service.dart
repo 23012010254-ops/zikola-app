@@ -7,7 +7,10 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirestoreService _firestore = FirestoreService();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: '510792598386-m4c8993mdg4qvnad51lr1ba8h3a5oir1.apps.googleusercontent.com',
+    scopes: [
+      'email',
+      'profile',
+    ],
   );
 
   /// Check if user is logged in
