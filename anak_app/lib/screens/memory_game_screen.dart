@@ -797,18 +797,19 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  // Light panel so the dark labels and coloured values stay readable.
+                  color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [
                     _rowStat('Jumlah Gerakan:', '$_moves'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Kesalahan:', '$_errors'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Waktu Selesai:', '$_gameTime detik'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Skor Diperoleh:', '$score'),
                   ],
                 ),

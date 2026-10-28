@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
+import '../services/age_difficulty.dart';
+import '../widgets/age_mode_chip.dart';
 import '../services/assessment_engine.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
@@ -92,6 +94,21 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
     });
   }
 
+  /// Shorter sequences and slower flashes for younger children.
+  SequenceLevelConfig _effectiveConfig(int level) {
+    final base = _levelsConfig[level - 1];
+    final age = AgeDifficulty.of(context);
+    return SequenceLevelConfig(
+      level: base.level,
+      sequenceLength: age.pick(
+        toddler: (base.sequenceLength - 1).clamp(2, 4),
+        preschool: base.sequenceLength.clamp(2, 6),
+        school: base.sequenceLength,
+      ),
+      flashDelayMs: (base.flashDelayMs * age.pick(toddler: 1.5, preschool: 1.2, school: 1.0)).round(),
+    );
+  }
+
   void _startLevel(int level) {
     setState(() {
       _gameState = 'playing';
@@ -106,7 +123,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
     });
     AudioService().playPuzzleBGM();
     
-    final config = _levelsConfig[level - 1];
+    final config = _effectiveConfig(level);
     _generateSequence(config.sequenceLength);
   }
 
@@ -133,7 +150,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
   }
 
   Future<void> _showSequence(List<int> seq) async {
-    final config = _levelsConfig[_currentLevel - 1];
+    final config = _effectiveConfig(_currentLevel);
     for (int i = 0; i < seq.length; i++) {
       if (!mounted || _gameState != 'showing') return;
       setState(() => _showingIndex = i);
@@ -208,7 +225,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
     int accuracy = (totalQuestions > 0) ? ((_correctAnswers / totalQuestions) * 100).round() : 0;
     int avgRespMs = totalQuestions > 0 ? ((totalTime * 1000) / totalQuestions).round() : 0;
 
-    _score += _levelsConfig[levelIdx].sequenceLength * 15;
+    _score += _effectiveConfig(levelIdx + 1).sequenceLength * 15;
 
     final double assessScore = AssessmentEngine.calculateGameScore(
       totalItems: totalQuestions,
@@ -341,7 +358,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
                             child: const Icon(Icons.arrow_back, color: Colors.white),
                           ),
                         ),
-                        Text('Sequence Memory', style: AppTheme.heading2.copyWith(color: Colors.white, fontSize: 20)),
+                        Text('Ingat Urutan', style: AppTheme.heading2.copyWith(color: Colors.white, fontSize: 20)),
                         const SizedBox(width: 44),
                       ],
                     ),
@@ -453,6 +470,8 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
                   ],
                 ),
               ),
+              const SizedBox(height: 8),
+              const AgeModeChip(color: Color(0xFF6D28D9)),
               const SizedBox(height: 20),
               Expanded(
                 child: Padding(
@@ -575,7 +594,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
                     ),
                     Column(
                       children: [
-                        const Text('Sequence Memory', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text('Ingat Urutan', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                         Text('Level $_currentLevel', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                       ],
                     ),
@@ -751,16 +770,17 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  // Light panel so the dark labels and coloured values stay readable.
+                  color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [
-                    _rowStat('Panjang Sekuens:', '${_levelsConfig[_currentLevel - 1].sequenceLength}'),
-                    const Divider(color: Colors.white24),
+                    _rowStat('Panjang Sekuens:', '${_effectiveConfig(_currentLevel).sequenceLength}'),
+                    const Divider(color: Colors.black12),
                     _rowStat('Nyawa Tersisa:', '$_lives'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Skor Total:', '$_score'),
                   ],
                 ),
@@ -833,7 +853,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
                   child: Column(
                     children: [
-                      _rowStat('Panjang Sekuens', '${_levelsConfig[_currentLevel - 1].sequenceLength}'),
+                      _rowStat('Panjang Sekuens', '${_effectiveConfig(_currentLevel).sequenceLength}'),
                       const Divider(),
                       _rowStat('Urutan Benar', '${_userSequence.length}'),
                       const Divider(),

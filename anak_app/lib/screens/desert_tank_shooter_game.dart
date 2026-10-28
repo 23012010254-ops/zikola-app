@@ -230,6 +230,8 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
   }
 
   void _spawnTank() {
+    // Called from a delayed future; the player may have left the screen.
+    if (!mounted) return;
     if (_tanks.isEmpty) {
       setState(() {
         _tanks.add(_generateTank(_currentLevel));
@@ -816,16 +818,17 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  // Light panel so the dark labels and coloured values stay readable.
+                  color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [
                     _rowStat('Tank Dihancurkan:', '$_correctAnswers'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Akurasi Tembakan:', '$accuracy%'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Waktu Bertahan:', '$totalTimeSecs detik'),
                   ],
                 ),
@@ -904,7 +907,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
                   children: [
                     const Text('🚛💨', style: TextStyle(fontSize: 80)),
                     const SizedBox(height: 24),
-                    Text('Oasis Pattern\nDefender', style: AppTheme.heading1.copyWith(color: AppTheme.primaryOrange, fontSize: 36), textAlign: TextAlign.center),
+                    Text('Tantangan Tank', style: AppTheme.heading1.copyWith(color: AppTheme.primaryOrange, fontSize: 36), textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     Text('Analisis pola yang dibawa musuh dan tembak dengan urutan emoji yang benar!', style: TextStyle(color: AppTheme.gray800, fontSize: 16), textAlign: TextAlign.center),
                     const SizedBox(height: 48),
@@ -944,7 +947,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
                     const SizedBox(height: 20),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Kembali ke Dashboard', style: TextStyle(fontSize: 16, color: Colors.black54)),
+                      child: const Text('Kembali', style: TextStyle(fontSize: 16, color: Colors.black54)),
                     )
                   ],
                 ),

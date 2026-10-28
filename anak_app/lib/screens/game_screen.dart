@@ -198,6 +198,114 @@ class _GameScreenState extends State<GameScreen> {
       rating: '4.9',
       gameKey: 'numberMemory',
     ),
+    _AvailableGame(
+      id: 'shape-sorting',
+      title: 'Pilah Bentuk',
+      description: 'Kelompokkan bentuk sesuai jenisnya!',
+      image: '🎯',
+      assetPath: 'assets/images/emoji/games/target.png',
+      bgColor: const Color(0xFFDCFCE7),
+      domains: ['Klasifikasi'],
+      difficulty: 'Easy',
+      time: '3 menit',
+      reward: '+30 ⭐',
+      rewardColor: const Color(0xFF15803D),
+      rating: '-',
+      gameKey: 'shapeSortingGame',
+    ),
+    _AvailableGame(
+      id: 'desert-road',
+      title: 'Jalan Gurun',
+      description: 'Susun jalan agar mobil sampai tujuan!',
+      image: '🌵',
+      assetPath: 'assets/images/emoji/objects/cactus.png',
+      bgColor: const Color(0xFFFEF3C7),
+      domains: ['Logika', 'Spasial'],
+      difficulty: 'Medium',
+      time: '5 menit',
+      reward: '+45 ⭐',
+      rewardColor: const Color(0xFFB45309),
+      rating: '-',
+      gameKey: 'desertRoadGame',
+    ),
+    _AvailableGame(
+      id: 'prism-painter',
+      title: 'Cermin Pola',
+      description: 'Lukis pola yang sama di sisi cermin!',
+      image: '🔮',
+      assetPath: 'assets/images/emoji/objects/crystal_ball.png',
+      bgColor: const Color(0xFFF3E8FF),
+      domains: ['Simetri', 'Spasial'],
+      difficulty: 'Medium',
+      time: '4 menit',
+      reward: '+40 ⭐',
+      rewardColor: const Color(0xFF7E22CE),
+      rating: '-',
+      gameKey: 'mirrorPatternGame',
+    ),
+    _AvailableGame(
+      id: 'puzzle-game',
+      title: 'Puzzle Logika',
+      description: 'Susun kepingan jadi gambar utuh!',
+      image: '⚙️',
+      assetPath: 'assets/images/emoji/games/gear.png',
+      bgColor: const Color(0xFFE2E8F0),
+      domains: ['Logika', 'Visual'],
+      difficulty: 'Medium',
+      time: '5 menit',
+      reward: '+45 ⭐',
+      rewardColor: const Color(0xFF334155),
+      rating: '-',
+      gameKey: 'puzzleGame',
+    ),
+  ];
+
+  final _memoryGames = [
+    _AvailableGame(
+      id: 'memory-game',
+      title: 'Kartu Memori',
+      description: 'Temukan pasangan kartu yang sama!',
+      image: '🧠',
+      assetPath: 'assets/images/emoji/games/brain.png',
+      bgColor: const Color(0xFFFCE7F3),
+      domains: ['Memori'],
+      difficulty: 'Easy',
+      time: '3 menit',
+      reward: '+30 ⭐',
+      rewardColor: const Color(0xFFBE185D),
+      rating: '-',
+      gameKey: 'memory',
+    ),
+    _AvailableGame(
+      id: 'sequence-memory',
+      title: 'Ingat Urutan',
+      description: 'Ulangi urutan warna yang menyala!',
+      image: '💡',
+      assetPath: 'assets/images/emoji/games/lightbulb.png',
+      bgColor: const Color(0xFFFEF9C3),
+      domains: ['Memori', 'Fokus'],
+      difficulty: 'Medium',
+      time: '4 menit',
+      reward: '+40 ⭐',
+      rewardColor: const Color(0xFFA16207),
+      rating: '-',
+      gameKey: 'sequenceMemoryGame',
+    ),
+    _AvailableGame(
+      id: 'pattern-recognition',
+      title: 'Tebak Pola',
+      description: 'Temukan bentuk yang hilang dari pola!',
+      image: '🔍',
+      assetPath: 'assets/images/emoji/games/magnifier.png',
+      bgColor: const Color(0xFFE0E7FF),
+      domains: ['Pola', 'Logika'],
+      difficulty: 'Medium',
+      time: '4 menit',
+      reward: '+40 ⭐',
+      rewardColor: const Color(0xFF4338CA),
+      rating: '-',
+      gameKey: 'patternRecognition',
+    ),
   ];
 
   final _creativeGames = [
@@ -270,10 +378,10 @@ class _GameScreenState extends State<GameScreen> {
         Navigator.pushNamed(context, '/spell-bee');
         break;
       case 'word-puzzle':
-        Navigator.pushNamed(context, '/word-puzzle');
+        Navigator.pushNamed(context, '/word-puzzle-game');
         break;
       case 'story-builder':
-        Navigator.pushNamed(context, '/story-builder');
+        Navigator.pushNamed(context, '/story-builder-game');
         break;
       case 'tank-shooter':
         Navigator.pushNamed(context, '/desert-tank-shooter');
@@ -300,10 +408,31 @@ class _GameScreenState extends State<GameScreen> {
         Navigator.pushNamed(context, '/bubble-popper');
         break;
       case 'number-sequence':
-        Navigator.pushNamed(context, '/number-sequence');
+        Navigator.pushNamed(context, '/number-sequence-game');
+        break;
+      case 'memory-game':
+        Navigator.pushNamed(context, '/memory-game');
+        break;
+      case 'sequence-memory':
+        Navigator.pushNamed(context, '/sequence-memory-game');
+        break;
+      case 'pattern-recognition':
+        Navigator.pushNamed(context, '/pattern-recognition-game');
+        break;
+      case 'shape-sorting':
+        Navigator.pushNamed(context, '/shape-sorting-game');
+        break;
+      case 'desert-road':
+        Navigator.pushNamed(context, '/desert-road-logic');
+        break;
+      case 'prism-painter':
+        Navigator.pushNamed(context, '/mirror-pattern');
+        break;
+      case 'puzzle-game':
+        Navigator.pushNamed(context, '/puzzle-game');
         break;
       case 'number-memory':
-        Navigator.pushNamed(context, '/number-memory');
+        Navigator.pushNamed(context, '/number-memory-game');
         break;
       default:
         context.read<AppState>().addSticker('game-player');
@@ -365,6 +494,8 @@ class _GameScreenState extends State<GameScreen> {
                   const SizedBox(height: 36),
                   
                   _buildDiscoverySection("Logika & Angka", const Color(0xFF10B981), _logicGames),
+                  const SizedBox(height: 36),
+                  _buildDiscoverySection("Memori & Fokus", const Color(0xFF8B5CF6), _memoryGames),
                   const SizedBox(height: 36),
                   
                   _buildDiscoverySection("Kreativitas", const Color(0xFFEC4899), _creativeGames),

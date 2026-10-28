@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
+import '../services/age_difficulty.dart';
+import '../widgets/age_mode_chip.dart';
 import '../services/assessment_engine.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
@@ -92,6 +94,23 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
     });
   }
 
+  /// Fewer digits and more viewing time for younger children; level 8 asks
+  /// for 10 digits in 2 seconds, which is far beyond a preschooler.
+  NumberLevelConfig _effectiveConfig(int level) {
+    final base = _levelsConfig[level - 1];
+    final age = AgeDifficulty.of(context);
+    return NumberLevelConfig(
+      level: base.level,
+      digitsCount: age.pick(
+        toddler: (base.digitsCount - 1).clamp(2, 4),
+        preschool: base.digitsCount.clamp(3, 6),
+        school: base.digitsCount,
+      ),
+      showDurationSecs: base.showDurationSecs + age.pick(toddler: 2, preschool: 1, school: 0),
+      answerDurationSecs: base.answerDurationSecs + age.pick(toddler: 5, preschool: 3, school: 0),
+    );
+  }
+
   void _startLevel(int level) {
     setState(() {
       _gameState = 'playing';
@@ -105,7 +124,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
     });
     AudioService().playPuzzleBGM();
     
-    final config = _levelsConfig[level - 1];
+    final config = _effectiveConfig(level);
     _generateNumber(config.digitsCount);
   }
 
@@ -115,7 +134,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
        number += _random.nextInt(10).toString();
     }
     
-    final config = _levelsConfig[_currentLevel - 1];
+    final config = _effectiveConfig(_currentLevel);
     
     setState(() {
       _targetNumber = number;
@@ -216,7 +235,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
       } else if (_lives <= 0) {
         _endGame();
       } else {
-        _generateNumber(_levelsConfig[_currentLevel - 1].digitsCount);
+        _generateNumber(_effectiveConfig(_currentLevel).digitsCount);
       }
     });
   }
@@ -284,7 +303,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
       hintsUsed: 0,
       assessmentScore: assessScore,
       detailedMetrics: {
-        'maxDigitLength': _levelsConfig[levelIdx].digitsCount,
+        'maxDigitLength': _effectiveConfig(levelIdx + 1).digitsCount,
         'livesRemaining': _lives,
       },
       subdomainScores: {
@@ -346,7 +365,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
       hintsUsed: 0,
       assessmentScore: assessScore,
       detailedMetrics: {
-        'maxDigitLength': _levelsConfig[_currentLevel - 1].digitsCount,
+        'maxDigitLength': _effectiveConfig(_currentLevel).digitsCount,
         'livesRemaining': _lives,
       },
       subdomainScores: {
@@ -411,7 +430,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                             child: const Icon(Icons.arrow_back, color: Colors.white),
                           ),
                         ),
-                        Text('Number Memory', style: AppTheme.heading2.copyWith(color: Colors.white, fontSize: 20)),
+                        Text('Memori Angka', style: AppTheme.heading2.copyWith(color: Colors.white, fontSize: 20)),
                         const SizedBox(width: 44),
                       ],
                     ),
@@ -519,6 +538,8 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                   ],
                 ),
               ),
+              const SizedBox(height: 8),
+              const AgeModeChip(color: Color(0xFF0369A1)),
               const SizedBox(height: 20),
               Expanded(
                 child: Padding(
@@ -615,7 +636,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
   }
 
   Widget _buildPlaying() {
-    final config = _levelsConfig[_currentLevel - 1];
+    final config = _effectiveConfig(_currentLevel);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -644,7 +665,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                     ),
                     Column(
                       children: [
-                        const Text('Number Memory', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text('Memori Angka', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                         Text('Level $_currentLevel', style: const TextStyle(color: Colors.white70, fontSize: 12)),
                       ],
                     ),
@@ -844,16 +865,17 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  // Light panel so the dark labels and coloured values stay readable.
+                  color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [
-                    _rowStat('Jumlah Digit:', '${_levelsConfig[_currentLevel - 1].digitsCount}'),
-                    const Divider(color: Colors.white24),
+                    _rowStat('Jumlah Digit:', '${_effectiveConfig(_currentLevel).digitsCount}'),
+                    const Divider(color: Colors.black12),
                     _rowStat('Nyawa Tersisa:', '$_lives'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Skor Total:', '$_score'),
                   ],
                 ),
@@ -926,7 +948,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
                   child: Column(
                     children: [
-                      _rowStat('Panjang Angka', '${_levelsConfig[_currentLevel - 1].digitsCount} digit'),
+                      _rowStat('Panjang Angka', '${_effectiveConfig(_currentLevel).digitsCount} digit'),
                       const Divider(),
                       _rowStat('Ketikkan Kamu', _userInput.isEmpty ? '-' : _userInput),
                       const Divider(),

@@ -343,7 +343,7 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
                   children: [
                     const Text('🛣️', style: TextStyle(fontSize: 100)),
                     const SizedBox(height: 24),
-                    Text('Logic Convoy\nRouting', style: AppTheme.heading1.copyWith(color: Colors.white, fontSize: 36), textAlign: TextAlign.center),
+                    Text('Jalan Gurun', style: AppTheme.heading1.copyWith(color: Colors.white, fontSize: 36), textAlign: TextAlign.center),
                     const SizedBox(height: 16),
                     Text('Geser kendaraan ke gerbang yang sesuai dengan aturan logika!', style: TextStyle(color: Colors.orange.shade900, fontSize: 16), textAlign: TextAlign.center),
                     const SizedBox(height: 48),
@@ -379,7 +379,7 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
                     const SizedBox(height: 20),
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Kembali ke Dashboard', style: TextStyle(fontSize: 16, color: Colors.black54)),
+                      child: const Text('Kembali', style: TextStyle(fontSize: 16, color: Colors.black54)),
                     )
                   ],
                 ),
@@ -757,16 +757,17 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.1),
+                  // Light panel so the dark labels and coloured values stay readable.
+                  color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [
                     _rowStat('Penyortiran Benar:', '$_correctAnswers'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Akurasi Logika:', '$accuracy%'),
-                    const Divider(color: Colors.white24),
+                    const Divider(color: Colors.black12),
                     _rowStat('Waktu Bermain:', '$totalTimeSecs detik'),
                   ],
                 ),

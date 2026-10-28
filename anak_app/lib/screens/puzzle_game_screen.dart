@@ -117,7 +117,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
   final List<PuzzleLevel> _puzzles = [
     PuzzleLevel(
       id: 1,
-      title: 'Cute Fox',
+      title: 'Rubah Lucu',
       difficulty: 'Easy',
       pieces: 6,
       columns: 2,
@@ -130,7 +130,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     ),
     PuzzleLevel(
       id: 2,
-      title: 'Happy Elephant',
+      title: 'Gajah Gembira',
       difficulty: 'Easy',
       pieces: 9,
       columns: 3,
@@ -143,7 +143,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     ),
     PuzzleLevel(
       id: 3,
-      title: 'Tropical Bird',
+      title: 'Burung Tropis',
       difficulty: 'Easy',
       pieces: 9,
       columns: 3,
@@ -156,7 +156,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     ),
     PuzzleLevel(
       id: 4,
-      title: 'Colorful Butterfly',
+      title: 'Kupu-Kupu Warna-Warni',
       difficulty: 'Medium',
       pieces: 12,
       columns: 3,
@@ -169,7 +169,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     ),
     PuzzleLevel(
       id: 5,
-      title: 'Ocean Fish',
+      title: 'Ikan Laut',
       difficulty: 'Medium',
       pieces: 16,
       columns: 4,
@@ -182,7 +182,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     ),
     PuzzleLevel(
       id: 6,
-      title: 'Wild Lion',
+      title: 'Singa Rimba',
       difficulty: 'Medium',
       pieces: 16,
       columns: 4,
@@ -195,7 +195,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     ),
     PuzzleLevel(
       id: 7,
-      title: 'Space Rocket',
+      title: 'Roket Angkasa',
       difficulty: 'Hard',
       pieces: 20,
       columns: 4,
@@ -209,7 +209,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     ),
     PuzzleLevel(
       id: 8,
-      title: 'Magic Dragon',
+      title: 'Naga Ajaib',
       difficulty: 'Hard',
       pieces: 25,
       columns: 5,
@@ -514,7 +514,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                         ),
                       ),
                       Text(
-                        'Puzzle Games',
+                        'Puzzle Logika',
                         style: AppTheme.heading2.copyWith(color: Colors.white, fontSize: 20),
                       ),
                       const SizedBox(width: 40),

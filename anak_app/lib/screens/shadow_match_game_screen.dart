@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
+import '../services/age_difficulty.dart';
+import '../widgets/age_mode_chip.dart';
 import '../services/audio_service.dart';
 import '../services/assessment_engine.dart';
 import '../theme/app_theme.dart';
@@ -100,12 +102,15 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
     final random = math.Random();
     List<String> pool = List.from(allEmojis)..shuffle();
     
+    // Fewer choices for toddlers; rotated shadows only from age 7.
+    final age = AgeDifficulty.of(context);
     int count = getOptionsCount(_currentLevel);
+    if (age.band == AgeBand.toddler) count = math.min(count, 3);
     options = pool.take(count).toList();
     targetEmoji = options[random.nextInt(count)];
 
     // Add rotation for Level 5 and above to increase spatial rotation difficulty
-    if (_currentLevel >= 5) {
+    if (_currentLevel >= 5 && age.band == AgeBand.school) {
       _rotationAngle = (random.nextBool() ? 1 : -1) * (15 + random.nextInt(30)) * math.pi / 180;
     } else {
       _rotationAngle = 0.0;
@@ -357,6 +362,8 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
                   ],
                 ),
               ),
+              const SizedBox(height: 8),
+              const AgeModeChip(color: Color(0xFFBE185D)),
               const SizedBox(height: 20),
               Expanded(
                 child: Padding(

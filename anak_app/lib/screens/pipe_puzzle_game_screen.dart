@@ -515,14 +515,14 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
 
     int flowIndex = 0;
     Timer.periodic(const Duration(milliseconds: 80), (timer) {
-      if (flowIndex >= _flowOrder.length) {
+      if (!mounted) {
         timer.cancel();
-        _onFlowComplete();
         return;
       }
 
-      if (!mounted) {
+      if (flowIndex >= _flowOrder.length) {
         timer.cancel();
+        _onFlowComplete();
         return;
       }
 

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
+import '../services/age_difficulty.dart';
+import '../widgets/age_mode_chip.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
 import '../services/assessment_engine.dart';
@@ -100,7 +102,8 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
   }
 
   int getMatrixSize(int level) {
-    if (level <= 3) return 2;
+    // Toddlers stay on the 2x2 grid at every level.
+    if (level <= 3 || AgeDifficulty.of(context).band == AgeBand.toddler) return 2;
     return 3;
   }
 
@@ -366,7 +369,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
                           child: const Icon(Icons.arrow_back, color: Colors.white),
                         ),
                       ),
-                      Text('Crystal Matrix Vault 🔮', style: AppTheme.heading2.copyWith(color: Colors.white, fontSize: 20)),
+                      Text('Tebak Pola 🔮', style: AppTheme.heading2.copyWith(color: Colors.white, fontSize: 20)),
                       const SizedBox(width: 44),
                     ],
                   ),
@@ -380,7 +383,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
                     child: const Icon(Icons.apps, size: 100, color: Colors.cyanAccent),
                   ),
                   const SizedBox(height: 32),
-                  Text('Crystal Matrix Vault', style: AppTheme.heading1.copyWith(color: Colors.white, fontSize: 32), textAlign: TextAlign.center),
+                  Text('Tebak Pola', style: AppTheme.heading1.copyWith(color: Colors.white, fontSize: 32), textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   Text('Pecahkan kode brankas kuno dengan menyeret kristal yang tepat ke dalam matriks!', style: TextStyle(color: Colors.indigo.shade200, fontSize: 16), textAlign: TextAlign.center),
                   const SizedBox(height: 32),
@@ -447,6 +450,8 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
                 ],
               ),
             ),
+            const SizedBox(height: 8),
+            const AgeModeChip(color: Color(0xFF4338CA)),
             const SizedBox(height: 20),
             Expanded(
               child: Padding(

@@ -232,7 +232,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
               children: [
                 const Icon(Icons.flip, size: 100, color: Colors.pinkAccent),
                 const SizedBox(height: 32),
-                Text('Prism Painter\n(Mirror Puzzle)', style: AppTheme.heading1.copyWith(color: Colors.white, fontSize: 36), textAlign: TextAlign.center),
+                Text('Cermin Pola', style: AppTheme.heading1.copyWith(color: Colors.white, fontSize: 36), textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 const Text('Lukis pantulan cermin dengan sentuhanmu untuk menciptakan seni piksel!', style: TextStyle(color: Colors.white70, fontSize: 16), textAlign: TextAlign.center),
                 const SizedBox(height: 48),
@@ -270,7 +270,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Kembali ke Dashboard', style: TextStyle(fontSize: 16, color: Colors.white54)),
+                  child: const Text('Kembali', style: TextStyle(fontSize: 16, color: Colors.white54)),
                 )
               ],
             ),

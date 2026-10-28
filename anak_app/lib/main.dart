@@ -23,6 +23,8 @@ import 'screens/personality_test_screen.dart';
 import 'screens/interest_talent_test_screen.dart';
 import 'screens/game_screen.dart';
 import 'screens/memory_game_screen.dart';
+import 'screens/mirror_pattern_game.dart';
+import 'screens/puzzle_game_screen.dart' show PuzzleGameScreen;
 import 'screens/word_puzzle_game_screen.dart';
 import 'screens/number_sequence_game_screen.dart';
 import 'screens/pattern_recognition_game_screen.dart';
@@ -222,6 +224,8 @@ class ZikolaApp extends StatelessWidget {
         '/interest-talent-test': (context) => const InterestTalentTestScreen(),
         '/game': (context) => const GameScreen(),
         '/memory-game': (context) => const MemoryGameScreen(),
+        '/mirror-pattern': (context) => const PrismPainterGame(),
+        '/puzzle-game': (context) => const PuzzleGameScreen(),
         '/word-puzzle-game': (context) => const WordPuzzleGameScreen(),
         '/number-sequence-game': (context) => const NumberSequenceGameScreen(),
         '/pattern-recognition-game': (context) => const PatternRecognitionGameScreen(),
