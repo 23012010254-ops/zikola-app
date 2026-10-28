@@ -496,7 +496,7 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('Pick image error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Gagal mengirim file. Coba lagi.'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -543,7 +543,7 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('Pick document error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Gagal mengirim file. Coba lagi.'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1834,7 +1834,18 @@ class _ChatScreenState extends State<ChatScreen> {
                           const SizedBox(height: 12),
                           Text('Gagal memuat pesan', style: AppTheme.heading3.copyWith(color: AppTheme.gray800, fontSize: 16)),
                           const SizedBox(height: 4),
-                          Text('${snapshot.error}', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          // Raw Firestore errors are logged, not shown to parents.
+                          Builder(builder: (_) {
+                            debugPrint('[ChatScreen] messages stream error: ${snapshot.error}');
+                            final denied = snapshot.error.toString().contains('permission-denied');
+                            return Text(
+                              denied
+                                  ? 'Percakapan ini tidak bisa dibuka dari akun Anda.'
+                                  : 'Periksa koneksi internet Anda, lalu coba buka lagi.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            );
+                          }),
                         ],
                       ),
                     ),

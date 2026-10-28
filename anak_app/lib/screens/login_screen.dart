@@ -260,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                     // Login Form Fields
                     CustomTextField(
                       controller: _emailController,
-                      hintText: 'Email atau nomor ponsel',
+                      hintText: 'Email',
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 16),

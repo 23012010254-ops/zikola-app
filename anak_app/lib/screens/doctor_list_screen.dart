@@ -16,7 +16,30 @@ class DoctorListScreen extends StatefulWidget {
 class _DoctorListScreenState extends State<DoctorListScreen> {
   final FirestoreService _firestoreService = FirestoreService();
 
-  Widget _buildAvatar(String imageStr, {double size = 48}) {
+  /// Coloured circle with the doctor's initials, used when there is no photo.
+  Widget _initialsAvatar(String name, double size) {
+    final words = name
+        .replaceAll(RegExp(r'^(dr\.?|drg\.?)\s+', caseSensitive: false), '')
+        .split(RegExp(r'[\s,]+'))
+        .where((w) => w.isNotEmpty && w[0].toUpperCase() != w[0].toLowerCase())
+        .toList();
+    final initials = words.take(2).map((w) => w[0].toUpperCase()).join();
+    const palette = [Color(0xFF7C3AED), Color(0xFF0EA5E9), Color(0xFF10B981), Color(0xFFF59E0B), Color(0xFFEC4899)];
+    final color = palette[name.hashCode.abs() % palette.length];
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16)),
+      child: Text(
+        initials.isEmpty ? '🩺' : initials,
+        style: TextStyle(fontSize: size * 0.36, fontWeight: FontWeight.w900, color: color),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(String imageStr, {double size = 48, String name = ''}) {
+    final fallback = _initialsAvatar(name, size);
     if (imageStr.startsWith('base64:')) {
       try {
         final bytes = base64Decode(imageStr.substring(7));
@@ -27,11 +50,11 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
             width: size,
             height: size,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Text('👨‍⚕️', style: TextStyle(fontSize: size * 0.6)),
+            errorBuilder: (context, error, stackTrace) => fallback,
           ),
         );
       } catch (e) {
-        return Text('👨‍⚕️', style: TextStyle(fontSize: size * 0.6));
+        return fallback;
       }
     } else if (imageStr.startsWith('http://') || imageStr.startsWith('https://')) {
       return ClipRRect(
@@ -41,11 +64,15 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Text('👨‍⚕️', style: TextStyle(fontSize: size * 0.6)),
+          errorBuilder: (context, error, stackTrace) => fallback,
         ),
       );
     }
-    return Text(imageStr, style: TextStyle(fontSize: size * 0.6));
+    // Short strings are emoji avatars; anything else (empty, junk) gets initials.
+    if (imageStr.isNotEmpty && imageStr.runes.length <= 4) {
+      return Text(imageStr, style: TextStyle(fontSize: size * 0.6));
+    }
+    return fallback;
   }
 
   @override
@@ -99,7 +126,7 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
                     const SizedBox(height: 16),
                     const Text('Gagal memuat data dokter', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     const SizedBox(height: 8),
-                    Text('${snapshot.error}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    const Text('Periksa koneksi internet Anda, lalu coba lagi.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey)),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF9333EA)),
@@ -177,7 +204,7 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     alignment: Alignment.center,
-                                    child: _buildAvatar(doc['image'] ?? '👨‍⚕️', size: 72),
+                                    child: _buildAvatar(doc['image']?.toString() ?? '', size: 72, name: doc['name']?.toString() ?? ''),
                                   ),
                                   if (isAvailable)
                                     Positioned(
@@ -217,7 +244,11 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
                                             children: [
                                               const Icon(Icons.star_rounded, color: Color(0xFFCA8A04), size: 16),
                                               const SizedBox(width: 4),
-                                              Text('${doc['rating']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFCA8A04))),
+                                              // No reviews yet -> "Baru" instead of a default 5.0.
+                                              Text(
+                                                ((doc['ratingCount'] ?? doc['reviews'] ?? 0) as num) > 0 ? '${doc['rating']}' : 'Baru',
+                                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFCA8A04)),
+                                              ),
                                             ],
                                           ),
                                         ),

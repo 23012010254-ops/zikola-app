@@ -114,6 +114,14 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/chats/$(chatId)).data;
     }
 
+    // A parent's chat that hasn't been created yet (chat_<uid>_<doctorId>).
+    // The app listens to messages before the first one creates the chat doc.
+    function isOwnNewChat(chatId) {
+      return signedIn()
+        && !exists(/databases/$(database)/documents/chats/$(chatId))
+        && chatId.matches('chat_' + request.auth.uid + '_.*');
+    }
+
     // Parents post as themselves; doctors only in their own chats; the AI
     // assistant ('doctor_bot') replies are written by the parent's client.
     function isValidSender(chat) {
@@ -138,7 +146,7 @@ service cloud.firestore {
       allow delete: if isChatParticipant(resource.data);
 
       match /messages/{messageId} {
-        allow read: if isChatParticipant(chatData(chatId));
+        allow read: if isOwnNewChat(chatId) || isChatParticipant(chatData(chatId));
         allow create: if isChatParticipant(chatData(chatId)) && isValidSender(chatData(chatId));
         allow update: if isChatParticipant(chatData(chatId))
           && !changedKeys().hasAny(['senderId', 'senderType']);

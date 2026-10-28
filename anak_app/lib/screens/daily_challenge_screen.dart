@@ -111,6 +111,13 @@ class DailyChallengeScreen extends StatelessWidget {
               levelXP: levelXP,
               currentLevel: currentLevel,
             ),
+            const SizedBox(height: 12),
+            // XP and points are separate on purpose; say so plainly.
+            Text(
+              'XP didapat dari misi harian dan menaikkan level anak. '
+              'Poin 🪙 didapat dari bermain game dan bisa ditukar dengan stiker.',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4),
+            ),
           ],
         ),
       ),
@@ -165,7 +172,7 @@ class _StreakCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$streak hari berturut-turut!',
+                  '$streak hari beruntun!',
                   style: const TextStyle(
                     fontSize: 22,
                     fontFamily: 'Nunito',

@@ -88,7 +88,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.getNotificationsStream(uid),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
+        if (snapshot.hasError) {
+          debugPrint('[NotificationScreen] stream error: ${snapshot.error}');
+          return const Center(child: Text('Gagal memuat notifikasi. Periksa koneksi internet Anda.'));
+        }
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
         final allDocs = snapshot.data?.docs ?? [];
@@ -307,7 +310,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.getNotificationsStream(uid),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
+        if (snapshot.hasError) {
+          debugPrint('[NotificationScreen] stream error: ${snapshot.error}');
+          return const Center(child: Text('Gagal memuat notifikasi. Periksa koneksi internet Anda.'));
+        }
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
         final allDocs = snapshot.data?.docs ?? [];
@@ -405,7 +411,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _db.collection('chats').where('buyerId', isEqualTo: uid).snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
+        if (snapshot.hasError) {
+          debugPrint('[NotificationScreen] stream error: ${snapshot.error}');
+          return const Center(child: Text('Gagal memuat notifikasi. Periksa koneksi internet Anda.'));
+        }
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
         final chatDocs = snapshot.data?.docs ?? [];

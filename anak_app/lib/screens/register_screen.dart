@@ -174,7 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               CustomTextField(
                 controller: _emailController,
-                hintText: 'Email atau nomor ponsel',
+                hintText: 'Email',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 16),

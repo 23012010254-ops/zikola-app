@@ -150,12 +150,16 @@ class _StickerCollectionScreenState extends State<StickerCollectionScreen> with 
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Toko & Vault Stiker',
+              'Toko Stiker',
               style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 18),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             Text(
               'Koleksi & beli stiker impianmu!',
               style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w500),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -220,7 +224,7 @@ class _StickerCollectionScreenState extends State<StickerCollectionScreen> with 
                 children: const [
                   Text('🛒', style: TextStyle(fontSize: 15)),
                   SizedBox(width: 6),
-                  Text('Toko Stiker'),
+                  Text('Toko'),
                 ],
               ),
             ),
@@ -229,8 +233,8 @@ class _StickerCollectionScreenState extends State<StickerCollectionScreen> with 
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text('🎒', style: TextStyle(fontSize: 15)),
-                  const SizedBox(width: 6),
-                  Text('Koleksi (${collectedList.length})'),
+                  const SizedBox(width: 4),
+                  Flexible(child: Text('Koleksi (${collectedList.length})', maxLines: 1, overflow: TextOverflow.fade, softWrap: false)),
                 ],
               ),
             ),
@@ -239,8 +243,8 @@ class _StickerCollectionScreenState extends State<StickerCollectionScreen> with 
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
                   Text('🎨', style: TextStyle(fontSize: 15)),
-                  SizedBox(width: 6),
-                  Text('Scrapbook'),
+                  SizedBox(width: 4),
+                  Flexible(child: Text('Scrapbook', maxLines: 1, overflow: TextOverflow.fade, softWrap: false)),
                 ],
               ),
             ),

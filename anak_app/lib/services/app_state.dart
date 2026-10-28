@@ -1438,6 +1438,7 @@ class AppState extends ChangeNotifier {
     _currentStreak = _prefs!.getInt('current_streak_$uid') ?? 0;
     _longestStreak = _prefs!.getInt('longest_streak_$uid') ?? 0;
     _totalXP = _prefs!.getInt('total_xp_$uid') ?? 0;
+    await _syncXPFromServer(uid);
 
     // Load or generate Daily Challenges
     final now = DateTime.now();
@@ -1511,12 +1512,34 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// XP used to live only on the device; keep the higher of local/server so
+  /// it survives reinstalls and shows the same level on every device.
+  Future<void> _syncXPFromServer(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final remote = (doc.data()?['totalXP'] as num?)?.toInt() ?? 0;
+      if (remote > _totalXP) {
+        _totalXP = remote;
+        await _prefs?.setInt('total_xp_$uid', _totalXP);
+      } else if (_totalXP > remote) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({'totalXP': _totalXP}, SetOptions(merge: true));
+      }
+    } catch (e) {
+      debugPrint('XP sync skipped: $e');
+    }
+  }
+
   Future<void> addXP(int xp) async {
     final oldLevel = currentLevel;
     _totalXP += xp;
     _prefs ??= await SharedPreferences.getInstance();
     if (_uid != null) {
       await _prefs!.setInt('total_xp_$_uid', _totalXP);
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(_uid)
+          .set({'totalXP': _totalXP}, SetOptions(merge: true))
+          .catchError((e) => debugPrint('XP save failed: $e'));
     }
 
     if (currentLevel > oldLevel) {
