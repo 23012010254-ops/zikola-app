@@ -56,6 +56,7 @@ import 'screens/shadow_match_game_screen.dart';
 import 'screens/pipe_puzzle_game_screen.dart';
 import 'screens/bubble_popper_game.dart';
 import 'widgets/sticker_notification.dart';
+import 'widgets/animated_splash_scene.dart';
 import 'services/chat_notification_service.dart';
 import 'screens/notification_screen.dart';
 import 'screens/doctor_web_screen.dart';
@@ -328,7 +329,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _checkSession() async {
     // Let animation play smoothly for at least 2 seconds so users can enjoy the splash screen
-    await Future.delayed(const Duration(milliseconds: 2000));
+    await Future.delayed(const Duration(milliseconds: 2200)); // let the intro animation finish
     
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -370,55 +371,33 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: const Color(0xFF6EB9FD),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Sky blue gradient background base
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF6EB9FD),
-                  Color(0xFFBCE0FA),
-                  Color(0xFFD6EEFD),
-                ],
+          // 1. Layered, animated splash artwork
+          const AnimatedSplashScene(),
+
+          // 2. Footer slogan
+          Positioned(
+            bottom: math.max(MediaQuery.of(context).padding.bottom + 16, 28) + 34,
+            left: 0,
+            right: 0,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: const Text(
+                'Zikola: Grow Smarter, Track Accurately',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF1E3A8A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
-
-          // 2. Full 3D Master Splash Artwork with gentle breathing animation & fade in
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, child) {
-                final double bobbing = math.sin(_pulseController.value * 2 * math.pi) * 2;
-                final double scale = 1.0 + (math.sin(_pulseController.value * 2 * math.pi) * 0.008);
-                return Transform.translate(
-                  offset: Offset(0, bobbing),
-                  child: Transform.scale(
-                    scale: scale,
-                    child: child,
-                  ),
-                );
-              },
-              child: Image.asset(
-                'assets/images/zikola_splash_full.png',
-                fit: BoxFit.cover,
-                width: size.width,
-                height: size.height,
-              ),
-            ),
-          ),
-
-          // 3. Magical sparkling stars in the sky
-          _buildSparkles(size),
 
           // 4. Subtle loading indicator or Error UI at bottom
           Positioned(
@@ -484,51 +463,6 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSparkles(Size size) {
-    final sparklePoints = [
-      Offset(size.width * 0.12, size.height * 0.08),
-      Offset(size.width * 0.88, size.height * 0.12),
-      Offset(size.width * 0.20, size.height * 0.36),
-      Offset(size.width * 0.84, size.height * 0.40),
-      Offset(size.width * 0.14, size.height * 0.62),
-    ];
-
-    return Stack(
-      children: List.generate(sparklePoints.length, (index) {
-        final pt = sparklePoints[index];
-        return AnimatedBuilder(
-          animation: _pulseController,
-          builder: (context, _) {
-            final phase = (_pulseController.value + index * 0.25) % 1.0;
-            final scale = math.sin(phase * math.pi);
-            final opacity = (0.2 + 0.8 * scale).clamp(0.0, 1.0);
-            return Positioned(
-              left: pt.dx,
-              top: pt.dy,
-              child: Opacity(
-                opacity: opacity,
-                child: Transform.rotate(
-                  angle: _pulseController.value * math.pi * 0.5,
-                  child: Icon(
-                    Icons.star_rounded,
-                    color: index % 2 == 0 ? const Color(0xFFFDE047) : Colors.white,
-                    size: 14 + (8 * scale),
-                    shadows: const [
-                      Shadow(
-                        color: Colors.white70,
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      }),
     );
   }
 

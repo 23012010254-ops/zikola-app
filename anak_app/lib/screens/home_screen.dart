@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../widgets/custom_bottom_nav.dart';
@@ -33,11 +34,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _showEasterEgg = false;
   double _easterEggX = -100;
   double _easterEggY = 200;
-  bool? _previewNightMode = false; // Default to Day Mode so morning sunshine and clouds are immediately visible
+
+  static const _darkModePrefKey = 'home_dark_mode';
+  bool _isDarkMode = false;
+
+  Future<void> _loadThemePreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getBool(_darkModePrefKey) ?? false;
+      if (mounted && saved != _isDarkMode) setState(() => _isDarkMode = saved);
+    } catch (_) {}
+  }
+
+  Future<void> _toggleDarkMode() async {
+    HapticFeedback.lightImpact();
+    AudioService().playClick();
+    setState(() => _isDarkMode = !_isDarkMode);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_darkModePrefKey, _isDarkMode);
+    } catch (_) {}
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadThemePreference();
     _fabPosition = ValueNotifier(const Offset(250, 550));
     _pulseController = AnimationController(
       vsync: this,
@@ -198,18 +220,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Left: ZIKOLA Official 3D Inflatable Logo (Tap to Switch Day/Night Mode)
-          GestureDetector(
-            onTap: () {
-              AudioService().playPop();
-              Navigator.pushNamed(context, '/photo-booth');
-            },
-            onLongPress: () => Navigator.pushNamed(context, '/motor-tips'),
-            child: Image.asset(
-              'assets/images/zikola_3d_logo.png',
-              height: 44,
-              fit: BoxFit.contain,
+          // Flexible so the logo shrinks instead of pushing the avatar off narrow screens.
+          Flexible(
+            child: GestureDetector(
+              onTap: () {
+                AudioService().playPop();
+                Navigator.pushNamed(context, '/photo-booth');
+              },
+              onLongPress: () => Navigator.pushNamed(context, '/motor-tips'),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Image.asset(
+                  'assets/images/zikola_3d_logo.png',
+                  height: 44,
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
           ),
+          const SizedBox(width: 8),
 
           // Right Controls: [🔒 Orang Tua (PIN)] + [🔔 Bell] + [Avatar]
           Row(
@@ -217,9 +246,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               // 1. PIN-Protected Parent Mode Toggle
               _buildParentModeToggle(context, appState),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
 
-              // 2. Notification Bell
+              // 2. Light / Dark mode toggle
+              Tooltip(
+                message: isNightMode ? 'Mode terang' : 'Mode gelap',
+                child: GestureDetector(
+                  onTap: _toggleDarkMode,
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: isNightMode ? const Color(0xFF1E293B) : Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isNightMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isNightMode ? 0.3 : 0.04),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      isNightMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      color: isNightMode ? const Color(0xFFFDE047) : const Color(0xFF1E293B),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+
+              // 3. Notification Bell
               GestureDetector(
                 onTap: () {
                   AudioService().playClick();
@@ -272,9 +334,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
 
-              // 3. Profile Avatar
+              // 4. Profile Avatar
               GestureDetector(
                 onTap: () {
                   AudioService().playClick();
@@ -1089,8 +1151,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     final childName = appState.childProfile.name;
     final hour = DateTime.now().hour;
-    final isNightMode = _previewNightMode ?? (hour >= 18 || hour < 6);
-    final greetingPrefix = isNightMode ? 'Selamat Malam,' : (hour < 12 ? 'Selamat Pagi,' : 'Selamat Siang,');
+    final isNightMode = _isDarkMode;
+    // Greeting follows the clock, independent of the light/dark toggle.
+    final greetingPrefix = hour < 11
+        ? 'Selamat Pagi,'
+        : hour < 15
+            ? 'Selamat Siang,'
+            : hour < 18
+                ? 'Selamat Sore,'
+                : 'Selamat Malam,';
 
 
 
@@ -1442,129 +1511,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildAnimatedSun(double t) {
-    // 360 rotation over cycle
-    final double rayAngle = t * 2 * math.pi;
-    // Breathing pulse for the halo and sun (0.97 to 1.04)
-    final double pulse = 1.0 + 0.035 * math.sin(t * 4 * math.pi);
-    // Subtle ray brightness pulsation
-    final double raysOpacity = (0.70 + 0.25 * math.sin(t * 2 * math.pi)).clamp(0.0, 1.0);
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        setState(() {
-          _previewNightMode = true;
-        });
-      },
-      child: Transform.scale(
-        scale: pulse,
-        child: SizedBox(
-          width: 130,
-          height: 130,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // 1. Ambient Sun Rays Corona Glow
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFFFDE047).withValues(alpha: 0.45),
-                      const Color(0xFFF59E0B).withValues(alpha: 0.18),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-
-              // 2. Rotating Sun Rays (Sinarnya yang memancar keluar)
-              Transform.rotate(
-                angle: rayAngle,
-                child: Opacity(
-                  opacity: raysOpacity,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: List.generate(12, (index) {
-                      final double angle = index * (math.pi / 6);
-                      return Transform.rotate(
-                        angle: angle,
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: Container(
-                            margin: const EdgeInsets.only(top: 6),
-                            width: 5,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(3),
-                              gradient: const LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [
-                                  Color(0xFFFDE047),
-                                  Color(0x00F59E0B),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-              ),
-
-              // 3. Sun Core Disk (Matahari Pagi Cerah 3D)
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const RadialGradient(
-                    center: Alignment(-0.25, -0.25),
-                    radius: 0.85,
-                    colors: [
-                      Color(0xFFFFFBEB), // Highlight lembut
-                      Color(0xFFFEF08A), // Kuning cerah
-                      Color(0xFFFBBF24), // Emas
-                      Color(0xFFF59E0B), // Oranye hangat
-                    ],
-                    stops: [0.0, 0.35, 0.70, 1.0],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.55),
-                      blurRadius: 16,
-                      spreadRadius: 3,
-                    ),
-                    BoxShadow(
-                      color: const Color(0xFFFEF08A).withValues(alpha: 0.75),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    width: 2.0,
-                  ),
-                ),
-                child: const Center(
-                  child: Text(
-                    '☀️',
-                    style: TextStyle(fontSize: 28),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildWeatherLayer(bool isNightMode) {
     if (isNightMode) {
       // Night Mode: Starry Sky with Glowing Crescent Moon & Ambient Nebula (Animated Twinkle)
@@ -1607,34 +1553,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         Colors.transparent,
                       ],
                     ),
-                  ),
-                ),
-              ),
-
-              // 2. Glowing Crescent Moon (Bulan Sabit Bersinar dengan Tap Switch)
-              Positioned(
-                top: 15,
-                right: 80,
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    setState(() {
-                      _previewNightMode = false;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFDE047).withValues(alpha: 0.35 + 0.15 * math.sin(t * 2 * math.pi)),
-                          blurRadius: 26,
-                          spreadRadius: 8,
-                        ),
-                      ],
-                    ),
-                    child: const Text('🌙', style: TextStyle(fontSize: 26)),
                   ),
                 ),
               ),
@@ -1819,13 +1737,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-              ),
-
-              // 3. Matahari & Sinarnya yang Memancar dan Berputar Lembut (Di Celah Header Atas)
-              Positioned(
-                top: 0,
-                left: 110,
-                child: _buildAnimatedSun(t),
               ),
 
               // 4. Awan-Awan Lucu Bergerak Tipis (Gentle Floating Clouds)
