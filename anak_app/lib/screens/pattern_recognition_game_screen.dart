@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -180,7 +179,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
       _responseTimesMs.clear();
       _gameStartTime = DateTime.now();
     });
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playPuzzleBGM();
     _generateNextVault();
   }
 
@@ -204,7 +203,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
         _score += 20 * _currentLevel;
         _correctAnswers++;
         _responseTimesMs.add(responseTime);
-        AudioService().playSFX('success.mp3');
+        AudioService().playCorrect();
         
         Future.delayed(const Duration(milliseconds: 1000), () {
           if (!mounted) return;
@@ -221,10 +220,10 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
       } else {
         _errors++;
         _lives--;
-        AudioService().playSFX('wrong.mp3');
+        AudioService().playWrong();
         if (_lives <= 0) {
           AudioService().stopBGM();
-          AudioService().playSFX('completion.mp3');
+          AudioService().playGameOver();
           setState(() {
             _gameState = 'completed'; // fail
           });
@@ -235,7 +234,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
 
   void _completeLevel() {
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playSparkle();
 
     int starsCount = _lives;
     _starRatings[_currentLevel - 1] = max(_starRatings[_currentLevel - 1], starsCount);
@@ -353,7 +352,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
                         onTap: () => Navigator.pop(context),
                         child: Container(
                           padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                           child: const Icon(Icons.arrow_back, color: Colors.white),
                         ),
                       ),
@@ -366,7 +365,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: Colors.blueAccent.withOpacity(0.4), blurRadius: 40, spreadRadius: 10)]
+                      boxShadow: [BoxShadow(color: Colors.blueAccent.withValues(alpha: 0.4), blurRadius: 40, spreadRadius: 10)]
                     ),
                     child: const Icon(Icons.apps, size: 100, color: Colors.cyanAccent),
                   ),
@@ -494,7 +493,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
                                               child: Icon(
                                                 Icons.qr_code_scanner_rounded,
                                                 size: 14,
-                                                color: const Color(0xFF06B6D4).withOpacity(0.3),
+                                                color: const Color(0xFF06B6D4).withValues(alpha: 0.3),
                                               ),
                                             ),
                                           Center(
@@ -592,7 +591,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
                     color: const Color(0xFF1E293B),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: Colors.blueGrey.shade700, width: 4),
-                    boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(_isVaultUnlocking ? 0.3 : 0.05), blurRadius: _isVaultUnlocking ? 50 : 20, spreadRadius: 5)]
+                    boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: _isVaultUnlocking ? 0.3 : 0.05), blurRadius: _isVaultUnlocking ? 50 : 20, spreadRadius: 5)]
                   ),
                   child: GridView.builder(
                     shrinkWrap: true,
@@ -624,14 +623,14 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
 
                             return Container(
                               decoration: BoxDecoration(
-                                color: isHovered ? Colors.cyanAccent.withOpacity(0.3) : const Color(0xFF0F172A),
+                                color: isHovered ? Colors.cyanAccent.withValues(alpha: 0.3) : const Color(0xFF0F172A),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: isHovered ? Colors.cyanAccent : Colors.blueGrey.shade600, width: 2, style: BorderStyle.solid)
                               ),
                               child: isHovered ? const Icon(Icons.add_circle_outline, color: Colors.cyanAccent, size: 40) : null,
                             );
                           },
-                          onAccept: (droppedCrystal) => _handleCrystalDrop(droppedCrystal),
+                          onAcceptWithDetails: (details) => _handleCrystalDrop(details.data),
                         );
                       }
                     },
@@ -646,9 +645,9 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                   color: const Color(0xFF1E293B).withOpacity(0.8),
+                   color: const Color(0xFF1E293B).withValues(alpha: 0.8),
                    borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                   border: Border(top: BorderSide(color: Colors.cyanAccent.withOpacity(0.3), width: 2))
+                   border: Border(top: BorderSide(color: Colors.cyanAccent.withValues(alpha: 0.3), width: 2))
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -663,6 +662,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
                         children: _currentLevelData!.options.map((opt) {
                           return Draggable<Crystal>(
                             data: opt,
+                            onDragStarted: () => AudioService().playPop(),
                             feedback: Opacity(opacity: 0.8, child: _buildCrystalNode(opt, size: 80)),
                             childWhenDragging: Opacity(opacity: 0.3, child: _buildCrystalNode(opt)),
                             child: _buildCrystalNode(opt),
@@ -686,10 +686,10 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
       decoration: BoxDecoration(
         color: const Color(0xFF334155),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: glowing ? Colors.white : crystal.color.withOpacity(0.5), width: 2),
+        border: Border.all(color: glowing ? Colors.white : crystal.color.withValues(alpha: 0.5), width: 2),
         boxShadow: [
           if (glowing) BoxShadow(color: crystal.color, blurRadius: 20, spreadRadius: 5),
-          if (!glowing) BoxShadow(color: crystal.color.withOpacity(0.2), blurRadius: 10)
+          if (!glowing) BoxShadow(color: crystal.color.withValues(alpha: 0.2), blurRadius: 10)
         ]
       ),
       child: Center(

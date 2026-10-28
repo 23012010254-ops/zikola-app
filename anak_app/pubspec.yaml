@@ -2,7 +2,7 @@ name: zikola
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 1.0.0+5
+version: 1.0.1+6
 
 environment:
   sdk: ^3.11.3
@@ -34,6 +34,7 @@ dependencies:
   firebase_messaging: ^16.4.3
   url_launcher: ^6.3.2
   flutter_webrtc: ^1.6.0
+  confetti: ^0.8.0
 
 dev_dependencies:
   flutter_test:
@@ -48,11 +49,29 @@ flutter:
   assets:
     - .env
     - assets/images/
+    - assets/images/stickers/
+    - assets/images/characters/
+    - assets/images/items/
+    - assets/images/ui/
+    - assets/images/backgrounds/
+    - assets/images/effects/
+    - assets/images/effects/celestial_burst/
+    - assets/images/effects/celestial_lightning/
+    - assets/images/effects/mythic_explosion/
+    - assets/images/effects/sparkle_gold/
+    - assets/images/emoji/games/
+    - assets/images/emoji/rewards/
+    - assets/images/emoji/animals/
+    - assets/images/emoji/feedback/
+    - assets/images/emoji/objects/
     - assets/audio/bgm/
     - assets/audio/sfx/
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/images/app_icon.png"
+  image_path: "assets/images/icon_app_squircle.png"
+  adaptive_icon_background: "assets/images/icon_app_full.png"
+  adaptive_icon_foreground: "assets/images/icon_app_full.png"
+  adaptive_icon_foreground_inset: 0
   remove_alpha_ios: true

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/assessment_engine.dart';
-import '../models/game_assessment.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
 
@@ -182,7 +181,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
       _feedback = null;
     });
 
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playHomeBGM();
     _generateNewProblem();
     
     _timer?.cancel();
@@ -252,7 +251,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
         _availableWords.add(word);
       }
     });
-    AudioService().playSFX('flip.mp3');
+    AudioService().playPop();
   }
 
   void _checkAnswer() {
@@ -283,16 +282,18 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
         _correctAnswers++;
         _levelCorrectAnswers++;
         context.read<AppState>().addSticker('story-builder');
-        AudioService().playSFX('success.mp3');
+        AudioService().playCorrect();
       } else {
         _wrongAnswers++;
         _lives--;
-        AudioService().playSFX('wrong.mp3');
+        AudioService().playWrong();
       }
     });
 
     if (_lives <= 0) {
       _timer?.cancel();
+      AudioService().stopBGM();
+      AudioService().playGameOver();
       Future.delayed(const Duration(seconds: 2), () {
         setState(() {
           _gameState = 'game_over';
@@ -301,11 +302,14 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
     } else if (isCorrect && _levelCorrectAnswers >= 3) {
       // Level beaten!
       _timer?.cancel();
+      AudioService().stopBGM();
+      AudioService().playSparkle();
       
       // Calculate stars based on remaining lives
       int stars = 1;
-      if (_lives == 3) stars = 3;
-      else if (_lives == 2) stars = 2;
+      if (_lives == 3) {
+        stars = 3;
+      } else if (_lives == 2) stars = 2;
       
       _starRatings[_currentLevel - 1] = max(_starRatings[_currentLevel - 1], stars);
       
@@ -448,9 +452,9 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
                     padding: const EdgeInsets.all(32),
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.4),
+                      color: Colors.white.withValues(alpha: 0.4),
                       borderRadius: BorderRadius.circular(40),
-                      border: Border.all(color: Colors.white.withOpacity(0.6)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
                     ),
                     child: Column(
                       children: [
@@ -477,7 +481,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                       borderRadius: BorderRadius.circular(32),
                       border: Border.all(color: Colors.white),
                     ),
@@ -512,10 +516,10 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.5),
+          color: Colors.white.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
         ),
         child: Icon(icon, color: const Color(0xFF92400E)),
       ),
@@ -532,7 +536,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF92400E) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF92400E).withOpacity(isSelected ? 1 : 0.2)),
+          border: Border.all(color: const Color(0xFF92400E).withValues(alpha: isSelected ? 1 : 0.2)),
         ),
         child: Text(
           label,
@@ -554,7 +558,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         gradient: const LinearGradient(colors: [Color(0xFF92400E), Color(0xFF78350F)]),
-        boxShadow: [BoxShadow(color: const Color(0xFF78350F).withOpacity(0.4), offset: const Offset(0, 8), blurRadius: 16)],
+        boxShadow: [BoxShadow(color: const Color(0xFF78350F).withValues(alpha: 0.4), offset: const Offset(0, 8), blurRadius: 16)],
       ),
       child: ElevatedButton(
         onPressed: onTap,
@@ -615,7 +619,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -694,7 +698,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(24),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15)],
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15)],
                           ),
                           child: Wrap(
                             spacing: 12, runSpacing: 12,
@@ -781,10 +785,10 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: isAvailable ? Colors.white : const Color(0xFF92400E).withOpacity(0.1),
+          color: isAvailable ? Colors.white : const Color(0xFF92400E).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF92400E).withOpacity(0.3), width: 2),
-          boxShadow: isAvailable ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))] : null,
+          border: Border.all(color: const Color(0xFF92400E).withValues(alpha: 0.3), width: 2),
+          boxShadow: isAvailable ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5, offset: const Offset(0, 2))] : null,
         ),
         child: Text(
           word,
@@ -896,7 +900,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
             borderRadius: BorderRadius.circular(4),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 offset: const Offset(0, 3),
                 blurRadius: 5,
               ),
@@ -966,12 +970,12 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
                 bottomRight: Radius.circular(12),
               ),
               border: Border.all(
-                color: isUnlocked ? const Color(0xFFFDE68A).withOpacity(0.5) : Colors.white12,
+                color: isUnlocked ? const Color(0xFFFDE68A).withValues(alpha: 0.5) : Colors.white12,
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   offset: const Offset(3, 4),
                   blurRadius: 5,
                 ),
@@ -987,14 +991,14 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
                   width: 10,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(3),
                         bottomLeft: Radius.circular(3),
                       ),
                       border: Border(
                         right: BorderSide(
-                          color: isUnlocked ? const Color(0xFFFDE68A).withOpacity(0.3) : Colors.white10,
+                          color: isUnlocked ? const Color(0xFFFDE68A).withValues(alpha: 0.3) : Colors.white10,
                           width: 1.5,
                         ),
                       ),
@@ -1003,9 +1007,9 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
                 ),
                 // Spine golden bands (horizontal gold ridges)
                 if (isUnlocked) ...[
-                  Positioned(left: 2, top: 18, child: Container(width: 6, height: 1.5, color: const Color(0xFFFDE68A).withOpacity(0.6))),
-                  Positioned(left: 2, top: 56, child: Container(width: 6, height: 1.5, color: const Color(0xFFFDE68A).withOpacity(0.6))),
-                  Positioned(left: 2, top: 94, child: Container(width: 6, height: 1.5, color: const Color(0xFFFDE68A).withOpacity(0.6))),
+                  Positioned(left: 2, top: 18, child: Container(width: 6, height: 1.5, color: const Color(0xFFFDE68A).withValues(alpha: 0.6))),
+                  Positioned(left: 2, top: 56, child: Container(width: 6, height: 1.5, color: const Color(0xFFFDE68A).withValues(alpha: 0.6))),
+                  Positioned(left: 2, top: 94, child: Container(width: 6, height: 1.5, color: const Color(0xFFFDE68A).withValues(alpha: 0.6))),
                   // Gold filigree corner studs
                   Positioned(top: 6, left: 14, child: Container(width: 3, height: 3, decoration: const BoxDecoration(color: Color(0xFFFDE68A), shape: BoxShape.circle))),
                   Positioned(top: 6, right: 6, child: Container(width: 3, height: 3, decoration: const BoxDecoration(color: Color(0xFFFDE68A), shape: BoxShape.circle))),
@@ -1038,7 +1042,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
                           Icon(
                             index % 2 == 0 ? Icons.menu_book_rounded : Icons.auto_stories_rounded,
                             size: 16,
-                            color: const Color(0xFFFDE68A).withOpacity(0.7),
+                            color: const Color(0xFFFDE68A).withValues(alpha: 0.7),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -1046,7 +1050,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFFFDE68A).withOpacity(0.8),
+                              color: const Color(0xFFFDE68A).withValues(alpha: 0.8),
                               letterSpacing: 1.2,
                               fontFamily: 'serif',
                             ),
@@ -1082,7 +1086,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: const Color(0xFF78350F).withOpacity(0.12),
+              color: const Color(0xFF78350F).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(

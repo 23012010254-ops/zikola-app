@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
@@ -33,6 +34,21 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     _logoBounce = Tween<double>(begin: -4.0, end: 4.0).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.easeInOutSine),
     );
+
+    _loadRememberedEmail();
+  }
+
+  void _loadRememberedEmail() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('remembered_email');
+      if (savedEmail != null && savedEmail.isNotEmpty && mounted) {
+        setState(() {
+          _emailController.text = savedEmail;
+          _rememberMe = true;
+        });
+      }
+    } catch (_) {}
   }
 
 
@@ -47,7 +63,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   void _handleLogin() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Mohon masukkan email dan password Anda'),
@@ -61,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     
     try {
       final authService = AuthService();
-      final success = await authService.login(_emailController.text.trim(), _passwordController.text);
+      final success = await authService.login(email, password);
       
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -71,27 +90,39 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         if (uid == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Login berhasil tapi sesi tidak tersedia. Coba lagi.'),
+              content: Text('Login berhasil tapi sesi tidak tersedia. Silakan coba lagi.'),
               backgroundColor: Colors.orange,
             ),
           );
           return;
         }
 
+        // Simpan preferensi "Ingat saya"
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          if (_rememberMe) {
+            await prefs.setString('remembered_email', email);
+          } else {
+            await prefs.remove('remembered_email');
+          }
+        } catch (_) {}
+
+        if (!mounted) return;
         final appState = Provider.of<AppState>(context, listen: false);
         await appState.setLoggedIn(true, uid: uid);
         
         if (!mounted) return;
         if (appState.needsSurvey) {
-          Navigator.pushReplacementNamed(context, '/survey');
+          Navigator.pushNamedAndRemoveUntil(context, '/survey', (route) => false);
         } else {
-          Navigator.pushReplacementNamed(context, '/home');
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email atau password salah. Silakan coba lagi.'),
+          SnackBar(
+            content: Text(authService.lastAuthError ?? 'Email atau password salah. Silakan periksa kembali.'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -107,11 +138,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   void _handleGoogleLogin() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final authService = AuthService();
       final success = await authService.signInWithGoogle();
-      
+
       if (!mounted) return;
       setState(() => _isLoading = false);
 
@@ -120,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         if (uid == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Login Google berhasil tapi sesi tidak tersedia. Coba lagi.'),
+              content: Text('Login Google berhasil tapi sesi tidak tersedia. Silakan coba lagi.'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -129,18 +160,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
         final appState = Provider.of<AppState>(context, listen: false);
         await appState.setLoggedIn(true, uid: uid);
-        
+
         if (!mounted) return;
         if (appState.needsSurvey) {
-          Navigator.pushReplacementNamed(context, '/survey');
+          Navigator.pushNamedAndRemoveUntil(context, '/survey', (route) => false);
         } else {
-          Navigator.pushReplacementNamed(context, '/home');
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authService.lastGoogleError ?? 'Login Google dibatalkan atau gagal. Silakan coba lagi.'),
             backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -149,10 +181,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Terjadi kesalahan: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Terjadi kesalahan: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -193,7 +222,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 20,
                               spreadRadius: 5,
                             )
@@ -291,12 +320,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       isLoading: _isLoading,
                       variant: CustomButtonVariant.primary,
                     ),
-                    
+
                     const SizedBox(height: 16),
 
                     // Google Login Button
                     CustomButton(
-                      text: 'Atau masuk google',
+                      text: 'Masuk dengan Google',
                       onPressed: _handleGoogleLogin,
                       isLoading: _isLoading,
                       variant: CustomButtonVariant.google,
@@ -312,7 +341,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       ),
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 36),
 
                     // Additional Options (Sign Up)
                     Row(

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Primary Tailwind Colors used in the React App
-  static const Color primaryBlue = Color(0xFF3B82F6); // blue-500
-  static const Color primaryBlueDark = Color(0xFF2563EB); // blue-600
+  static const Color primaryBlue = Color(0xFF2563EB); // Royal Blue (Duolingo/Lingokids style)
+  static const Color primaryBlueDark = Color(0xFF1D4ED8); // blue-700
   static const Color primaryBlueLight = Color(0xFFEFF6FF); // blue-50
   static const Color blue500 = primaryBlue;
   
@@ -86,7 +86,7 @@ class AppTheme {
   static const Color indigo500 = Color(0xFF6366F1);
 
   // Background Colors
-  static const Color bgLight = Color(0xFFF9FAFB); // gray-50
+  static const Color bgLight = Color(0xFFF8FAFC); // slate-50
   static const Color bgWhite = Colors.white;
 
   
@@ -140,7 +140,7 @@ class AppTheme {
           backgroundColor: primaryOrange,
           foregroundColor: Colors.white,
           elevation: 4,
-          shadowColor: primaryOrange.withOpacity(0.5),
+          shadowColor: primaryOrange.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

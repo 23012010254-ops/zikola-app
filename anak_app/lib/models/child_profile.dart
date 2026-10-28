@@ -32,7 +32,12 @@ class ChildProfile {
     this.badges = const ['super-star', 'brain-explorer'],
     SurveyData? surveyData,
     this.totalPoints = 0,
-    this.showcasedStickers = const [],
+    this.showcasedStickers = const [
+      'eternal-crown',
+      'celestial-galaxy-dragon',
+      'hot-streak',
+      'dragon-emperor',
+    ],
     this.surveyCompleted = false,
     this.followers = const [],
     this.following = const [],

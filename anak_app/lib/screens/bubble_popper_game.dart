@@ -227,6 +227,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
       _gameState = 'playing';
     });
 
+    AudioService().playArcadeBGM();
     _spawnAllBubbles();
 
     // Start physics ticker (60fps)
@@ -556,7 +557,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
         vx: math.cos(angle) * speed,
         vy: math.sin(angle) * speed - 2,
         size: 3 + _random.nextDouble() * 4,
-        color: color.withOpacity(0.8),
+        color: color.withValues(alpha: 0.8),
       ));
     }
   }
@@ -597,7 +598,8 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
     final timeBonus = (_timeRemaining * 5 * (_currentLevel + 1));
     _totalScore += timeBonus;
 
-    AudioService().playSFX('correct.mp3');
+    AudioService().stopBGM();
+    AudioService().playSparkle();
 
     setState(() {
       _gameState = 'level_complete';
@@ -612,7 +614,8 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
 
     _totalTimeSpent += _config.timeLimit;
 
-    AudioService().playSFX('game_over.mp3');
+    AudioService().stopBGM();
+    AudioService().playGameOver();
     setState(() {
       _gameState = 'game_over';
     });
@@ -749,7 +752,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 15,
                             offset: const Offset(0, 4),
                           ),
@@ -854,7 +857,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                                     fontWeight: FontWeight.w900,
                                     shadows: [
                                       Shadow(
-                                        color: Colors.black.withOpacity(0.4),
+                                        color: Colors.black.withValues(alpha: 0.4),
                                         blurRadius: 4,
                                       ),
                                     ],
@@ -886,13 +889,13 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                                           borderRadius: BorderRadius.circular(20),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.orange.withOpacity(0.4),
+                                              color: Colors.orange.withValues(alpha: 0.4),
                                               blurRadius: 8,
                                             ),
                                           ],
                                         ),
                                         child: Text(
-                                          '🔥 ${_comboMultiplier}× COMBO',
+                                          '🔥 $_comboMultiplier× COMBO',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.w900,
@@ -1017,9 +1020,9 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: timerColor.withOpacity(0.1),
+            color: timerColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: timerColor.withOpacity(0.3)),
+            border: Border.all(color: timerColor.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -1086,32 +1089,32 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
       case BubbleType.golden:
         emoji = '✨';
         gradientColors = [
-          Colors.white.withOpacity(0.9),
-          Colors.amber.shade200.withOpacity(0.8),
+          Colors.white.withValues(alpha: 0.9),
+          Colors.amber.shade200.withValues(alpha: 0.8),
           Colors.amber.shade400,
         ];
         break;
       case BubbleType.skull:
         emoji = '💀';
         gradientColors = [
-          Colors.white.withOpacity(0.9),
-          Colors.red.shade200.withOpacity(0.8),
+          Colors.white.withValues(alpha: 0.9),
+          Colors.red.shade200.withValues(alpha: 0.8),
           Colors.red.shade500,
         ];
         break;
       case BubbleType.bomb:
         emoji = '💣';
         gradientColors = [
-          Colors.white.withOpacity(0.7),
-          Colors.grey.shade500.withOpacity(0.8),
+          Colors.white.withValues(alpha: 0.7),
+          Colors.grey.shade500.withValues(alpha: 0.8),
           Colors.grey.shade800,
         ];
         break;
       default:
         emoji = null;
         gradientColors = [
-          Colors.white.withOpacity(0.9),
-          bubble.color.withOpacity(0.8),
+          Colors.white.withValues(alpha: 0.9),
+          bubble.color.withValues(alpha: 0.8),
           bubble.color,
         ];
     }
@@ -1129,19 +1132,19 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
         ),
         boxShadow: [
           BoxShadow(
-            color: bubble.color.withOpacity(0.4),
+            color: bubble.color.withValues(alpha: 0.4),
             blurRadius: 12,
             spreadRadius: 2,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             blurRadius: 4,
             offset: const Offset(-2, -2),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withOpacity(0.6),
+          color: Colors.white.withValues(alpha: 0.6),
           width: 2,
         ),
       ),
@@ -1342,7 +1345,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                       onTap: () => Navigator.pop(context),
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.arrow_back, color: Color(0xFF0369A1)),
                       ),
                     ),
@@ -1527,7 +1530,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                 boxShadow: isUnlocked
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF38BDF8).withOpacity(0.4),
+                          color: const Color(0xFF38BDF8).withValues(alpha: 0.4),
                           blurRadius: 10,
                           spreadRadius: 1,
                         ),
@@ -1551,7 +1554,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                               radius: 0.8,
                             ),
                       border: Border.all(
-                        color: isUnlocked ? Colors.white.withOpacity(0.8) : Colors.white24,
+                        color: isUnlocked ? Colors.white.withValues(alpha: 0.8) : Colors.white24,
                         width: 2,
                       ),
                     ),
@@ -1564,7 +1567,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                         width: 12,
                         height: 6,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           borderRadius: const BorderRadius.all(Radius.elliptical(6, 3)),
                         ),
                       ),
@@ -1600,7 +1603,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.12),
+              color: Colors.black.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1660,9 +1663,9 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(0.5)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.5)),
                   ),
                   child: Column(
                     children: [
@@ -1722,7 +1725,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -1749,7 +1752,7 @@ class _BubbleBackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.06)
+      ..color = Colors.white.withValues(alpha: 0.06)
       ..style = PaintingStyle.fill;
 
     canvas.drawCircle(Offset(size.width * 0.15, size.height * 0.2), 35, paint);
@@ -1791,7 +1794,7 @@ class _BubblePathPainter extends CustomPainter {
           Offset(currX, currY), 
           3.0 + math.sin(t * 1.0) * 1.2, 
           Paint()
-            ..color = Colors.white.withOpacity(0.3)
+            ..color = Colors.white.withValues(alpha: 0.3)
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1.5,
         );

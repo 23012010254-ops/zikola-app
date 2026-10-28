@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math' as math;
 import 'dart:async';
-import '../models/game_assessment.dart';
 import '../services/assessment_engine.dart';
 import '../services/app_state.dart';
 import '../services/audio_service.dart';
@@ -402,12 +401,12 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                   children: [
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16)),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                             child: const Text('📝', style: TextStyle(fontSize: 24)),
                           ),
                           const SizedBox(width: 16),
@@ -432,7 +431,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Container(
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                 child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
               ),
             ),
@@ -446,7 +445,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                   Container(
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(color: Colors.orange.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
                     child: Row(
                       children: [
                         const Icon(Icons.info_outline, color: Colors.deepOrange),
@@ -468,7 +467,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -505,7 +504,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -538,7 +537,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                       onTap: () => Navigator.pop(context),
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
                       ),
                     ),
@@ -586,7 +585,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
           subtitle,
           style: TextStyle(
             fontSize: 16,
-            color: Colors.white.withOpacity(0.9),
+            color: Colors.white.withValues(alpha: 0.9),
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -602,18 +601,18 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
               child: Text(icon, style: const TextStyle(fontSize: 40)),
             ),
             const SizedBox(width: 20),
@@ -623,11 +622,11 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                 children: [
                   Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
                   const SizedBox(height: 4),
-                  Text(desc, style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.8), height: 1.2)),
+                  Text(desc, style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.8), height: 1.2)),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.5), size: 28),
+            Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.5), size: 28),
           ],
         ),
       ),
@@ -657,7 +656,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                       onTap: () => setState(() => gameState = 'menu'),
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
                       ),
                     ),
@@ -683,7 +682,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Column(
@@ -706,7 +705,7 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Column(
@@ -759,9 +758,9 @@ class _LinguisticTestScreenState extends State<LinguisticTestScreen> with Single
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
+          color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(14),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))] : [],
+          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 4))] : [],
         ),
         alignment: Alignment.center,
         child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFF2563EB) : Colors.white)),
@@ -807,9 +806,9 @@ height: 36,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -821,7 +820,7 @@ height: 36,
                         },
                         child: Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                           child: const Icon(Icons.close, color: Colors.white, size: 20),
                         ),
                       ),
@@ -858,7 +857,7 @@ height: 36,
                                 Container(
                                   width: 180, height: 180,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -879,7 +878,7 @@ height: 36,
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(32),
                             boxShadow: [
-                              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 8))
+                              BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 8))
                             ],
                           ),
                           child: Column(
@@ -912,7 +911,7 @@ height: 36,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, -10))],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, -10))],
                 ),
                 child: Column(
                   children: [
@@ -941,7 +940,7 @@ height: 36,
                                 ),
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
-                                  BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 6))
+                                  BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 6))
                                 ],
                               ),
                               child: Text(
@@ -974,7 +973,7 @@ height: 36,
                               ),
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
-                                BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4))
+                                BoxShadow(color: const Color(0xFF3B82F6).withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 4))
                               ],
                             ),
                             child: Text(
@@ -1002,13 +1001,13 @@ height: 36,
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.white.withOpacity(0.9), size: 18),
+            Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 18),
             const SizedBox(width: 4),
             Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
           ],
         ),
         const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white.withOpacity(0.7))),
+        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white.withValues(alpha: 0.7))),
       ],
     );
   }
@@ -1089,7 +1088,7 @@ height: 36,
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Column(
@@ -1156,7 +1155,7 @@ height: 36,
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.2),
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1203,18 +1202,18 @@ height: 36,
     String message;
 
     if (accuracy >= 90) {
-      bgColor = Colors.green.withOpacity(0.2);
-      borderColor = Colors.green.withOpacity(0.3);
+      bgColor = Colors.green.withValues(alpha: 0.2);
+      borderColor = Colors.green.withValues(alpha: 0.3);
       textColor = const Color(0xFFBBF7D0);
       message = '🌟 Excellent! Kemampuan bahasamu sangat baik!';
     } else if (accuracy >= 70) {
-      bgColor = Colors.blue.withOpacity(0.2);
-      borderColor = Colors.blue.withOpacity(0.3);
+      bgColor = Colors.blue.withValues(alpha: 0.2);
+      borderColor = Colors.blue.withValues(alpha: 0.3);
       textColor = const Color(0xFFBFDBFE);
       message = '👍 Good! Terus latih kemampuan bahasamu!';
     } else {
-      bgColor = Colors.purple.withOpacity(0.2);
-      borderColor = Colors.purple.withOpacity(0.3);
+      bgColor = Colors.purple.withValues(alpha: 0.2);
+      borderColor = Colors.purple.withValues(alpha: 0.3);
       textColor = const Color(0xFFE9D5FF);
       message = '💪 Keep practicing! Kemampuan bahasamu akan terus berkembang!';
     }

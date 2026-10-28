@@ -83,7 +83,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
       _roundIndex = 0;
       _gameStartTime = DateTime.now();
     });
-    AudioService().playBGM('creative_bgm.mp3.wav', volume: 0.3);
+    AudioService().playMysteryBGM();
     _generateLevel();
   }
 
@@ -109,7 +109,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
     if (_lives <= 0 || _gameState != 'playing') return;
 
     if (draggedEmoji == targetEmoji) {
-      AudioService().playSFX('correct_match.mp3.wav');
+      AudioService().playCorrect();
       _successController.forward(from: 0).then((_) {
         if (!mounted) return;
         setState(() {
@@ -124,13 +124,13 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
         });
       });
     } else {
-      AudioService().playSFX('error.mp3');
+      AudioService().playWrong();
       setState(() {
         _errors++;
         _lives--;
         if (_lives <= 0) {
           AudioService().stopBGM();
-          AudioService().playSFX('completion.mp3');
+          AudioService().playGameOver();
           _gameState = 'completed'; // fail
         } else {
           // Generate a new matching pair on error to keep the game engaging
@@ -142,7 +142,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
 
   void _completeLevel() {
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playSparkle();
 
     int starsCount = _lives;
     _starRatings[_currentLevel - 1] = math.max(_starRatings[_currentLevel - 1], starsCount);
@@ -258,7 +258,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
                           onTap: () => Navigator.pop(context),
                           child: Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(12)),
                             child: const Icon(Icons.arrow_back, color: Color(0xFFBE185D)),
                           ),
                         ),
@@ -397,7 +397,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
                                       boxShadow: isUnlocked
                                           ? [
                                               BoxShadow(
-                                                color: const Color(0xFFF43F5E).withOpacity(0.4),
+                                                color: const Color(0xFFF43F5E).withValues(alpha: 0.4),
                                                 blurRadius: 10,
                                                 spreadRadius: 1,
                                               )
@@ -412,7 +412,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
                                           Icon(
                                             Icons.portrait_rounded,
                                             size: 48,
-                                            color: Colors.white.withOpacity(0.06),
+                                            color: Colors.white.withValues(alpha: 0.06),
                                           ),
                                         Center(
                                           child: isUnlocked
@@ -523,10 +523,10 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
                               width: 180,
                               height: 180,
                               decoration: BoxDecoration(
-                                color: highlighted ? Colors.white : Colors.black.withOpacity(0.05),
+                                color: highlighted ? Colors.white : Colors.black.withValues(alpha: 0.05),
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: highlighted ? const Color(0xFFE879F9) : Colors.black.withOpacity(0.1),
+                                  color: highlighted ? const Color(0xFFE879F9) : Colors.black.withValues(alpha: 0.1),
                                   width: 4,
                                   style: highlighted ? BorderStyle.solid : BorderStyle.none,
                                 ),
@@ -585,7 +585,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
                               color: const Color(0xFFFDF4FF),
                               shape: BoxShape.circle,
                               border: Border.all(color: const Color(0xFFE879F9), width: 3),
-                              boxShadow: [BoxShadow(color: const Color(0xFFC084FC).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 5))],
+                              boxShadow: [BoxShadow(color: const Color(0xFFC084FC).withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 5))],
                             ),
                             child: Center(child: Text(emoji, style: const TextStyle(fontSize: 44))),
                           ),
@@ -645,7 +645,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
                   const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(24)),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(24)),
                     child: Column(
                       children: [
                         _buildStatRow('Benar', '$_correctAnswers / 3'),

@@ -241,7 +241,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
       duration: const Duration(seconds: 5),
     )..repeat();
 
-    AudioService().playGameBGM();
+    AudioService().playMysteryBGM();
   }
 
   @override
@@ -690,7 +690,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
         _grid[y][x] = 0;
         _coinsCollected++;
       });
-      AudioService().playCorrect();
+      AudioService().playSparkle();
       _showHudMessage(_isEvenLevel ? "+1 Koin Emas Kuno! 🪙" : "+1 Kristal Energi! 💎");
     } 
     else if (value == 5) { // Kunci
@@ -707,7 +707,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
           }
         }
       });
-      AudioService().playCorrect();
+      AudioService().playSparkle();
       _showHudMessage(_isEvenLevel ? "Gerbang Kuil Terbuka! 🔑" : "Pintu Laser Terbuka! 🔑");
     } 
     else if (value == 7) { // Baterai
@@ -954,7 +954,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
           if (_flashRed)
             Positioned.fill(
               child: Container(
-                color: Colors.red.withOpacity(0.35),
+                color: Colors.red.withValues(alpha: 0.35),
               ),
             ),
         ],
@@ -1052,7 +1052,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.cyanAccent.withOpacity(0.2),
+                          color: Colors.cyanAccent.withValues(alpha: 0.2),
                           blurRadius: 40,
                           spreadRadius: 10,
                         ),
@@ -1278,7 +1278,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
               ? []
               : [
                   BoxShadow(
-                    color: planetColors[0].withOpacity(0.5),
+                    color: planetColors[0].withValues(alpha: 0.5),
                     blurRadius: 15,
                     spreadRadius: 2,
                   )
@@ -1355,18 +1355,18 @@ class _MazeGameScreenState extends State<MazeGameScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B).withOpacity(0.85),
+        color: const Color(0xFF1E293B).withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _isEvenLevel
-              ? Colors.amberAccent.withOpacity(0.25)
-              : Colors.cyanAccent.withOpacity(0.2),
+              ? Colors.amberAccent.withValues(alpha: 0.25)
+              : Colors.cyanAccent.withValues(alpha: 0.2),
         ),
         boxShadow: [
           BoxShadow(
             color: _isEvenLevel
-                ? Colors.amberAccent.withOpacity(0.06)
-                : Colors.cyanAccent.withOpacity(0.05),
+                ? Colors.amberAccent.withValues(alpha: 0.06)
+                : Colors.cyanAccent.withValues(alpha: 0.05),
             blurRadius: 10,
             spreadRadius: 2,
           )
@@ -1482,13 +1482,13 @@ class _MazeGameScreenState extends State<MazeGameScreen>
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: _hudMessage.contains("💥") 
-            ? Colors.redAccent.withOpacity(0.2) 
-            : (_hudMessage.contains("🔑") ? Colors.greenAccent.withOpacity(0.2) : Colors.cyanAccent.withOpacity(0.15)),
+            ? Colors.redAccent.withValues(alpha: 0.2) 
+            : (_hudMessage.contains("🔑") ? Colors.greenAccent.withValues(alpha: 0.2) : Colors.cyanAccent.withValues(alpha: 0.15)),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: _hudMessage.contains("💥") 
-              ? Colors.redAccent.withOpacity(0.4) 
-              : (_hudMessage.contains("🔑") ? Colors.greenAccent.withOpacity(0.4) : Colors.cyanAccent.withOpacity(0.3)),
+              ? Colors.redAccent.withValues(alpha: 0.4) 
+              : (_hudMessage.contains("🔑") ? Colors.greenAccent.withValues(alpha: 0.4) : Colors.cyanAccent.withValues(alpha: 0.3)),
           width: 1,
         ),
       ),
@@ -1516,26 +1516,26 @@ class _MazeGameScreenState extends State<MazeGameScreen>
 
     final Color gridBorderColor = _isEvenLevel
         ? (config.hasFog
-            ? Colors.orangeAccent.withOpacity(0.35)
-            : Colors.greenAccent.withOpacity(0.35))
+            ? Colors.orangeAccent.withValues(alpha: 0.35)
+            : Colors.greenAccent.withValues(alpha: 0.35))
         : (config.hasFog
-            ? Colors.deepPurpleAccent.withOpacity(0.3)
-            : Colors.cyanAccent.withOpacity(0.3));
+            ? Colors.deepPurpleAccent.withValues(alpha: 0.3)
+            : Colors.cyanAccent.withValues(alpha: 0.3));
 
     final Color gridShadowColor = _isEvenLevel
         ? (config.hasFog
-            ? Colors.orangeAccent.withOpacity(0.12)
-            : Colors.greenAccent.withOpacity(0.1))
+            ? Colors.orangeAccent.withValues(alpha: 0.12)
+            : Colors.greenAccent.withValues(alpha: 0.1))
         : (config.hasFog
-            ? Colors.deepPurpleAccent.withOpacity(0.1)
-            : Colors.cyanAccent.withOpacity(0.08));
+            ? Colors.deepPurpleAccent.withValues(alpha: 0.1)
+            : Colors.cyanAccent.withValues(alpha: 0.08));
 
     return Container(
       width: size,
       height: size,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: _isEvenLevel ? const Color(0xFF0A120D).withOpacity(0.7) : const Color(0xFF0F172A).withOpacity(0.6),
+        color: _isEvenLevel ? const Color(0xFF0A120D).withValues(alpha: 0.7) : const Color(0xFF0F172A).withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: gridBorderColor,
@@ -1745,11 +1745,11 @@ class _MazeGameScreenState extends State<MazeGameScreen>
       if (_isEvenLevel) {
         cellDecoration = BoxDecoration(
           color: const Color(0xFF14241C),
-          border: Border.all(color: Colors.green.withOpacity(0.55), width: 1.0),
+          border: Border.all(color: Colors.green.withValues(alpha: 0.55), width: 1.0),
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
             BoxShadow(
-              color: Colors.green.withOpacity(0.2),
+              color: Colors.green.withValues(alpha: 0.2),
               blurRadius: 4,
               spreadRadius: 0.5,
             )
@@ -1758,11 +1758,11 @@ class _MazeGameScreenState extends State<MazeGameScreen>
       } else {
         cellDecoration = BoxDecoration(
           color: const Color(0xFF0F172A),
-          border: Border.all(color: Colors.blueAccent.withOpacity(0.55), width: 1.0),
+          border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.55), width: 1.0),
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
             BoxShadow(
-              color: Colors.blueAccent.withOpacity(0.15),
+              color: Colors.blueAccent.withValues(alpha: 0.15),
               blurRadius: 4,
               spreadRadius: 0.5,
             )
@@ -1773,12 +1773,12 @@ class _MazeGameScreenState extends State<MazeGameScreen>
       // Path
       if (_isEvenLevel) {
         cellDecoration = BoxDecoration(
-          color: const Color(0xFF2E2D22).withOpacity(0.4),
+          color: const Color(0xFF2E2D22).withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(2),
         );
       } else {
         cellDecoration = BoxDecoration(
-          color: const Color(0xFF1E293B).withOpacity(0.4),
+          color: const Color(0xFF1E293B).withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(2),
         );
       }
@@ -1797,8 +1797,8 @@ class _MazeGameScreenState extends State<MazeGameScreen>
                       height: 1.5,
                       decoration: BoxDecoration(
                         color: _isEvenLevel 
-                            ? Colors.greenAccent.withOpacity(0.25)
-                            : Colors.white.withOpacity(0.15),
+                            ? Colors.greenAccent.withValues(alpha: 0.25)
+                            : Colors.white.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -1814,7 +1814,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
               child: Container(
                 margin: const EdgeInsets.all(0.8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(fogOpacity),
+                  color: Colors.black.withValues(alpha: fogOpacity),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1897,18 +1897,18 @@ class _MazeGameScreenState extends State<MazeGameScreen>
       height: 125,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.blueGrey.withOpacity(0.08),
+        color: Colors.blueGrey.withValues(alpha: 0.08),
         border: Border.all(
           color: _isEvenLevel
-              ? Colors.greenAccent.withOpacity(0.25)
-              : Colors.blueAccent.withOpacity(0.25),
+              ? Colors.greenAccent.withValues(alpha: 0.25)
+              : Colors.blueAccent.withValues(alpha: 0.25),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: _isEvenLevel
-                ? Colors.greenAccent.withOpacity(0.03)
-                : Colors.blueAccent.withOpacity(0.03),
+                ? Colors.greenAccent.withValues(alpha: 0.03)
+                : Colors.blueAccent.withValues(alpha: 0.03),
             blurRadius: 10,
             spreadRadius: 2,
           )
@@ -1926,8 +1926,8 @@ class _MazeGameScreenState extends State<MazeGameScreen>
               color: const Color(0xFF0F172A),
               border: Border.all(
                 color: _isEvenLevel
-                    ? Colors.greenAccent.withOpacity(0.4)
-                    : Colors.blueAccent.withOpacity(0.4),
+                    ? Colors.greenAccent.withValues(alpha: 0.4)
+                    : Colors.blueAccent.withValues(alpha: 0.4),
                 width: 1,
               ),
             ),
@@ -1983,11 +1983,11 @@ class _MazeGameScreenState extends State<MazeGameScreen>
         height: 36,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: const Color(0xFF1E293B).withOpacity(0.9),
+          color: const Color(0xFF1E293B).withValues(alpha: 0.9),
           border: Border.all(
             color: _isEvenLevel
-                ? Colors.amberAccent.withOpacity(0.2)
-                : Colors.cyanAccent.withOpacity(0.2),
+                ? Colors.amberAccent.withValues(alpha: 0.2)
+                : Colors.cyanAccent.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -2013,10 +2013,10 @@ class _MazeGameScreenState extends State<MazeGameScreen>
             colors: [Color(0xFF1E1B4B), Color(0xFF0F172A)],
           ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.cyanAccent.withOpacity(0.3), width: 1.5),
+          border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.cyanAccent.withOpacity(0.1),
+              color: Colors.cyanAccent.withValues(alpha: 0.1),
               blurRadius: 25,
               spreadRadius: 3,
             )
@@ -2143,10 +2143,10 @@ class _MazeGameScreenState extends State<MazeGameScreen>
         decoration: BoxDecoration(
           color: const Color(0xFF0F172A),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.redAccent.withOpacity(0.3), width: 1.5),
+          border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.redAccent.withOpacity(0.15),
+              color: Colors.redAccent.withValues(alpha: 0.15),
               blurRadius: 30,
               spreadRadius: 2,
             )
@@ -2270,9 +2270,9 @@ class _MazeGameScreenState extends State<MazeGameScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B).withOpacity(0.85),
+                  color: const Color(0xFF1E293B).withValues(alpha: 0.85),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.cyanAccent.withOpacity(0.3)),
+                  border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3)),
                 ),
                 child: Column(
                   children: [
@@ -2369,7 +2369,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 6,
-          shadowColor: color.withOpacity(0.5),
+          shadowColor: color.withValues(alpha: 0.5),
         ),
         child: Text(
           text,
@@ -2400,7 +2400,7 @@ class _StaticStarsPainter extends CustomPainter {
       double r = random.nextDouble() * 1.5 + 0.4;
       
       // Menggambar beberapa bintang berkilau lemah
-      paint.color = Colors.white.withOpacity(random.nextDouble() * 0.4 + 0.1);
+      paint.color = Colors.white.withValues(alpha: random.nextDouble() * 0.4 + 0.1);
       canvas.drawCircle(Offset(x, y), r, paint);
     }
   }
@@ -2419,12 +2419,12 @@ class _MapConnectionPainter extends CustomPainter {
     if (points.length < 2) return;
 
     final paint = Paint()
-      ..color = Colors.greenAccent.withOpacity(0.3)
+      ..color = Colors.greenAccent.withValues(alpha: 0.3)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 
     final glowPaint = Paint()
-      ..color = Colors.greenAccent.withOpacity(0.08)
+      ..color = Colors.greenAccent.withValues(alpha: 0.08)
       ..strokeWidth = 6.0
       ..style = PaintingStyle.stroke;
 
@@ -2473,12 +2473,12 @@ class _StaticFirefliesPainter extends CustomPainter {
       double r = random.nextDouble() * 3.0 + 1.0;
       
       // Kunang-kunang berwarna kuning/hijau neon pudar
-      paint.color = Colors.amberAccent.withOpacity(random.nextDouble() * 0.5 + 0.15);
+      paint.color = Colors.amberAccent.withValues(alpha: random.nextDouble() * 0.5 + 0.15);
       canvas.drawCircle(Offset(x, y), r, paint);
       
       // Halo glow untuk kunang-kunang
       final glowPaint = Paint()
-        ..color = Colors.yellowAccent.withOpacity(random.nextDouble() * 0.1 + 0.03)
+        ..color = Colors.yellowAccent.withValues(alpha: random.nextDouble() * 0.1 + 0.03)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
       canvas.drawCircle(Offset(x, y), r * 2.5, glowPaint);
     }

@@ -271,30 +271,75 @@ class _CommunityScreenState extends State<CommunityScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header (Sticky emulation)
+              // Header
               Container(
                 color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                 child: Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pushReplacementNamed(context, '/home'),
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: AppTheme.gray100, borderRadius: BorderRadius.circular(12)),
-                            child: Icon(Icons.arrow_back, color: AppTheme.gray700, size: 20),
-                          ),
+                        // Bottom-nav tab like Progres/Profil, so no back button;
+                        // spacer keeps the title centred.
+                        const SizedBox(width: 40),
+                        const Column(
+                          children: [
+                            Text(
+                              'Komunitas Orang Tua 💬',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF0F172A),
+                                fontFamily: 'Nunito',
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Berbagi cerita & solusi parenting',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF64748B),
+                                fontFamily: 'Nunito',
+                              ),
+                            ),
+                          ],
                         ),
-                        Text('Komunitas', style: AppTheme.heading2.copyWith(color: AppTheme.gray900)),
                         GestureDetector(
                           onTap: _showCreatePostModal,
                           child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: const Color(0xFF3B82F6), borderRadius: BorderRadius.circular(12)), // blue-500
-                            child: const Icon(Icons.add, color: Colors.white, size: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF2563EB).withValues(alpha: 0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Tulis',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    fontFamily: 'Nunito',
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -308,23 +353,41 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         return Expanded(
                           child: GestureDetector(
                             onTap: () => setState(() => _activeTab = tab['id']!),
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
                               margin: const EdgeInsets.symmetric(horizontal: 4),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 9),
                               decoration: BoxDecoration(
-                                color: isActive ? const Color(0xFF3B82F6) : AppTheme.gray100,
-                                borderRadius: BorderRadius.circular(12),
+                                color: isActive ? const Color(0xFF2563EB) : const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isActive ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+                                  width: 1.2,
+                                ),
+                                boxShadow: isActive
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF2563EB).withValues(alpha: 0.2),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        )
+                                      ]
+                                    : [],
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(tab['icon']!, style: const TextStyle(fontSize: 14)),
-                                  const SizedBox(width: 4),
-                                  Text(tab['label']!, style: TextStyle(
-                                    color: isActive ? Colors.white : AppTheme.gray600,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  )),
+                                  Text(tab['icon']!, style: const TextStyle(fontSize: 13)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    tab['label']!,
+                                    style: TextStyle(
+                                      color: isActive ? Colors.white : const Color(0xFF475569),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      fontFamily: 'Nunito',
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -342,64 +405,101 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
                   color: const Color(0xFFFEF3C7),
-                  child: Row(
+                  child: const Row(
                     children: [
-                      const Icon(Icons.cloud_off_rounded, size: 16, color: Color(0xFFD97706)),
-                      const SizedBox(width: 8),
-                      const Expanded(
+                      Icon(Icons.cloud_off_rounded, size: 16, color: Color(0xFFD97706)),
+                      SizedBox(width: 8),
+                      Expanded(
                         child: Text(
                           'Koneksi tidak stabil. Menampilkan data terakhir...',
-                          style: TextStyle(fontSize: 12, color: Color(0xFFD97706), fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFD97706),
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Nunito',
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
 
-              // Quick Actions
+              // Quick Actions Banner
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFFA855F7)]), // blue-500 to purple-500
-                    borderRadius: BorderRadius.circular(24),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1E40AF), Color(0xFF2563EB), Color(0xFF3B82F6)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(26),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF2563EB).withValues(alpha: 0.25),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Bergabung dengan Diskusi', style: AppTheme.heading3.copyWith(color: Colors.white, fontSize: 16)),
-                      const SizedBox(height: 8),
-                      Text('Tanyakan, berbagi pengalaman, dan dapatkan tips dari sesama orang tua', style: AppTheme.bodyText.copyWith(color: const Color(0xFFEFF6FF), fontSize: 13)), // blue-50
-                      const SizedBox(height: 16),
                       Row(
                         children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _showCreatePostModal,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: const Color(0xFF2563EB), // blue-600
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text('Buat Postingan', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            child: const Text('💡', style: TextStyle(fontSize: 18)),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () {},
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white.withOpacity(0.2),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text('Cari Topik', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Ruang Diskusi Ramah Keluarga',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Nunito',
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tanyakan keresahan, bagikan tips bermain, atau konsultasikan pengalaman stimulasi bersama sesama orang tua.',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _showCreatePostModal,
+                          icon: const Icon(Icons.edit_note_rounded, size: 18),
+                          label: const Text('Buat Postingan Baru ✍️'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF2563EB),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                              fontFamily: 'Nunito',
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -459,11 +559,18 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     return Padding(
                       padding: const EdgeInsets.all(40),
                       child: Center(
-                        child: Text(
-                          "Belum ada postingan komunitas.\nJadilah yang pertama memposting!", 
-                          textAlign: TextAlign.center,
-                          style: AppTheme.bodyText.copyWith(color: AppTheme.gray500)
-                        )
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset('assets/images/stickers/bingung.png', width: 120, height: 120),
+                            const SizedBox(height: 16),
+                            Text(
+                              "Belum ada postingan komunitas.\nJadilah yang pertama memposting!", 
+                              textAlign: TextAlign.center,
+                              style: AppTheme.bodyText.copyWith(color: AppTheme.gray500, fontWeight: FontWeight.bold)
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }
@@ -488,7 +595,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: posts.map((post) {
                         final isLiked = currentUid != null && post.likedBy.contains(currentUid);
@@ -503,144 +610,236 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             );
                           },
                           child: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 14),
+                            padding: const EdgeInsets.all(18),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(targetUid: post.authorId)));
-                                },
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 40, height: 40,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFDBEAFE), 
-                                        shape: BoxShape.circle,
-                                        image: post.avatarBase64 != null
-                                          ? DecorationImage(image: MemoryImage(base64Decode(post.avatarBase64!)), fit: BoxFit.cover)
-                                          : null
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(context, MaterialPageRoute(builder: (_) => PublicProfileScreen(targetUid: post.authorId)));
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEFF6FF),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(color: const Color(0xFFBFDBFE), width: 1.5),
+                                          image: post.avatarBase64 != null
+                                              ? DecorationImage(
+                                                  image: MemoryImage(base64Decode(post.avatarBase64!)),
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : null,
+                                        ),
+                                        child: post.avatarBase64 == null
+                                            ? Center(
+                                                child: Text(
+                                                  post.avatar.length <= 2 ? post.avatar : '👦',
+                                                  style: const TextStyle(fontSize: 22),
+                                                ),
+                                              )
+                                            : null,
                                       ),
-                                      child: post.avatarBase64 == null
-                                        ? Center(child: Text(post.avatar.length <= 2 ? post.avatar : '👦', style: const TextStyle(fontSize: 20)))
-                                        : null,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(post.author, style: AppTheme.heading3.copyWith(color: AppTheme.gray900, fontSize: 14)),
-                                        Row(
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Icon(Icons.access_time, color: AppTheme.gray500, size: 12),
-                                            const SizedBox(width: 4),
-                                            Text(_formatTime(post.time), style: AppTheme.bodyText.copyWith(color: AppTheme.gray500, fontSize: 12)),
-                                            const SizedBox(width: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                              decoration: BoxDecoration(color: _getCategoryBg(post.category), borderRadius: BorderRadius.circular(12)),
-                                              child: Text(post.category, style: TextStyle(color: _getCategoryText(post.category), fontSize: 10, fontWeight: FontWeight.bold)),
+                                            Text(
+                                              post.author,
+                                              style: const TextStyle(
+                                                color: Color(0xFF0F172A),
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w900,
+                                                fontFamily: 'Nunito',
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                const Icon(Icons.access_time_rounded, color: Color(0xFF94A3B8), size: 12),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  _formatTime(post.time),
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF94A3B8),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontFamily: 'Nunito',
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                  decoration: BoxDecoration(
+                                                    color: _getCategoryBg(post.category),
+                                                    borderRadius: BorderRadius.circular(10),
+                                                  ),
+                                                  child: Text(
+                                                    post.category,
+                                                    style: TextStyle(
+                                                      color: _getCategoryText(post.category),
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w900,
+                                                      fontFamily: 'Nunito',
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ],
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(post.content, style: AppTheme.bodyText.copyWith(color: AppTheme.gray700, fontSize: 13, height: 1.5)),
-                            if (post.postImage != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => FullScreenImageViewer(
-                                            base64Image: post.postImage,
-                                            tag: 'post_image_${post.id}',
+                                ),
+                                const SizedBox(height: 14),
+                                Text(
+                                  post.content,
+                                  style: const TextStyle(
+                                    color: Color(0xFF334155),
+                                    fontSize: 13,
+                                    height: 1.5,
+                                    fontWeight: FontWeight.w500,
+                                    fontFamily: 'Nunito',
+                                  ),
+                                ),
+                                if (post.postImage != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 14),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => FullScreenImageViewer(
+                                              base64Image: post.postImage,
+                                              tag: 'post_image_${post.id}',
+                                            ),
                                           ),
-                                        ),
-                                      );
-                                    },
-                                    child: Hero(
-                                      tag: 'post_image_${post.id}',
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Image.memory(
-                                          base64Decode(post.postImage!),
-                                          width: double.infinity,
-                                          height: 200,
-                                          fit: BoxFit.cover,
+                                        );
+                                      },
+                                      child: Hero(
+                                        tag: 'post_image_${post.id}',
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: Image.memory(
+                                            base64Decode(post.postImage!),
+                                            width: double.infinity,
+                                            height: 200,
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              const SizedBox(height: 16),
-                              const Divider(height: 1, color: Color(0xFFF3F4F6)),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (currentUid == null) {
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Harap login terlebih dahulu")));
-                                        return;
-                                      }
-                                      _toggleLike(post, isLiked);
-                                    },
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          isLiked ? Icons.favorite : Icons.favorite_border,
-                                          color: isLiked ? Colors.red : AppTheme.gray500,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text('${post.likes}', style: TextStyle(
-                                          color: isLiked ? Colors.red : AppTheme.gray500,
-                                          fontSize: 12, fontWeight: FontWeight.bold,
-                                        )),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Row(
+                                const SizedBox(height: 16),
+                                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                const SizedBox(height: 12),
+                                Row(
                                   children: [
-                                    Icon(Icons.chat_bubble_outline, color: AppTheme.gray500, size: 16),
-                                    const SizedBox(width: 4),
-                                    Text('${post.comments}', style: TextStyle(color: AppTheme.gray500, fontSize: 12, fontWeight: FontWeight.bold)),
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (currentUid == null) {
+                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Harap login terlebih dahulu")));
+                                          return;
+                                        }
+                                        _toggleLike(post, isLiked);
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: isLiked ? const Color(0xFFFEE2E2) : const Color(0xFFF8FAFC),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                              color: isLiked ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              '${post.likes}',
+                                              style: TextStyle(
+                                                color: isLiked ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 12,
+                                                fontFamily: 'Nunito',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.chat_bubble_outline_rounded,
+                                            color: Color(0xFF64748B),
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            '${post.comments}',
+                                            style: const TextStyle(
+                                              color: Color(0xFF64748B),
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 12,
+                                              fontFamily: 'Nunito',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (currentUid == post.authorId)
+                                      GestureDetector(
+                                        onTap: () => _confirmDeletePost(post.id),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFF1F2),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Icon(Icons.delete_outline_rounded, color: Color(0xFFE11D48), size: 16),
+                                        ),
+                                      ),
                                   ],
                                 ),
-                                const Spacer(),
-                                if (currentUid == post.authorId)
-                                  GestureDetector(
-                                    onTap: () => _confirmDeletePost(post.id),
-                                    child: Icon(Icons.delete_outline, color: AppTheme.red500.withOpacity(0.7), size: 18),
-                                  ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  ),
-                );
-              }
-            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),

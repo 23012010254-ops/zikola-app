@@ -153,7 +153,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
       _currentWordIndex = 0;
     });
 
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playHomeBGM();
     _initCurrentWord();
 
     _timer?.cancel();
@@ -193,7 +193,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
       _placedLetters[nextEmpty] = letter;
     });
     HapticFeedback.lightImpact();
-    AudioService().playSFX('flip.mp3');
+    AudioService().playPop();
 
     _checkCompletion();
   }
@@ -208,7 +208,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
       _placedLetters[position] = null;
     });
     HapticFeedback.lightImpact();
-    AudioService().playSFX('flip.mp3');
+    AudioService().playPop();
   }
 
   void _checkCompletion() {
@@ -230,7 +230,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
             l!.isCorrect = true;
           }
         });
-        AudioService().playSFX('success.mp3');
+        AudioService().playCorrect();
 
         if (_currentWordIndex < _sessionWords.length - 1) {
           Future.delayed(const Duration(milliseconds: 1500), () {
@@ -253,14 +253,14 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
           _lives--;
         });
         _shakeController.forward(from: 0);
-        AudioService().playSFX('wrong.mp3');
+        AudioService().playWrong();
         
         if (_lives <= 0) {
           _timer?.cancel();
           Future.delayed(const Duration(milliseconds: 1000), () {
             if (!mounted) return;
             AudioService().stopBGM();
-            AudioService().playSFX('completion.mp3');
+            AudioService().playGameOver();
             setState(() {
               _gameState = 'completed';
             });
@@ -275,7 +275,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
   void _completeLevel() {
     _timer?.cancel();
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playSparkle();
 
     int starsCount = _lives;
     _starRatings[_currentLevel - 1] = max(_starRatings[_currentLevel - 1], starsCount);
@@ -390,7 +390,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
                                   onTap: () => Navigator.pop(context),
                                   child: Container(
                                     padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                                     child: const Icon(Icons.arrow_back, color: Colors.white),
                                   ),
                                 ),
@@ -528,7 +528,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
                                   boxShadow: isUnlocked
                                       ? [
                                           BoxShadow(
-                                            color: const Color(0xFF78350F).withOpacity(0.2),
+                                            color: const Color(0xFF78350F).withValues(alpha: 0.2),
                                             blurRadius: 6,
                                             offset: const Offset(2, 4),
                                           )
@@ -539,7 +539,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
                                   margin: const EdgeInsets.all(2),
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: isUnlocked ? const Color(0xFF78350F).withOpacity(0.4) : Colors.transparent,
+                                      color: isUnlocked ? const Color(0xFF78350F).withValues(alpha: 0.4) : Colors.transparent,
                                       width: 1.5,
                                     ),
                                     borderRadius: BorderRadius.circular(10),
@@ -622,7 +622,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
                         widthFactor: progress,
                         child: Container(
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [word.themeColor, word.themeColor.withOpacity(0.7)]),
+                            gradient: LinearGradient(colors: [word.themeColor, word.themeColor.withValues(alpha: 0.7)]),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
@@ -659,9 +659,9 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
                     width: 140,
                     height: 140,
                     decoration: BoxDecoration(
-                      color: word.themeColor.withOpacity(0.1),
+                      color: word.themeColor.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
-                      border: Border.all(color: word.themeColor.withOpacity(0.2), width: 4),
+                      border: Border.all(color: word.themeColor.withValues(alpha: 0.2), width: 4),
                     ),
                     child: Center(child: Text(word.emoji, style: const TextStyle(fontSize: 72))),
                   ),
@@ -671,13 +671,13 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20)],
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 20)],
                     ),
                     child: Column(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(color: word.themeColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(color: word.themeColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                           child: Text(word.category.toUpperCase(), style: TextStyle(color: word.themeColor, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1)),
                         ),
                         const SizedBox(height: 16),
@@ -747,7 +747,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
                       color: isCorrect ? const Color(0xFF22C55E) : (letter != null ? word.themeColor : Colors.transparent),
                       width: 2,
                     ),
-                    boxShadow: letter != null ? [BoxShadow(color: word.themeColor.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))] : null,
+                    boxShadow: letter != null ? [BoxShadow(color: word.themeColor.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))] : null,
                   ),
                   child: Center(
                     child: Text(
@@ -783,11 +783,11 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [word.themeColor, word.themeColor.withOpacity(0.8)],
+                colors: [word.themeColor, word.themeColor.withValues(alpha: 0.8)],
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: word.themeColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
+                BoxShadow(color: word.themeColor.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4)),
               ],
             ),
             child: Center(
@@ -809,9 +809,9 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color.withOpacity(0.2)),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

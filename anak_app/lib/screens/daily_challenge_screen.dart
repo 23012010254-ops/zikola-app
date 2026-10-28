@@ -54,15 +54,35 @@ class DailyChallengeScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Greeting
-            Text(
-              'Hai, $childName! 👋',
-              style: AppTheme.heading2.copyWith(color: AppTheme.textPrimary),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Selesaikan misi harian untuk mendapatkan XP!',
-              style: AppTheme.bodyText.copyWith(color: AppTheme.textSecondary),
+            // Greeting & Mascot
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hai, $childName! 👋',
+                        style: AppTheme.heading2.copyWith(color: AppTheme.textPrimary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        challenges.every((c) => c.current >= c.target) 
+                            ? 'Luar biasa! Semua misi hari ini sudah selesai! 🎉'
+                            : 'Selesaikan misi harian untuk mendapatkan XP!',
+                        style: AppTheme.bodyText.copyWith(color: AppTheme.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                Image.asset(
+                  challenges.every((c) => c.current >= c.target)
+                      ? 'assets/images/stickers/mantap.png'
+                      : 'assets/images/stickers/keren.png',
+                  width: 80,
+                  height: 80,
+                ),
+              ],
             ),
             const SizedBox(height: 20),
 
@@ -120,7 +140,7 @@ class _StreakCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFF97316).withOpacity(0.3),
+            color: const Color(0xFFF97316).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -159,7 +179,7 @@ class _StreakCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
+              color: Colors.white.withValues(alpha: 0.25),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -214,10 +234,10 @@ class _ChallengeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: done ? challenge.color.withOpacity(0.08) : Colors.white,
+        color: done ? challenge.color.withValues(alpha: 0.08) : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: done ? challenge.color.withOpacity(0.3) : AppTheme.gray200,
+          color: done ? challenge.color.withValues(alpha: 0.3) : AppTheme.gray200,
           width: 1.5,
         ),
       ),
@@ -229,8 +249,8 @@ class _ChallengeCard extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               color: done
-                  ? challenge.color.withOpacity(0.15)
-                  : challenge.color.withOpacity(0.1),
+                  ? challenge.color.withValues(alpha: 0.15)
+                  : challenge.color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(14),
             ),
             alignment: Alignment.center,
@@ -266,7 +286,7 @@ class _ChallengeCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: challenge.color.withOpacity(0.12),
+                        color: challenge.color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -351,7 +371,7 @@ class _XPProgressCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF3B82F6).withOpacity(0.3),
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -397,7 +417,7 @@ class _XPProgressCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 12,
-              backgroundColor: Colors.white.withOpacity(0.2),
+              backgroundColor: Colors.white.withValues(alpha: 0.2),
               valueColor:
                   const AlwaysStoppedAnimation<Color>(Colors.white),
             ),

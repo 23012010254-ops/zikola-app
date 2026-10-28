@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
-import '../models/test_result.dart';
+import '../services/audio_service.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -14,6 +14,7 @@ class _FeaturedGame {
   final String title;
   final String description;
   final String image;
+  final String? assetPath;
   final List<Color> gradient;
   final List<String> domains;
   final String gameKey;
@@ -23,6 +24,7 @@ class _FeaturedGame {
     required this.title,
     required this.description,
     required this.image,
+    this.assetPath,
     required this.gradient,
     required this.domains,
     required this.gameKey,
@@ -34,6 +36,7 @@ class _AvailableGame {
   final String title;
   final String description;
   final String image;
+  final String? assetPath;
   final Color bgColor;
   final List<String> domains;
   final String difficulty;
@@ -48,6 +51,7 @@ class _AvailableGame {
     required this.title,
     required this.description,
     required this.image,
+    this.assetPath,
     required this.bgColor,
     required this.domains,
     required this.difficulty,
@@ -68,10 +72,21 @@ class _GameScreenState extends State<GameScreen> {
       title: 'Tantangan Tank',
       description: 'Pertahankan markas dari serangan tank!',
       image: '🚜',
+      assetPath: 'assets/images/items/cannon_large.png',
       gradient: [const Color(0xFF10B981), const Color(0xFF047857)], 
       domains: ['Aksi', 'Kecepatan'],
       gameKey: 'tankShooter',
-    )
+    ),
+    _FeaturedGame(
+      id: 'alien-shooter',
+      title: 'Alien Shooter',
+      description: 'Pertahankan bumi dari UFO matematika antariksa!',
+      image: '🛸',
+      assetPath: 'assets/images/emoji/objects/ufo.png',
+      gradient: [const Color(0xFF6366F1), const Color(0xFF312E81)],
+      domains: ['Logika', 'Aksi'],
+      gameKey: 'alienShooter',
+    ),
   ];
 
   final _literacyGames = [
@@ -80,14 +95,45 @@ class _GameScreenState extends State<GameScreen> {
       title: 'Lomba Eja',
       description: 'Susun huruf jadi kata manis',
       image: '🐝',
+      assetPath: 'assets/images/emoji/animals/bee.png',
       bgColor: const Color(0xFFFEF9C3),
       domains: ['Ejaan'],
       difficulty: 'Easy',
-      time: '3 min',
+      time: '3 menit',
       reward: '+30 ⭐',
       rewardColor: const Color(0xFFA16207),
       rating: '4.9',
       gameKey: 'spellBee',
+    ),
+    _AvailableGame(
+      id: 'word-puzzle',
+      title: 'Susun Kata',
+      description: 'Tebak kata dari kisi huruf',
+      image: '📖',
+      assetPath: 'assets/images/emoji/games/books.png',
+      bgColor: const Color(0xFFE0E7FF),
+      domains: ['Kosakata'],
+      difficulty: 'Medium',
+      time: '4 menit',
+      reward: '+40 ⭐',
+      rewardColor: const Color(0xFF3730A3),
+      rating: '4.8',
+      gameKey: 'wordPuzzle',
+    ),
+    _AvailableGame(
+      id: 'story-builder',
+      title: 'Bina Cerita',
+      description: 'Rangkai alur cerita seru',
+      image: '🏰',
+      assetPath: 'assets/images/emoji/objects/castle.png',
+      bgColor: const Color(0xFFF3E8FF),
+      domains: ['Narasi'],
+      difficulty: 'Medium',
+      time: '5 menit',
+      reward: '+50 ⭐',
+      rewardColor: const Color(0xFF6B21A8),
+      rating: '4.9',
+      gameKey: 'storyBuilder',
     ),
   ];
 
@@ -95,57 +141,121 @@ class _GameScreenState extends State<GameScreen> {
     _AvailableGame(
       id: 'maze-game',
       title: 'Maze Adventure',
-      description: 'Geser keluar!',
-      image: '🗺️',
+      description: 'Geser bola keluar labirin!',
+      image: '🧭',
+      assetPath: 'assets/images/emoji/games/compass.png',
       bgColor: const Color(0xFFFFEDD5),
       domains: ['Spasial'],
       difficulty: 'Medium',
-      time: '5 min',
+      time: '5 menit',
       reward: '+50 ⭐',
       rewardColor: const Color(0xFFC2410C),
       rating: '4.9',
       gameKey: 'mazeGame',
     ),
     _AvailableGame(
-      id: 'alien-shooter',
-      title: 'Alien Shooter',
-      description: 'Tembak alien jahat!',
-      image: '🛸',
-      bgColor: const Color(0xFFE0E7FF),
-      domains: ['Aksi'],
-      difficulty: 'Hard',
-      time: '10 min',
+      id: 'pipe-puzzle',
+      title: 'Aliran Pipa',
+      description: 'Sambungkan pipa sampai air mengalir!',
+      image: '🧩',
+      assetPath: 'assets/images/emoji/games/puzzle.png',
+      bgColor: const Color(0xFFCCFBF1),
+      domains: ['Logika'],
+      difficulty: 'Medium',
+      time: '4 menit',
+      reward: '+45 ⭐',
+      rewardColor: const Color(0xFF0F766E),
+      rating: '4.8',
+      gameKey: 'pipePuzzle',
+    ),
+    _AvailableGame(
+      id: 'number-sequence',
+      title: 'Barisan Angka',
+      description: 'Cari angka hilang berikutnya!',
+      image: '🧮',
+      assetPath: 'assets/images/emoji/games/lightbulb.png',
+      bgColor: const Color(0xFFE0F2FE),
+      domains: ['Aritmatika'],
+      difficulty: 'Medium',
+      time: '3 menit',
       reward: '+40 ⭐',
-      rewardColor: const Color(0xFF4338CA),
-      rating: '4.7',
-      gameKey: 'alienShooter',
+      rewardColor: const Color(0xFF0369A1),
+      rating: '4.8',
+      gameKey: 'numberSequence',
+    ),
+    _AvailableGame(
+      id: 'number-memory',
+      title: 'Memori Angka',
+      description: 'Ingat urutan angka dengan cepat!',
+      image: '🧠',
+      assetPath: 'assets/images/emoji/games/brain.png',
+      bgColor: const Color(0xFFF1F5F9),
+      domains: ['Memori'],
+      difficulty: 'Hard',
+      time: '4 menit',
+      reward: '+60 ⭐',
+      rewardColor: const Color(0xFF475569),
+      rating: '4.9',
+      gameKey: 'numberMemory',
     ),
   ];
 
   final _creativeGames = [
     _AvailableGame(
+      id: 'coloring-game',
+      title: 'Kanvas Warna',
+      description: 'Warnai gambar lucu suka-suka',
+      image: '🎨',
+      assetPath: 'assets/images/emoji/games/palette.png',
+      bgColor: const Color(0xFFFEF3C7),
+      domains: ['Kreatif'],
+      difficulty: 'Easy',
+      time: '5 menit',
+      reward: '+60 ⭐',
+      rewardColor: const Color(0xFFB45309),
+      rating: '5.0',
+      gameKey: 'coloringGame',
+    ),
+    _AvailableGame(
       id: 'shadow-match',
       title: 'Tebak Bayangan',
-      description: 'Cocokkan rupa benda',
-      image: '👥',
+      description: 'Cocokkan bentuk rupa benda',
+      image: '🔍',
+      assetPath: 'assets/images/emoji/games/magnifier.png',
       bgColor: const Color(0xFFFCE7F3),
       domains: ['Visual', 'Ketelitian'],
       difficulty: 'Easy',
-      time: '3 min',
+      time: '3 menit',
       reward: '+80 ⭐',
       rewardColor: const Color(0xFFDB2777),
       rating: '4.9',
       gameKey: 'shadowMatch',
     ),
     _AvailableGame(
+      id: 'bubble-popper',
+      title: 'Gelembung Ria',
+      description: 'Pecahkan gelembung angka seru!',
+      image: '🎮',
+      assetPath: 'assets/images/emoji/games/gamepad.png',
+      bgColor: const Color(0xFFE0E7FF),
+      domains: ['Kecepatan'],
+      difficulty: 'Easy',
+      time: '2 menit',
+      reward: '+50 ⭐',
+      rewardColor: const Color(0xFF4338CA),
+      rating: '4.9',
+      gameKey: 'bubblePopper',
+    ),
+    _AvailableGame(
       id: 'sticker-fun',
       title: 'Pesta Stiker',
-      description: 'Koleksi stiker lucu',
-      image: '🌈',
+      description: 'Koleksi dan tempel stiker',
+      image: '🎉',
+      assetPath: 'assets/images/emoji/rewards/party.png',
       bgColor: const Color(0xFFF0FDF4),
       domains: ['Kreativitas'],
       difficulty: 'Easy',
-      time: '5 min',
+      time: '5 menit',
       reward: '+10 ⭐',
       rewardColor: const Color(0xFF16A34A),
       rating: '5.0',
@@ -154,9 +264,16 @@ class _GameScreenState extends State<GameScreen> {
   ];
 
   void _handleGameClick(String id) {
+    AudioService().playPop();
     switch (id) {
       case 'spell-bee':
         Navigator.pushNamed(context, '/spell-bee');
+        break;
+      case 'word-puzzle':
+        Navigator.pushNamed(context, '/word-puzzle');
+        break;
+      case 'story-builder':
+        Navigator.pushNamed(context, '/story-builder');
         break;
       case 'tank-shooter':
         Navigator.pushNamed(context, '/desert-tank-shooter');
@@ -181,6 +298,12 @@ class _GameScreenState extends State<GameScreen> {
         break;
       case 'bubble-popper':
         Navigator.pushNamed(context, '/bubble-popper');
+        break;
+      case 'number-sequence':
+        Navigator.pushNamed(context, '/number-sequence');
+        break;
+      case 'number-memory':
+        Navigator.pushNamed(context, '/number-memory');
         break;
       default:
         context.read<AppState>().addSticker('game-player');
@@ -260,13 +383,13 @@ class _GameScreenState extends State<GameScreen> {
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(32),
-                        boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.3), offset: const Offset(0, 10), blurRadius: 20)],
+                        boxShadow: [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.3), offset: const Offset(0, 10), blurRadius: 20)],
                       ),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
                             child: const Text('💡', style: TextStyle(fontSize: 32)),
                           ),
                           const SizedBox(width: 20),
@@ -275,7 +398,7 @@ class _GameScreenState extends State<GameScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text('Kejutan Harian!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
-                                Text('Mainkan 3 game hari ini untuk mendapatkan stiker spesial!', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, fontWeight: FontWeight.w500)),
+                                Text('Mainkan 3 game hari ini untuk mendapatkan stiker spesial!', style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.w500)),
                               ],
                             ),
                           ),
@@ -296,7 +419,7 @@ class _GameScreenState extends State<GameScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(36),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 25, offset: const Offset(0, 10))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 25, offset: const Offset(0, 10))],
                 border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
               ),
               child: Row(
@@ -331,7 +454,10 @@ class _GameScreenState extends State<GameScreen> {
             ],
           ),
           GestureDetector(
-            onTap: () => setState(() => _showDashboard = !_showDashboard),
+            onTap: () {
+              AudioService().playClick();
+              setState(() => _showDashboard = !_showDashboard);
+            },
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -386,15 +512,17 @@ class _GameScreenState extends State<GameScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(colors: game.gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
                   borderRadius: BorderRadius.circular(32),
-                  boxShadow: [BoxShadow(color: game.gradient[1].withOpacity(0.4), blurRadius: 18, offset: const Offset(0, 10))],
+                  boxShadow: [BoxShadow(color: game.gradient[1].withValues(alpha: 0.4), blurRadius: 18, offset: const Offset(0, 10))],
                 ),
                 child: Stack(
                   children: [
                     Positioned(
                       right: -10, bottom: -10,
                       child: Opacity(
-                        opacity: 0.15,
-                        child: Text(game.image, style: const TextStyle(fontSize: 140)),
+                        opacity: 0.28,
+                        child: game.assetPath != null
+                            ? Image.asset(game.assetPath!, width: 140, height: 140, fit: BoxFit.contain)
+                            : Text(game.image, style: const TextStyle(fontSize: 140)),
                       ),
                     ),
                     Padding(
@@ -404,13 +532,13 @@ class _GameScreenState extends State<GameScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(10)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
                             child: Text(game.domains[0], style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
                           ),
                           const SizedBox(height: 12),
                           Text(game.title, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white)),
                           const SizedBox(height: 4),
-                          Text(game.description, style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13, fontWeight: FontWeight.w500), maxLines: 2),
+                          Text(game.description, style: TextStyle(color: Colors.white.withValues(alpha: 0.85), fontSize: 13, fontWeight: FontWeight.w500), maxLines: 2),
                           const Spacer(),
                           ElevatedButton(
                             onPressed: () => _handleGameClick(game.id),
@@ -468,13 +596,16 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   Widget _buildLingokidsCard(_AvailableGame game) {
-    return Container(
+    // Whole card is tappable — kids tap the picture, not the small button.
+    return GestureDetector(
+      onTap: () => _handleGameClick(game.id),
+      child: Container(
       width: 170,
       margin: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(36),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 6))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 6))],
         border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
       ),
       child: Column(
@@ -484,10 +615,17 @@ class _GameScreenState extends State<GameScreen> {
               width: double.infinity,
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: game.bgColor.withOpacity(0.5),
+                color: game.bgColor.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(28),
               ),
-              child: Center(child: Text(game.image, style: const TextStyle(fontSize: 52))),
+              child: Center(
+                child: game.assetPath != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Image.asset(game.assetPath!, fit: BoxFit.contain),
+                      )
+                    : Text(game.image, style: const TextStyle(fontSize: 52)),
+              ),
             ),
           ),
           Padding(
@@ -499,9 +637,9 @@ class _GameScreenState extends State<GameScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 16),
+                    const Icon(Icons.schedule_rounded, color: Color(0xFF94A3B8), size: 15),
                     const SizedBox(width: 4),
-                    Text(game.rating, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFF64748B))),
+                    Text(game.time, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF64748B))),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -524,6 +662,7 @@ class _GameScreenState extends State<GameScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -533,7 +672,7 @@ class _GameScreenState extends State<GameScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(32),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 20)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 20)],
         border: Border.all(color: const Color(0xFFF1F5F9), width: 2),
       ),
       child: Row(
@@ -552,7 +691,7 @@ class _GameScreenState extends State<GameScreen> {
       children: [
         Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
           child: Icon(icon, color: color, size: 24),
         ),
         const SizedBox(height: 12),
@@ -566,6 +705,9 @@ class _GameScreenState extends State<GameScreen> {
     return GestureDetector(
       onTap: () async {
         final appState = Provider.of<AppState>(context, listen: false);
+        if (!appState.isParentMode) {
+          AudioService().playClick();
+        }
         if (route == '/consultation' && !appState.isParentMode) {
           final bool hasPin = appState.parentalPin != null && appState.parentalPin!.isNotEmpty;
           final dynamic result = await Navigator.pushNamed(
@@ -577,8 +719,8 @@ class _GameScreenState extends State<GameScreen> {
             }
           );
           
-          if (result == true || result is String) {
-            if (result is String) {
+          if (result == true || (result is String && result.length == 4)) {
+            if (result is String && result.length == 4) {
               await appState.setParentalPin(result);
             }
             appState.setParentMode(true);

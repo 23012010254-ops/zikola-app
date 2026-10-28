@@ -291,7 +291,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
       }
     });
 
-    AudioService().playGameBGM();
+    AudioService().playPuzzleBGM();
   }
 
   // ─── Piece Selection ────────────────────────────────────────────────────
@@ -301,7 +301,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     setState(() {
       _selectedPiece = _selectedPiece == pieceId ? null : pieceId;
     });
-    AudioService().playClick();
+    AudioService().playPop();
   }
 
   // ─── Slot Placement ─────────────────────────────────────────────────────
@@ -352,7 +352,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
         _wrongMoveShake = true;
         _combo = 0;
       });
-      AudioService().playSFX('wrong.mp3');
+      AudioService().playWrong();
       _shakeController.forward(from: 0).then((_) {
         if (mounted) {
           setState(() {
@@ -431,6 +431,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
     context.read<AppState>().addPointsFromScore(rawScore);
 
     AudioService().stopBGM();
+    AudioService().playSparkle();
     AudioService().playAchievement();
   }
 
@@ -506,7 +507,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.arrow_back, color: Colors.white),
@@ -523,7 +524,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
@@ -780,7 +781,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20)],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 20)],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -987,7 +988,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Icon(Icons.arrow_back, color: Colors.white),
@@ -1005,7 +1006,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
@@ -1022,7 +1023,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
@@ -1079,7 +1080,7 @@ class _PuzzleGameScreenState extends State<PuzzleGameScreen> with TickerProvider
                         const SizedBox(height: 8),
                         LinearProgressIndicator(
                           value: progress,
-                          backgroundColor: Colors.white.withOpacity(0.2),
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
                           valueColor: const AlwaysStoppedAnimation<Color>(Colors.yellowAccent),
                           borderRadius: BorderRadius.circular(4),
                         ),

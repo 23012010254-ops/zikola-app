@@ -158,7 +158,7 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
   @override
   void initState() {
     super.initState();
-    AudioService().playGameBGM();
+    AudioService().playMysteryBGM();
   }
 
   @override
@@ -449,7 +449,7 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
   void _onPuzzleSolved(Set<int> connectedCells) {
     _timer?.cancel();
     setState(() => _isSolved = true);
-    AudioService().playAchievement();
+    AudioService().playBubble();
 
     // Build water flow order via BFS from start
     _buildFlowOrder(connectedCells);
@@ -576,6 +576,8 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
       'percentage': (_earnedStars / 3 * 100).round(),
     });
 
+    AudioService().playSparkle();
+
     setState(() {
       _isFlowing = false;
       _mode = _ScreenMode.victory;
@@ -683,7 +685,7 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
                         boxShadow: isUnlocked
                             ? [
                                 BoxShadow(
-                                  color: const Color(0xFF06B6D4).withOpacity(0.3),
+                                  color: const Color(0xFF06B6D4).withValues(alpha: 0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -699,7 +701,7 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
                             child: Icon(
                               Icons.settings_input_component_rounded,
                               size: 72,
-                              color: Colors.white.withOpacity(0.08),
+                              color: Colors.white.withValues(alpha: 0.08),
                             ),
                           ),
                           // Small rivet/screw decoration in the 4 corners
@@ -862,7 +864,7 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Grid: ${cols}×$rows',
+                    'Grid: $cols×$rows',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.blue.shade600,

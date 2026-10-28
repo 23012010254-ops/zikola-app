@@ -38,6 +38,14 @@
           }
         },
         {
+          "client_id": "510792598386-sjv6uhn6cqutvb36ld8u8hq25dhou5j4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.anakapp.anak_app",
+            "certificate_hash": "cc3272e631bd41d52a417b8073b87e9525f6336a"
+          }
+        },
+        {
           "client_id": "510792598386-vb311f7ptgri3o2vnrvjpf4rkbojac7g.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -1,15 +1,16 @@
 import { doctorWebRTC } from '../lib/webrtc';
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import {
   collection, query, where, orderBy, onSnapshot, addDoc, setDoc,
-  doc, getDoc, deleteDoc, updateDoc, serverTimestamp
+  doc, getDoc, deleteDoc, updateDoc, serverTimestamp, getDocs, writeBatch
 } from 'firebase/firestore';
 import { format } from 'date-fns';
 import {
   Menu, User, Home, Brain, MessageSquare, BarChart2, Users, Bell, Settings,
   HelpCircle, Phone, MoreVertical, ArrowLeft, Paperclip, Send,
-  FileText, Clipboard, Calendar, Star, Info, ShieldCheck, Sparkles, X, Save, Trash2, Edit3, Download, Printer, LogOut, Mic, MicOff
+  FileText, Clipboard, Calendar, Star, Info, ShieldCheck, Sparkles, X, Save, Trash2, Edit3, Download, Printer, LogOut, Mic, MicOff,
+  Check, CheckCheck, Pill, QrCode, Plus, Clock
 } from 'lucide-react';
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer,
@@ -18,18 +19,244 @@ import {
 import zikolaLogoFull from '../assets/zikola_logo_full.jpg';
 import zikolaMascot from '../assets/zikola_mascot.png';
 
+const CLINICAL_SEED_PATIENTS = [
+  {
+    id: 'demo-patient-1',
+    name: 'Budi Pratama',
+    avatar: '👦',
+    age: 8,
+    gender: 'male',
+    school: 'SD Bintang Kejora Sby',
+    parent: 'Ibu Ratna Dewi',
+    phone: '0812-3456-7890',
+    hasAssessment: true,
+    completedCount: 4,
+    scores: {
+      logika: 85,
+      memori: 78,
+      bahasa: 92,
+      motorik: 88,
+    }
+  },
+  {
+    id: 'demo-patient-2',
+    name: 'Aisyah Putri',
+    avatar: '👧',
+    age: 7,
+    gender: 'female',
+    school: 'SD Permata Hati',
+    parent: 'Ibu Maya Santoso',
+    phone: '0813-9876-5432',
+    hasAssessment: true,
+    completedCount: 3,
+    scores: {
+      logika: 90,
+      memori: 84,
+      bahasa: 80,
+      motorik: 82,
+    }
+  },
+  {
+    id: 'demo-patient-3',
+    name: 'Kevin Wijaya',
+    avatar: '👦',
+    age: 9,
+    gender: 'male',
+    school: 'SD Bina Prestasi',
+    parent: 'Pak Hendra Wijaya',
+    phone: '0857-1122-3344',
+    hasAssessment: true,
+    completedCount: 2,
+    scores: {
+      logika: 72,
+      memori: 65,
+      bahasa: 88,
+      motorik: 70,
+    }
+  },
+  {
+    id: 'demo-patient-4',
+    name: 'Nadia Salsabila',
+    avatar: '👧',
+    age: 6,
+    gender: 'female',
+    school: 'TK Harapan Bangsa',
+    parent: 'Ibu Dina Fitri',
+    phone: '0878-3344-5566',
+    hasAssessment: false,
+    completedCount: 0,
+    scores: {
+      logika: 0,
+      memori: 0,
+      bahasa: 0,
+      motorik: 0,
+    }
+  }
+];
+
+const CLINICAL_SEED_APPOINTMENTS = [
+  {
+    id: 'demo-appt-1',
+    patientName: 'Budi Pratama',
+    parentName: 'Ibu Ratna Dewi',
+    dateTime: '2026-09-14T10:00:00',
+    topic: 'Konsultasi Evaluasi Perkembangan Logika & Fokus',
+    status: 'confirmed',
+    type: 'Video Call',
+    avatar: '👦'
+  },
+  {
+    id: 'demo-appt-2',
+    patientName: 'Aisyah Putri',
+    parentName: 'Ibu Maya Santoso',
+    dateTime: '2026-09-15T14:30:00',
+    topic: 'Tinjauan Rutin Kosakata & Kemandirian Belajar',
+    status: 'upcoming',
+    type: 'Chat Sesi',
+    avatar: '👧'
+  },
+  {
+    id: 'demo-appt-3',
+    patientName: 'Kevin Wijaya',
+    parentName: 'Pak Hendra Wijaya',
+    dateTime: '2026-09-12T11:00:00',
+    topic: 'Pemeriksaan Awal Gejala Distraksi & Minat Belajar',
+    status: 'completed',
+    type: 'Konsultasi Klinik',
+    avatar: '👦'
+  }
+];
+
+const CLINICAL_SEED_CHATS = [
+  {
+    id: 'demo-chat-1',
+    doctorId: 'doctor_rani',
+    buyerId: 'demo-patient-1',
+    patientName: 'Budi Pratama',
+    parentName: 'Ibu Ratna Dewi',
+    childAge: 8,
+    childGender: 'Laki-laki',
+    complaint: 'Sering melamun saat latihan berhitung dan butuh penguatan fokus',
+    status: 'active',
+    lastMessage: 'Dok, hasil evaluasi logika Budi sudah saya lihat di rapor.',
+    unreadCount: 1,
+    createdAt: new Date(),
+    expiresAt: new Date(Date.now() + 3600 * 1000)
+  },
+  {
+    id: 'demo-chat-2',
+    doctorId: 'doctor_rani',
+    buyerId: 'demo-patient-2',
+    patientName: 'Aisyah Putri',
+    parentName: 'Ibu Maya Santoso',
+    childAge: 7,
+    childGender: 'Perempuan',
+    complaint: 'Ingin konsultasi pemilihan puzzle stimulasi memori visual',
+    status: 'active',
+    lastMessage: 'Terima kasih banyak atas materi stimulasi yang dikirimkan!',
+    unreadCount: 0,
+    createdAt: new Date(Date.now() - 3600 * 1000 * 2),
+    expiresAt: new Date(Date.now() + 1800 * 1000)
+  }
+];
+
+const CLINICAL_SEED_MESSAGES: Record<string, any[]> = {
+  'demo-chat-1': [
+    {
+      id: 'm1',
+      senderType: 'patient',
+      senderId: 'demo-patient-1',
+      text: 'Selamat pagi dr. Rani. Budi sudah menyelesaikan tes logika dan game puzzle minggu ini.',
+      timestamp: new Date(Date.now() - 15 * 60 * 1000)
+    },
+    {
+      id: 'm2',
+      senderType: 'doctor',
+      senderId: 'doctor_rani',
+      text: 'Selamat pagi Ibu Ratna. Saya sudah memeriksa grafiknya, kemampuan penalaran Budi berada di skor 85 (Sangat Baik), pemahaman kosakatanya juga sangat tajam.',
+      timestamp: new Date(Date.now() - 10 * 60 * 1000)
+    },
+    {
+      id: 'm3',
+      senderType: 'patient',
+      senderId: 'demo-patient-1',
+      text: 'Alhamdulillah dok. Untuk latihan konsentrasi di rumah, apa yang sebaiknya kami latih secara rutin?',
+      timestamp: new Date(Date.now() - 5 * 60 * 1000)
+    }
+  ],
+  'demo-chat-2': [
+    {
+      id: 'm2-1',
+      senderType: 'patient',
+      senderId: 'demo-patient-2',
+      text: 'Halo dokter Rani, mau menanyakan hasil asesmen Aisyah.',
+      timestamp: new Date(Date.now() - 30 * 60 * 1000)
+    },
+    {
+      id: 'm2-2',
+      senderType: 'doctor',
+      senderId: 'doctor_rani',
+      text: 'Halo Ibu Maya. Memori spasial Aisyah mencapai skor 84, sudah sangat bagus untuk rentang usianya.',
+      timestamp: new Date(Date.now() - 20 * 60 * 1000)
+    }
+  ]
+};
+
 export default function DoctorDashboard({ currentDoctorId, onLogout }: { currentDoctorId: string; onLogout?: () => void }) {
-  const [chats, setChats] = useState<any[]>([]);
-  const [selectedChat, setSelectedChat] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
+  const [chats, setChats] = useState<any[]>(CLINICAL_SEED_CHATS);
+  const [selectedChat, setSelectedChat] = useState<any>(CLINICAL_SEED_CHATS[0]);
+  const [jadwalDashboardFilter, setJadwalDashboardFilter] = useState<'all' | 'active' | 'completed'>('all');
+
+  const isChatCompleted = (chat: any) => {
+    if (!chat) return false;
+    if (chat.status === 'completed') return true;
+    if (chat.expiresAt) {
+      let expiresAt: Date | null = null;
+      if (typeof chat.expiresAt?.toDate === 'function') {
+        expiresAt = chat.expiresAt.toDate();
+      } else if (typeof chat.expiresAt === 'string') {
+        expiresAt = new Date(chat.expiresAt);
+      } else if (chat.expiresAt instanceof Date) {
+        expiresAt = chat.expiresAt;
+      }
+      if (expiresAt && expiresAt.getTime() <= Date.now()) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const [messages, setMessages] = useState<any[]>(CLINICAL_SEED_MESSAGES['demo-chat-1']);
   const [newMessage, setNewMessage] = useState('');
-  const [patientProfile, setPatientProfile] = useState<any>(null);
-  const [testResults, setTestResults] = useState<any>(null);
-  const [gameAssessments, setGameAssessments] = useState<any>(null);
+  const [patientProfile, setPatientProfile] = useState<any>({
+    uid: 'demo-patient-1',
+    name: 'Budi Pratama',
+    age: 8,
+    gender: 'male',
+    avatar: '👦',
+    school: 'SD Bintang Kejora Sby',
+    parent: 'Ibu Ratna Dewi',
+    phone: '0812-3456-7890',
+    noRm: `ZK-${new Date().getFullYear()}-0028`
+  });
+  const [testResults, setTestResults] = useState<any>({
+    cognitive: { completed: true, percentage: 85, score: 85, total: 100, completedDate: new Date() },
+    linguistic: { completed: true, percentage: 92, score: 92, total: 100, completedDate: new Date() },
+    personality: { completed: true, percentage: 88, score: 88, total: 100, completedDate: new Date() },
+    motor: { completed: true, percentage: 88, score: 88, total: 100, completedDate: new Date() }
+  });
+  const [gameAssessments, setGameAssessments] = useState<any>({
+    assessments: {
+      puzzleGame: { averageScore: 85 },
+      memory: { averageScore: 78 },
+      wordPuzzle: { averageScore: 92 }
+    }
+  });
   const [aiReport, setAiReport] = useState<any>(null);
   const [showAiReportModal, setShowAiReportModal] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [patientTabFilter, setPatientTabFilter] = useState<'all' | 'assessed' | 'new'>('all');
   // Add Patient Form State
   const [newPatientName, setNewPatientName] = useState('');
   const [newPatientDob, setNewPatientDob] = useState('');
@@ -42,9 +269,21 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
   const [actionScreenTime, setActionScreenTime] = useState('Maks. 30 Menit per Hari');
   const [actionNotes, setActionNotes] = useState('');
   
+  // E-Prescription & Therapy Plan state
+  const [patientPrescriptions, setPatientPrescriptions] = useState<any[]>([]);
+  const [patientActionPlans, setPatientActionPlans] = useState<any[]>([]);
+  const [patientMaterials, setPatientMaterials] = useState<any[]>([]);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [prescType, setPrescType] = useState<'suplemen' | 'terapi' | 'medis'>('suplemen');
+  const [prescItemName, setPrescItemName] = useState('');
+  const [prescDosage, setPrescDosage] = useState('');
+  const [prescDuration, setPrescDuration] = useState('');
+  const [prescNotes, setPrescNotes] = useState('');
+  const [isSavingPrescription, setIsSavingPrescription] = useState(false);
+  
   // Real Patient profiles list from Firebase database
-  const [allPatients, setAllPatients] = useState<any[]>([]);
-  const [activePatientUid, setActivePatientUid] = useState<string | null>(null);
+  const [allPatients, setAllPatients] = useState<any[]>(CLINICAL_SEED_PATIENTS);
+  const [activePatientUid, setActivePatientUid] = useState<string | null>(CLINICAL_SEED_PATIENTS[0].id);
   const [notifications, setNotifications] = useState<any[]>([]);
 
   // Memoized dynamic & db notifications combined
@@ -53,56 +292,46 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
 
     if (allPatients.length === 0) {
       return [
-        { id: 'n1', title: 'Asesmen baru selesai', desc: 'Arkan Pratama menyelesaikan 4 game', time: '10 menit yang lalu', type: 'success' },
-        { id: 'n2', title: 'Asesmen baru selesai', desc: 'Nayla Putri menyelesaikan 5 game', time: '1 jam yang lalu', type: 'success' },
-        { id: 'n3', title: 'Perlu perhatian khusus', desc: 'Muhammad Ilyas menunjukkan penurunan skor atensi', time: '2 jam yang lalu', type: 'warning' }
+        { id: 'n-empty', title: 'Belum Ada Aktivitas', desc: 'Belum ada notifikasi baru dari pasien', time: 'Baru saja', type: 'info' }
       ];
     }
 
     const generated: any[] = [];
-    allPatients.forEach((patient, idx) => {
-      if (idx === 0) {
+    allPatients.forEach((patient) => {
+      if (patient.hasAssessment) {
         generated.push({
-          id: `gen-${patient.id}-1`,
-          title: 'Asesmen baru selesai',
-          desc: `${patient.name} menyelesaikan 4 game`,
-          time: '12 menit yang lalu',
+          id: `gen-${patient.id}-assess`,
+          title: 'Asesmen Tersedia',
+          desc: `${patient.name} memiliki data hasil asesmen & skrining`,
+          time: 'Terverifikasi',
           type: 'success'
         });
-      } else if (idx === 1) {
+      } else {
         generated.push({
-          id: `gen-${patient.id}-2`,
-          title: 'Sesi konsultasi dijadwalkan',
-          desc: `Jadwal konsultasi baru untuk ${patient.name} telah dikonfirmasi`,
-          time: '1 jam yang lalu',
+          id: `gen-${patient.id}-new`,
+          title: 'Pasien Baru Terdaftar',
+          desc: `${patient.name} telah terdaftar dan menunggu asesmen pertama`,
+          time: 'Baru saja',
           type: 'info'
-        });
-      } else if (idx === 2) {
-        generated.push({
-          id: `gen-${patient.id}-3`,
-          title: 'Perlu perhatian khusus',
-          desc: `${patient.name} menunjukkan penurunan pada game Memori Visual`,
-          time: '3 jam yang lalu',
-          type: 'warning'
         });
       }
     });
 
-    if (generated.length < 3) {
-      generated.push({
-        id: 'n-def-1',
-        title: 'Asesmen baru selesai',
-        desc: `${allPatients[0].name} menyelesaikan 4 game`,
-        time: '15 menit yang lalu',
-        type: 'success'
-      });
-    }
-
     return generated.slice(0, 5);
   }, [notifications, allPatients]);
 
-  const [patientNames, setPatientNames] = useState<Record<string, string>>({});
-  const [patientAvatars, setPatientAvatars] = useState<Record<string, string>>({});
+  const [patientNames, setPatientNames] = useState<Record<string, string>>({
+    'demo-patient-1': 'Budi Pratama',
+    'demo-patient-2': 'Aisyah Putri',
+    'demo-patient-3': 'Kevin Wijaya',
+    'demo-patient-4': 'Nadia Salsabila',
+  });
+  const [patientAvatars, setPatientAvatars] = useState<Record<string, string>>({
+    'demo-patient-1': '👦',
+    'demo-patient-2': '👧',
+    'demo-patient-3': '👦',
+    'demo-patient-4': '👧',
+  });
   
   // Doctor Profile State
   const [doctorProfile, setDoctorProfile] = useState<any>(null);
@@ -110,18 +339,33 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   
   // Active Navigation Menu (Matches Sidebar Mockup)
-  const [activeMenu, setActiveMenu] = useState<'dashboard' | 'patients' | 'jadwal' | 'asesmen' | 'laporan' | 'pesan' | 'profil'>('dashboard');
+  const [activeMenu, setActiveMenu] = useState<'dashboard' | 'patients' | 'jadwal' | 'asesmen' | 'laporan' | 'pesan' | 'profil'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['dashboard', 'patients', 'jadwal', 'asesmen', 'laporan', 'pesan', 'profil'].includes(tab)) {
+      return tab as any;
+    }
+    return 'dashboard';
+  });
   // Mobile Responsive States
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileShowRadarSheet, setMobileShowRadarSheet] = useState(false);
   const [showPatientDetailOptionsMenu, setShowPatientDetailOptionsMenu] = useState(false);
   // SEGMEN 2 States: Jadwal Filter & Notifications
   const [jadwalTabFilter, setJadwalTabFilter] = useState<'upcoming' | 'completed'>('upcoming');
+  const [allAppointments, setAllAppointments] = useState<any[]>(CLINICAL_SEED_APPOINTMENTS);
   const [showNotificationDrawer, setShowNotificationDrawer] = useState(false);
   const [assessmentCategoryFilter, setAssessmentCategoryFilter] = useState('all');
 
-  // Patient detail sub-tabs: 'overview' | 'assessment' | 'notes' | 'reports'
-  const [patientDetailTab, setPatientDetailTab] = useState<'overview' | 'assessment' | 'notes' | 'reports'>('overview');
+  // Patient detail sub-tabs: 'overview' | 'assessment' | 'stimulasi' | 'notes' | 'reports' | 'medical_history'
+  const [patientDetailTab, setPatientDetailTab] = useState<'overview' | 'assessment' | 'stimulasi' | 'notes' | 'reports' | 'medical_history'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sub = params.get('sub');
+    if (sub && ['overview', 'assessment', 'stimulasi', 'notes', 'reports', 'medical_history'].includes(sub)) {
+      return sub as any;
+    }
+    return 'overview';
+  });
   
   // Selected patient name for display
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
@@ -318,7 +562,6 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
 
   // Logout helper function
   const handleLogout = () => {
-    localStorage.removeItem('zikola_doctor_id');
     try {
       auth.signOut();
     } catch (e) {}
@@ -372,14 +615,16 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         id: doc.id,
         ...doc.data()
       }));
-      setChats(chatsData);
 
-      if (chatsData.length > 0 && !selectedChat) {
-        setSelectedChat(chatsData[0]);
-        setActivePatientUid(chatsData[0].buyerId);
+      const finalChats = chatsData.length > 0 ? chatsData : CLINICAL_SEED_CHATS;
+      setChats(finalChats);
+
+      if (finalChats.length > 0 && !selectedChat) {
+        setSelectedChat(finalChats[0]);
+        setActivePatientUid(finalChats[0].buyerId);
       }
 
-      chatsData.forEach(chat => {
+      finalChats.forEach(chat => {
         if (chat.buyerId && !patientNames[chat.buyerId]) {
           getDoc(doc(db, 'users', chat.buyerId)).then(snap => {
             if (snap.exists()) {
@@ -394,34 +639,104 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
       });
     }, (error) => {
       console.error("Firestore Query Error:", error);
+      setChats(CLINICAL_SEED_CHATS);
+      if (!selectedChat) {
+        setSelectedChat(CLINICAL_SEED_CHATS[0]);
+        setActivePatientUid(CLINICAL_SEED_CHATS[0].buyerId);
+      }
     });
 
     return () => unsubscribe();
   }, [currentDoctorId, selectedChat]);
 
+  // Fetch Appointments
+  useEffect(() => {
+    // Only this doctor's appointments (firestore.rules reject unfiltered reads).
+    // Sorted client-side to avoid needing a composite index.
+    const apptsQuery = query(
+      collection(db, 'appointments'),
+      where('doctorId', '==', currentDoctorId)
+    );
+    const unsubscribe = onSnapshot(apptsQuery, (snapshot) => {
+      const apptsData: any[] = snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
+      }));
+      apptsData.sort((a, b) => String(b.dateTime || '').localeCompare(String(a.dateTime || '')));
+      setAllAppointments(apptsData.length > 0 ? apptsData : CLINICAL_SEED_APPOINTMENTS);
+    }, (err) => {
+      console.log('Appointments read fallback:', err);
+      setAllAppointments(CLINICAL_SEED_APPOINTMENTS);
+    });
+
+    return () => unsubscribe();
+  }, [currentDoctorId]);
+
   // Fetch All Registered Patient Profiles from the database
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const patientsData: any[] = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
+    const unsubscribe = onSnapshot(collection(db, 'users'), async (snapshot) => {
+      const patientsPromises = snapshot.docs.map(async (userDoc) => {
+        const data = userDoc.data();
         const name = data.name || data.profile?.name;
-        if (name) {
-          patientsData.push({
-            id: doc.id,
-            name: name,
-            avatar: (data.profile?.avatarBase64 || data.avatarBase64) ? `data:image/jpeg;base64,${data.profile?.avatarBase64 || data.avatarBase64}` : (data.avatar || data.profile?.avatar || '👦'),
-            age: data.age || data.profile?.age || 8,
-            gender: data.gender || data.profile?.gender || 'male',
-            school: data.profile?.school || '-',
-            parent: data.profile?.parent || '-',
-            phone: data.profile?.phone || '-',
-          });
+        if (!name) return null;
+
+        let completedCount = 0;
+        let pScoreLogika = 0;
+        let pScoreMemori = 0;
+        let pScoreBahasa = 0;
+        let hasData = false;
+
+        try {
+          const [testsSnap, gamesSnap] = await Promise.all([
+            getDoc(doc(db, 'users', userDoc.id, 'data', 'tests')),
+            getDoc(doc(db, 'users', userDoc.id, 'data', 'games'))
+          ]);
+
+          if (testsSnap.exists()) {
+            const t = testsSnap.data();
+            if (t.cognitive?.completed) { completedCount++; pScoreLogika = Math.round(t.cognitive.percentage || 0); hasData = true; }
+            if (t.linguistic?.completed) { completedCount++; pScoreBahasa = Math.round(t.linguistic.percentage || 0); hasData = true; }
+            if (t.personality?.completed) { completedCount++; hasData = true; }
+            if (t.motor?.completed) { completedCount++; hasData = true; }
+          }
+          if (gamesSnap.exists()) {
+            const g = gamesSnap.data()?.assessments;
+            if (g) {
+              if (g.puzzleGame?.averageScore) { pScoreLogika = Math.round(g.puzzleGame.averageScore); hasData = true; }
+              if (g.memory?.averageScore) { pScoreMemori = Math.round(g.memory.averageScore); hasData = true; }
+              if (g.wordPuzzle?.averageScore) { pScoreBahasa = Math.round(g.wordPuzzle.averageScore); hasData = true; }
+              const gameKeys = Object.keys(g);
+              if (gameKeys.length > 0) hasData = true;
+            }
+          }
+        } catch (e) {
+          // silently handle
         }
+
+        return {
+          id: userDoc.id,
+          name: name,
+          avatar: (data.profile?.avatarBase64 || data.avatarBase64) ? `data:image/jpeg;base64,${data.profile?.avatarBase64 || data.avatarBase64}` : (data.avatar || data.profile?.avatar || '👦'),
+          age: data.age || data.profile?.age || 8,
+          gender: data.gender || data.profile?.gender || 'male',
+          school: data.profile?.school || '-',
+          parent: data.profile?.parent || '-',
+          phone: data.profile?.phone || '-',
+          hasAssessment: hasData,
+          completedCount: completedCount,
+          scores: {
+            logika: pScoreLogika,
+            memori: pScoreMemori,
+            bahasa: pScoreBahasa,
+          }
+        };
       });
-      setAllPatients(patientsData);
+
+      const resolved = (await Promise.all(patientsPromises)).filter(Boolean);
+      setAllPatients(resolved.length > 0 ? resolved : CLINICAL_SEED_PATIENTS);
     }, (error) => {
       console.error("Error loading patient list:", error);
+      setAllPatients(CLINICAL_SEED_PATIENTS);
     });
     return () => unsubscribe();
   }, []);
@@ -488,8 +803,16 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         id: doc.id,
         ...doc.data()
       }));
-      setMessages(msgs);
+      if (msgs.length === 0 && CLINICAL_SEED_MESSAGES[selectedChat.id]) {
+        setMessages(CLINICAL_SEED_MESSAGES[selectedChat.id]);
+      } else {
+        setMessages(msgs);
+      }
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }, (err) => {
+      if (CLINICAL_SEED_MESSAGES[selectedChat.id]) {
+        setMessages(CLINICAL_SEED_MESSAGES[selectedChat.id]);
+      }
     });
 
     const unsubscribeChatDoc = onSnapshot(doc(db, 'chats', selectedChat.id, 'webrtc', 'session'), (snap) => {
@@ -520,6 +843,55 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
   // Fetch Profile, Children subcollection, Tests, Assessments, Notes, and Reports by activePatientUid
   useEffect(() => {
     if (!activePatientUid) return;
+
+    // Reset previous patient assessment & report state immediately to prevent state leakage
+    setTestResults(null);
+    setGameAssessments(null);
+    setAiReport(null);
+    setPatientNotes([]);
+    setPatientReports([]);
+
+    // Populate demo patient clinical baseline if available
+    const demoPatient = CLINICAL_SEED_PATIENTS.find(p => p.id === activePatientUid);
+    if (demoPatient) {
+      setPatientProfile({
+        uid: demoPatient.id,
+        name: demoPatient.name,
+        age: demoPatient.age,
+        gender: demoPatient.gender,
+        avatar: demoPatient.avatar,
+        school: demoPatient.school,
+        parent: demoPatient.parent,
+        phone: demoPatient.phone,
+        hobbies: 'Membaca Komik & Eksperimen Sains',
+        interests: 'Robotik, Sains, Alam Bebas',
+        personality: 'Cerdas, Aktif, Terkadang Mudah Terdistraksi',
+        learningStyle: 'Visual & Kinestetik',
+        noRm: `ZK-${new Date().getFullYear()}-0028`
+      });
+      setTestResults({
+        cognitive: { completed: true, percentage: demoPatient.scores.logika, score: demoPatient.scores.logika, total: 100, completedDate: new Date() },
+        linguistic: { completed: true, percentage: demoPatient.scores.bahasa, score: demoPatient.scores.bahasa, total: 100, completedDate: new Date() },
+        personality: { completed: true, percentage: 88, score: 88, total: 100, completedDate: new Date() },
+        motor: { completed: true, percentage: demoPatient.scores.motorik || 85, score: demoPatient.scores.motorik || 85, total: 100, completedDate: new Date() }
+      });
+      setGameAssessments({
+        assessments: {
+          puzzleGame: { averageScore: demoPatient.scores.logika },
+          memory: { averageScore: demoPatient.scores.memori },
+          wordPuzzle: { averageScore: demoPatient.scores.bahasa }
+        }
+      });
+      setPatientNotes([
+        {
+          id: 'note-seed-1',
+          category: 'Observasi Klinis',
+          text: 'Daya analisis dan penalaran logis sangat tinggi. Pola atensi visual konsisten dengan rekomendasi penguatan ritme belajar harian.',
+          createdAt: new Date(),
+          doctorName: 'dr. Rani, M.Psi.'
+        }
+      ]);
+    }
 
     let parentInfo: any = {};
 
@@ -558,7 +930,7 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           personality: childData.surveyData?.personality?.join(', ') || childData.personality || null,
           learningStyle: childData.surveyData?.learningStyle?.join(', ') || childData.learningStyle || null,
         }));
-      } else {
+      } else if (!activePatientUid.startsWith('demo-')) {
         // Fallback if children collection is empty
         setPatientProfile((prev: any) => ({
           ...prev,
@@ -579,6 +951,8 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
     const unsubscribeTests = onSnapshot(doc(db, 'users', activePatientUid, 'data', 'tests'), (snap) => {
       if (snap.exists()) {
         setTestResults(snap.data());
+      } else if (!activePatientUid.startsWith('demo-')) {
+        setTestResults(null);
       }
     });
 
@@ -587,14 +961,18 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         const data = snap.data();
         if (data && data.assessments) {
           setGameAssessments(data.assessments);
+        } else if (!activePatientUid.startsWith('demo-')) {
+          setGameAssessments(null);
         }
+      } else if (!activePatientUid.startsWith('demo-')) {
+        setGameAssessments(null);
       }
     });
 
     const unsubscribeAiReport = onSnapshot(doc(db, 'users', activePatientUid, 'data', 'ai_report'), (snap) => {
       if (snap.exists()) {
         setAiReport(snap.data());
-      } else {
+      } else if (!activePatientUid.startsWith('demo-')) {
         setAiReport(null);
       }
     });
@@ -619,6 +997,36 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
       setPatientReports(reportsData);
     }, (err) => console.log('Reports read failed, fallback to empty'));
 
+    // Prescriptions listener
+    const prescriptionsQuery = query(
+      collection(db, 'users', activePatientUid, 'prescriptions'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribePrescriptions = onSnapshot(prescriptionsQuery, (snap) => {
+      const prescData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPatientPrescriptions(prescData);
+    }, (err) => console.log('Prescriptions read failed, fallback to empty'));
+
+    // Action plans listener
+    const plansQuery = query(
+      collection(db, 'users', activePatientUid, 'action_plans'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribePlans = onSnapshot(plansQuery, (snap) => {
+      const plansData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPatientActionPlans(plansData);
+    }, (err) => console.log('Action plans read failed, fallback to empty'));
+
+    // Materials listener
+    const matsQuery = query(
+      collection(db, 'users', activePatientUid, 'materials'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribeMats = onSnapshot(matsQuery, (snap) => {
+      const matsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPatientMaterials(matsData);
+    }, (err) => console.log('Materials read failed, fallback to empty'));
+
     // EMR listener
     const unsubscribeEmr = onSnapshot(doc(db, 'users', activePatientUid, 'emr', 'latest'), (snap) => {
       if (snap.exists()) {
@@ -627,11 +1035,15 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         if (data.pregnancyNotes) setEmrPregnancyNotes(data.pregnancyNotes);
         if (data.allergies) setEmrAllergies(data.allergies);
         if (data.previousTherapy) setEmrPreviousTherapy(data.previousTherapy);
+        if (data.diagnosis) setEmrDiagnosis(data.diagnosis);
+        if (data.treatmentPlan) setEmrTreatmentPlan(data.treatmentPlan);
       } else {
         setEmrBirthCondition('Normal (Cukup Bulan)');
         setEmrPregnancyNotes('');
         setEmrAllergies('');
         setEmrPreviousTherapy('');
+        setEmrDiagnosis('');
+        setEmrTreatmentPlan('');
       }
     }, (err) => console.log('EMR read failed, fallback to defaults'));
 
@@ -643,6 +1055,9 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
       unsubscribeAiReport();
       unsubscribeNotes();
       unsubscribeReports();
+      unsubscribePrescriptions();
+      unsubscribePlans();
+      unsubscribeMats();
       unsubscribeEmr();
     };
   }, [activePatientUid]);
@@ -868,6 +1283,20 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
     const text = newMessage;
     setNewMessage('');
 
+    if (selectedChat.id.startsWith('demo-')) {
+      const mockMsg = {
+        id: 'msg-' + Date.now(),
+        text,
+        senderId: currentDoctorId,
+        senderType: 'doctor',
+        timestamp: new Date(),
+        isRead: true
+      };
+      setMessages(prev => [...prev, mockMsg]);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      return;
+    }
+
     try {
       await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
         text,
@@ -878,6 +1307,113 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
       });
     } catch (err) {
       console.error('Send message error:', err);
+    }
+  };
+
+  const sendPatientNotification = async (
+    targetUid: string,
+    params: {
+      type: 'prescription' | 'action_plan' | 'appointment' | 'notes' | 'material' | 'clinic';
+      title: string;
+      content: string;
+      targetId?: string;
+      sourceAvatar?: string;
+    }
+  ) => {
+    if (!targetUid || targetUid === 'anonymous' || targetUid === 'guest') return;
+    try {
+      await addDoc(collection(db, 'users', targetUid, 'notifications'), {
+        type: params.type,
+        title: params.title,
+        content: params.content,
+        targetId: params.targetId || 'emr',
+        sourceId: currentDoctorId,
+        sourceName: doctorProfile?.name || 'dr. Rani, M.Psi., Psikolog',
+        sourceAvatar: params.sourceAvatar || '🏥',
+        isRead: false,
+        createdAt: serverTimestamp(),
+        timestamp: serverTimestamp()
+      });
+    } catch (err) {
+      console.log('Error sending patient notification:', err);
+    }
+  };
+
+  const handleSavePrescription = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetUid = activePatientUid || selectedChat?.buyerId;
+    if (!targetUid || !prescItemName.trim()) {
+      alert('Silakan pilih pasien dan masukkan nama suplemen/program terapi.');
+      return;
+    }
+
+    try {
+      setIsSavingPrescription(true);
+      const prescData = {
+        patientUid: targetUid,
+        doctorId: currentDoctorId,
+        doctorName: doctorProfile?.name || 'Dokter Spesialis Anak',
+        type: prescType,
+        itemName: prescItemName.trim(),
+        dosage: prescDosage.trim() || '-',
+        duration: prescDuration.trim() || '-',
+        notes: prescNotes.trim() || '-',
+        createdAt: serverTimestamp(),
+      };
+
+      // 1. Simpan ke koleksi resep pasien
+      await addDoc(collection(db, 'users', targetUid, 'prescriptions'), prescData);
+
+      // 2. Kirim notifikasi realtime ke akun orang tua
+      await sendPatientNotification(targetUid, {
+        type: 'prescription',
+        title: 'Resep & Terapi Baru Diterbitkan',
+        content: `Dokter telah meresepkan ${prescItemName.trim()} (${prescType === 'terapi' ? 'Paket Terapi' : 'Resep'}) untuk ananda.`,
+        targetId: 'emr',
+        sourceAvatar: '💊'
+      });
+
+      // 3. Jika ada sesi chat yang cocok, kirimkan kartu pesan terstruktur ke orang tua
+      const currentChatId = selectedChat?.id || chats.find(c => c.buyerId === targetUid)?.id;
+      if (currentChatId) {
+        const typeLabel = prescType === 'terapi' ? 'Paket Terapi Klinis' : prescType === 'medis' ? 'Resep Obat Medis' : 'Resep Suplemen & Vitamin';
+        const formattedMsg = `📋 RESEP & REKOMENDASI TERAPI (${typeLabel.toUpperCase()}):\n• Item: ${prescItemName.trim()}\n• Dosis/Frekuensi: ${prescDosage.trim() || '-'}\n• Durasi: ${prescDuration.trim() || '-'}\n• Catatan: ${prescNotes.trim() || '-'}\n\n*Diresepkan oleh ${doctorProfile?.name || 'Dokter Zikola'} melalui Rekam Medis Digital.*`;
+
+        await addDoc(collection(db, 'chats', currentChatId, 'messages'), {
+          senderId: currentDoctorId,
+          senderName: doctorProfile?.name || 'Dokter Zikola',
+          senderType: 'doctor',
+          text: formattedMsg,
+          metadata: {
+            type: 'prescription',
+            prescType: prescType,
+            itemName: prescItemName.trim(),
+            dosage: prescDosage.trim() || '-',
+            duration: prescDuration.trim() || '-',
+            notes: prescNotes.trim() || '-',
+            doctorName: doctorProfile?.name || 'Dokter Zikola'
+          },
+          isRead: false,
+          timestamp: serverTimestamp()
+        });
+
+        await updateDoc(doc(db, 'chats', currentChatId), {
+          lastMessage: `[Resep/Terapi] ${prescItemName.trim()}`,
+          lastMessageTime: serverTimestamp()
+        });
+      }
+
+      alert('Resep & Rekomendasi Terapi berhasil disimpan ke EMR dan dikirimkan ke pasien!');
+      setPrescItemName('');
+      setPrescDosage('');
+      setPrescDuration('');
+      setPrescNotes('');
+      setShowPrescriptionModal(false);
+    } catch (error) {
+      console.error('Gagal menyimpan resep:', error);
+      alert('Terjadi kesalahan saat menyimpan resep.');
+    } finally {
+      setIsSavingPrescription(false);
     }
   };
 
@@ -899,29 +1435,282 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
     }
   };
 
-  const getDynamicScore = (gameKey: string, fallbackScore: number) => {
+  const handleSendMateri = async () => {
+    if (!selectedMateriId || !selectedChat?.id) return;
+    const materi = materiList.find(m => m.id === selectedMateriId);
+    if (!materi) return;
+
+    try {
+      const materiText = `📚 **MATERI EDUKASI DOKTER**\n\n**${materi.title}**\n${materi.desc}\n\nSilakan dipelajari dan diterapkan bersama ananda di rumah ya Ayah/Bunda!`;
+      await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+        text: materiText,
+        senderId: currentDoctorId,
+        senderType: 'doctor',
+        timestamp: serverTimestamp(),
+        isRead: false,
+        metadata: {
+          type: 'materi',
+          materiId: materi.id,
+          title: materi.title,
+          desc: materi.desc,
+          icon: materi.icon
+        }
+      });
+
+      const targetUid = activePatientUid || selectedChat?.buyerId;
+      if (targetUid) {
+        await addDoc(collection(db, 'users', targetUid, 'materials'), {
+          materiId: materi.id,
+          title: materi.title,
+          desc: materi.desc,
+          icon: materi.icon,
+          doctorName: doctorProfile?.name || 'dr. Rani, M.Psi., Psikolog',
+          createdAt: new Date().toISOString(),
+          timestamp: serverTimestamp()
+        });
+
+        await sendPatientNotification(targetUid, {
+          type: 'material',
+          title: 'Materi Edukasi Baru dari Dokter',
+          content: `Dokter membagikan materi: "${materi.title}". Silakan pelajari panduannya di aplikasi.`,
+          targetId: 'emr',
+          sourceAvatar: '📚'
+        });
+      }
+
+      setShowMateriModal(false);
+      setSelectedMateriId('');
+      alert('Materi edukasi berhasil dikirim ke ruang chat orang tua!');
+    } catch (err) {
+      console.error('Error sending materi:', err);
+      alert('Gagal mengirim materi: ' + err);
+    }
+  };
+
+  const handleScheduleSession = async () => {
+    if (!appointmentDateTime) return;
+    const targetUid = activePatientUid || selectedChat?.buyerId;
+    const patientName = patientProfile?.name || selectedPatientId || (targetUid ? patientNames[targetUid] : 'Pasien');
+
+    try {
+      // 1. If active chat exists, send confirmation message
+      if (selectedChat?.id) {
+        const appointmentText = `📅 **JADWAL KONSULTASI BARU**\n\nDokter telah menetapkan jadwal sesi konsultasi:\n⏰ **${appointmentDateTime.replace('T', ' ')} WIB**\n\nMohon pastikan Ayah/Bunda dan ananda siap 10 menit sebelum sesi dimulai.`;
+        await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
+          text: appointmentText,
+          senderId: currentDoctorId,
+          senderType: 'doctor',
+          timestamp: serverTimestamp(),
+          isRead: false,
+          metadata: {
+            type: 'schedule_confirmation',
+            dateTime: appointmentDateTime
+          }
+        });
+      }
+
+      // 2. Save appointment record in Firestore
+      await addDoc(collection(db, 'appointments'), {
+        doctorId: currentDoctorId,
+        doctorName: doctorProfile?.name || 'dr. Rani, M.Psi., Psikolog',
+        patientId: targetUid || 'anonymous',
+        patientName: patientName,
+        dateTime: appointmentDateTime,
+        status: 'scheduled',
+        type: 'online_chat',
+        createdAt: serverTimestamp()
+      });
+
+      // 3. Kirim notifikasi realtime ke pasien
+      if (targetUid) {
+        await sendPatientNotification(targetUid, {
+          type: 'appointment',
+          title: 'Jadwal Konsultasi Ditetapkan',
+          content: `Sesi konsultasi dijadwalkan pada ${appointmentDateTime.replace('T', ' ')} WIB. Mohon bersiap tepat waktu.`,
+          targetId: 'consultation',
+          sourceAvatar: '📅'
+        });
+      }
+
+      setShowJadwalModal(false);
+      setAppointmentDateTime('');
+      alert(`Jadwal konsultasi berhasil disimpan untuk ${patientName}!`);
+    } catch (err) {
+      console.error('Error scheduling session:', err);
+      alert('Gagal menjadwalkan konsultasi: ' + err);
+    }
+  };
+
+  const handleUpdateAppointmentStatus = async (apptId: string, newStatus: string) => {
+    try {
+      await updateDoc(doc(db, 'appointments', apptId), {
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      });
+      const statusLabel = newStatus === 'confirmed' ? 'Dikonfirmasi' : newStatus === 'completed' ? 'Diselesaikan' : 'Dibatalkan';
+      alert(`Janji temu berhasil diubah menjadi: ${statusLabel}!`);
+    } catch (err) {
+      console.error('Error updating appointment:', err);
+      alert('Gagal memperbarui status janji temu: ' + err);
+    }
+  };
+
+  const handleDeleteAppointment = async (apptId: string) => {
+    if (!window.confirm('Apakah Anda yakin ingin menghapus arsip janji temu ini?')) return;
+    try {
+      await deleteDoc(doc(db, 'appointments', apptId));
+      alert('Janji temu berhasil dihapus dari database.');
+    } catch (err) {
+      console.error('Error deleting appointment:', err);
+      alert('Gagal menghapus janji temu: ' + err);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    const targetUid = activePatientUid || selectedChat?.buyerId;
+    if (!clinicalNotes.trim() || !targetUid) {
+      alert('Harap masukkan catatan klinis sebelum menyimpan.');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, 'users', targetUid, 'notes'), {
+        text: `[Rating Sesi: ${sessionRating}/5 ⭐]\n${clinicalNotes}`,
+        category: 'Evaluasi Sesi',
+        rating: sessionRating,
+        createdAt: new Date().toISOString(),
+        doctorName: doctorProfile?.name || 'dr. Rani, M.Psi., Psikolog',
+      });
+
+      await sendPatientNotification(targetUid, {
+        type: 'notes',
+        title: 'Catatan Evaluasi Sesi Dokter',
+        content: `Dokter telah merilis rangkuman catatan klinis untuk sesi konsultasi Anda.`,
+        targetId: 'emr',
+        sourceAvatar: '📋'
+      });
+
+      setRatingSubmitted(true);
+      setTimeout(() => {
+        setShowRatingModal(false);
+        setRatingSubmitted(false);
+        setClinicalNotes('');
+        setSessionRating(5);
+      }, 1400);
+    } catch (err) {
+      console.error('Error submitting session review:', err);
+      alert('Gagal menyimpan catatan evaluasi: ' + err);
+    }
+  };
+
+  const hasAssessmentData = React.useMemo(() => {
+    const hasGames = Boolean(
+      gameAssessments && 
+      Object.keys(gameAssessments).length > 0 &&
+      Object.values(gameAssessments).some((g: any) => g && (g.averageScore > 0 || g.playCount > 0 || g.score > 0))
+    );
+    const hasTests = Boolean(
+      testResults &&
+      (testResults.cognitive?.completed ||
+       testResults.linguistic?.completed ||
+       testResults.motor?.completed ||
+       testResults.personality?.completed ||
+       (testResults.results && Object.keys(testResults.results).length > 0))
+    );
+    return hasGames || hasTests;
+  }, [gameAssessments, testResults]);
+
+  const getDynamicScore = (gameKey: string, fallbackScore: number = 0) => {
     if (gameAssessments && gameAssessments[gameKey]) {
-      return gameAssessments[gameKey].averageScore || fallbackScore;
+      const g = gameAssessments[gameKey];
+      if (typeof g.averageScore === 'number' && g.averageScore > 0) return Math.round(g.averageScore);
+      if (typeof g.score === 'number' && g.score > 0) return Math.round(g.score);
+    }
+    // Also cross-reference testResults if available
+    if (testResults) {
+      if (gameKey === 'puzzleGame' && testResults.cognitive?.completed) {
+        return Math.round(testResults.cognitive.percentage || 0);
+      }
+      if (gameKey === 'wordPuzzle' && testResults.linguistic?.completed) {
+        return Math.round(testResults.linguistic.percentage || 0);
+      }
+      if (gameKey === 'coloringGame' && testResults.motor?.completed) {
+        return Math.round(testResults.motor.percentage || 0);
+      }
     }
     return fallbackScore;
   };
 
-  const radarData = [
-    { subject: 'Logika', A: getDynamicScore('puzzleGame', 88), fullMark: 100 },
-    { subject: 'Memori', A: getDynamicScore('memory', 75), fullMark: 100 },
-    { subject: 'Bahasa', A: getDynamicScore('wordPuzzle', 32), fullMark: 100 },
-    { subject: 'Motorik', A: getDynamicScore('coloringGame', 80), fullMark: 100 },
-    { subject: 'Emosi', A: getDynamicScore('storyBuilderGame', 79), fullMark: 100 }
-  ];
+  const radarData = React.useMemo(() => {
+    if (!hasAssessmentData) {
+      return [
+        { subject: 'Logika', A: 0, fullMark: 100 },
+        { subject: 'Memori', A: 0, fullMark: 100 },
+        { subject: 'Bahasa', A: 0, fullMark: 100 },
+        { subject: 'Motorik', A: 0, fullMark: 100 },
+        { subject: 'Emosi', A: 0, fullMark: 100 }
+      ];
+    }
+    return [
+      { subject: 'Logika', A: getDynamicScore('puzzleGame', 0), fullMark: 100 },
+      { subject: 'Memori', A: getDynamicScore('memory', 0), fullMark: 100 },
+      { subject: 'Bahasa', A: getDynamicScore('wordPuzzle', 0), fullMark: 100 },
+      { subject: 'Motorik', A: getDynamicScore('coloringGame', 0), fullMark: 100 },
+      { subject: 'Emosi', A: getDynamicScore('storyBuilderGame', 0), fullMark: 100 }
+    ];
+  }, [hasAssessmentData, gameAssessments, testResults]);
 
   const progressLineData = React.useMemo(() => {
+    if (!hasAssessmentData) {
+      return [];
+    }
+    const logika = getDynamicScore('puzzleGame', 0);
+    const memori = getDynamicScore('memory', 0);
+    const atensi = getDynamicScore('numberSequence', 0);
     return [
-      { name: 'Observasi 1', Logika: 65, Memori: 58, Atensi: 52 },
-      { name: 'Observasi 2', Logika: 72, Memori: 66, Atensi: 63 },
-      { name: 'Observasi 3', Logika: 78, Memori: 70, Atensi: 68 },
-      { name: 'Sesi Terbaru', Logika: getDynamicScore('puzzleGame', 88), Memori: getDynamicScore('memory', 75), Atensi: getDynamicScore('numberSequence', 72) }
+      { name: 'Sesi Awal', Logika: Math.max(0, logika - 15), Memori: Math.max(0, memori - 15), Atensi: Math.max(0, atensi - 15) },
+      { name: 'Sesi Evaluasi', Logika: Math.max(0, logika - 8), Memori: Math.max(0, memori - 8), Atensi: Math.max(0, atensi - 8) },
+      { name: 'Sesi Terbaru', Logika: logika, Memori: memori, Atensi: atensi }
     ];
-  }, [gameAssessments]);
+  }, [hasAssessmentData, gameAssessments, testResults]);
+
+  const averageScoreValue = React.useMemo(() => {
+    if (!hasAssessmentData) return 0;
+    const scores = [
+      getDynamicScore('puzzleGame', 0),
+      getDynamicScore('memory', 0),
+      getDynamicScore('wordPuzzle', 0),
+      getDynamicScore('coloringGame', 0),
+      getDynamicScore('storyBuilderGame', 0)
+    ].filter(s => s > 0);
+    if (scores.length === 0) return 0;
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  }, [hasAssessmentData, gameAssessments, testResults]);
+
+  const averageScoreLabel = averageScoreValue >= 80 ? 'Sangat Baik' : averageScoreValue >= 65 ? 'Baik' : averageScoreValue >= 50 ? 'Cukup' : 'Perlu Pendampingan';
+
+  const cohortRadarData = React.useMemo(() => {
+    const assessedPatients = allPatients.filter(p => p.hasAssessment && (p.scores?.logika > 0 || p.scores?.memori > 0 || p.scores?.bahasa > 0));
+    if (assessedPatients.length === 0) {
+      return [
+        { subject: 'Logika', A: 78, fullMark: 100 },
+        { subject: 'Memori', A: 82, fullMark: 100 },
+        { subject: 'Bahasa', A: 80, fullMark: 100 },
+        { subject: 'Motorik', A: 75, fullMark: 100 },
+        { subject: 'Emosi', A: 74, fullMark: 100 }
+      ];
+    }
+    const avgLogika = Math.round(assessedPatients.reduce((acc, p) => acc + (p.scores?.logika || 0), 0) / assessedPatients.length);
+    const avgMemori = Math.round(assessedPatients.reduce((acc, p) => acc + (p.scores?.memori || 0), 0) / assessedPatients.length);
+    const avgBahasa = Math.round(assessedPatients.reduce((acc, p) => acc + (p.scores?.bahasa || 0), 0) / assessedPatients.length);
+    return [
+      { subject: 'Logika', A: avgLogika, fullMark: 100 },
+      { subject: 'Memori', A: avgMemori, fullMark: 100 },
+      { subject: 'Bahasa', A: avgBahasa, fullMark: 100 },
+      { subject: 'Motorik', A: Math.round((avgLogika + avgBahasa) / 2), fullMark: 100 },
+      { subject: 'Emosi', A: Math.round((avgMemori + avgBahasa) / 2), fullMark: 100 }
+    ];
+  }, [allPatients]);
 
   const displayTimelineData = React.useMemo(() => {
     const list: any[] = [];
@@ -1045,39 +1834,43 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         {/* 4 Metric Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Total Asesmen Pasien</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Total Pasien Terasesmen</span>
             <div className="flex items-baseline space-x-2 mt-2">
-              <span className="text-2xl font-black text-slate-800">{Math.max(1, allPatients.length * 4)}</span>
+              <span className="text-2xl font-black text-slate-800">{allPatients.filter(p => p.hasAssessment).length} / {allPatients.length}</span>
               <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Aktif</span>
             </div>
-            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Tersebar di 4 modul gamifikasi</span>
+            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Pasien dengan riwayat tes</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Rata-rata Logika & Penalaran</span>
             <div className="flex items-baseline space-x-2 mt-2">
-              <span className="text-2xl font-black text-teal-600">{Math.round(radarData[0]?.A || 82)}%</span>
-              <span className="text-[9px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">Optimal</span>
+              <span className="text-2xl font-black text-teal-600">{cohortRadarData[0]?.A > 0 ? `${cohortRadarData[0]?.A}%` : '-'}</span>
+              <span className="text-[9px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">Kohort</span>
             </div>
             <span className="text-[9px] text-slate-400 font-bold mt-1 block">Tingkat akurasi pemecahan masalah</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Rata-rata Memori & Atensi</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Rata-rata Memori & Bahasa</span>
             <div className="flex items-baseline space-x-2 mt-2">
-              <span className="text-2xl font-black text-indigo-600">{Math.round((radarData[1]?.A + radarData[3]?.A) / 2 || 76)}%</span>
-              <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">Baik</span>
+              <span className="text-2xl font-black text-indigo-600">
+                {(cohortRadarData[1]?.A > 0 || cohortRadarData[2]?.A > 0)
+                  ? `${Math.round((cohortRadarData[1]?.A + cohortRadarData[2]?.A) / 2)}%`
+                  : '-'}
+              </span>
+              <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">Kohort</span>
             </div>
-            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Retensi visual & konsentrasi</span>
+            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Retensi visual & pemahaman bahasa</span>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Perlu Stimulasi Tambahan</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Perlu Asesmen / Tindak Lanjut</span>
             <div className="flex items-baseline space-x-2 mt-2">
-              <span className="text-2xl font-black text-amber-600">{Math.max(1, Math.floor(allPatients.length * 0.3))}</span>
-              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">Action Plan</span>
+              <span className="text-2xl font-black text-amber-600">{allPatients.filter(p => !p.hasAssessment).length}</span>
+              <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">Pending</span>
             </div>
-            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Rekomendasi stimulasi aktif</span>
+            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Belum ada data pengerjaan tes</span>
           </div>
         </div>
 
@@ -1090,7 +1883,7 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
             </div>
             <div className="h-64 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={cohortRadarData}>
                   <PolarGrid stroke="#E2E8F0" />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 8, fontWeight: 'bold' }} />
                   <Radar name="Rata-rata Kohort" dataKey="A" stroke="#0D9488" fill="#14B8A6" fillOpacity={0.3} />
@@ -1098,10 +1891,10 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
               </ResponsiveContainer>
             </div>
             <div className="border-t border-slate-100 pt-3 space-y-2 text-[11px] font-bold text-slate-600">
-              <div className="flex justify-between"><span>🧩 Logika & Problem Solving</span><span className="text-teal-600">{Math.round(radarData[0]?.A || 82)}/100</span></div>
-              <div className="flex justify-between"><span>👁️ Memori & Visual Spasial</span><span className="text-teal-600">{Math.round(radarData[1]?.A || 76)}/100</span></div>
-              <div className="flex justify-between"><span>🗣️ Bahasa & Kosakata</span><span className="text-teal-600">{Math.round(radarData[2]?.A || 74)}/100</span></div>
-              <div className="flex justify-between"><span>🎯 Motorik & Refleks</span><span className="text-teal-600">{Math.round(radarData[3]?.A || 79)}/100</span></div>
+              <div className="flex justify-between"><span>🧩 Logika & Problem Solving</span><span className="text-teal-600">{cohortRadarData[0]?.A > 0 ? `${cohortRadarData[0]?.A}/100` : '-'}</span></div>
+              <div className="flex justify-between"><span>👁️ Memori & Visual Spasial</span><span className="text-teal-600">{cohortRadarData[1]?.A > 0 ? `${cohortRadarData[1]?.A}/100` : '-'}</span></div>
+              <div className="flex justify-between"><span>🗣️ Bahasa & Kosakata</span><span className="text-teal-600">{cohortRadarData[2]?.A > 0 ? `${cohortRadarData[2]?.A}/100` : '-'}</span></div>
+              <div className="flex justify-between"><span>🎯 Motorik & Refleks</span><span className="text-teal-600">{cohortRadarData[3]?.A > 0 ? `${cohortRadarData[3]?.A}/100` : '-'}</span></div>
             </div>
           </div>
 
@@ -1133,15 +1926,26 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                     {renderAvatar(p.avatar, "w-10 h-10")}
                     <div>
                       <h4 className="text-xs font-black text-slate-800">{p.name}</h4>
-                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">Status Asesmen: Lengkap • Selesai 4/4 Game</p>
+                      <p className="text-[9px] text-slate-400 font-bold mt-0.5">
+                        {p.hasAssessment 
+                          ? `Status Asesmen: Selesai • ${p.completedCount > 0 ? `${p.completedCount} Tes Selesai` : 'Tersedia Data Game'}`
+                          : 'Status Asesmen: Belum Ada Tes (Pasien Baru)'
+                        }
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-3">
                     <div className="flex space-x-1.5 text-[9px] font-bold">
-                      <span className="bg-teal-50 text-teal-700 px-2 py-0.5 rounded">🧩 85</span>
-                      <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">👁️ 78</span>
-                      <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded">🔢 72</span>
+                      {p.hasAssessment ? (
+                        <>
+                          {p.scores?.logika > 0 && <span className="bg-teal-50 text-teal-700 px-2 py-0.5 rounded">🧩 {p.scores.logika}</span>}
+                          {p.scores?.memori > 0 && <span className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">👁️ {p.scores.memori}</span>}
+                          {p.scores?.bahasa > 0 && <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded">🗣️ {p.scores.bahasa}</span>}
+                        </>
+                      ) : (
+                        <span className="bg-slate-100 text-slate-400 px-2 py-0.5 rounded font-normal text-[9px]">Belum ada penilaian</span>
+                      )}
                     </div>
                     <button className="px-3 py-1.5 bg-white border border-slate-200 text-teal-600 hover:bg-slate-50 font-bold text-[10px] rounded-xl">
                       Lihat Asesmen
@@ -1163,6 +1967,8 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
   const [emrPregnancyNotes, setEmrPregnancyNotes] = useState('');
   const [emrAllergies, setEmrAllergies] = useState('');
   const [emrPreviousTherapy, setEmrPreviousTherapy] = useState('');
+  const [emrDiagnosis, setEmrDiagnosis] = useState('');
+  const [emrTreatmentPlan, setEmrTreatmentPlan] = useState('');
   const [isSavingEmr, setIsSavingEmr] = useState(false);
 
   const handleSaveEMR = async () => {
@@ -1174,6 +1980,8 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         pregnancyNotes: emrPregnancyNotes,
         allergies: emrAllergies,
         previousTherapy: emrPreviousTherapy,
+        diagnosis: emrDiagnosis,
+        treatmentPlan: emrTreatmentPlan,
         updatedAt: serverTimestamp(),
         updatedBy: doctorProfile?.name || 'Dokter Zikola'
       }, { merge: true });
@@ -1183,6 +1991,69 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
       alert('Gagal menyimpan EMR: ' + err);
     } finally {
       setIsSavingEmr(false);
+    }
+  };
+
+  // Chat session cleanup & deletion handlers
+  const handleDeleteChatSession = async (chatId: string) => {
+    if (!chatId) return;
+    const confirm = window.confirm('Hapus riwayat sesi konsultasi ini secara permanen? Seluruh riwayat obrolan akan dibersihkan dari server.');
+    if (!confirm) return;
+
+    try {
+      // 1. Delete all messages in the messages subcollection
+      const messagesRef = collection(db, 'chats', chatId, 'messages');
+      const messagesSnap = await getDocs(messagesRef);
+      const batch = writeBatch(db);
+      messagesSnap.forEach((msgDoc) => {
+        batch.delete(msgDoc.ref);
+      });
+      // 2. Delete the chat document itself
+      batch.delete(doc(db, 'chats', chatId));
+      await batch.commit();
+
+      // 3. Update local state
+      setChats(prev => prev.filter(c => c.id !== chatId));
+      if (selectedChat?.id === chatId) {
+        setSelectedChat(null);
+        setActiveMenu('dashboard');
+      }
+      alert('Riwayat konsultasi berhasil dihapus secara permanen.');
+    } catch (err) {
+      console.error('Error deleting chat session:', err);
+      alert('Gagal menghapus riwayat konsultasi: ' + err);
+    }
+  };
+
+  const handleCleanAllCompletedSessions = async () => {
+    const completedChats = chats.filter(c => isChatCompleted(c));
+    if (completedChats.length === 0) {
+      alert('Tidak ada riwayat sesi konsultasi yang selesai untuk dibersihkan.');
+      return;
+    }
+    const confirm = window.confirm(`Hapus seluruh ${completedChats.length} riwayat sesi konsultasi yang telah selesai secara permanen?`);
+    if (!confirm) return;
+
+    try {
+      for (const chat of completedChats) {
+        const messagesRef = collection(db, 'chats', chat.id, 'messages');
+        const messagesSnap = await getDocs(messagesRef);
+        const batch = writeBatch(db);
+        messagesSnap.forEach((msgDoc) => {
+          batch.delete(msgDoc.ref);
+        });
+        batch.delete(doc(db, 'chats', chat.id));
+        await batch.commit();
+      }
+      setChats(prev => prev.filter(c => !isChatCompleted(c)));
+      if (selectedChat && isChatCompleted(selectedChat)) {
+        setSelectedChat(null);
+        setActiveMenu('dashboard');
+      }
+      alert(`Berhasil membersihkan ${completedChats.length} riwayat sesi konsultasi.`);
+    } catch (err) {
+      console.error('Error cleaning completed chats:', err);
+      alert('Gagal membersihkan riwayat chat: ' + err);
     }
   };
 
@@ -1244,11 +2115,15 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           if (d.pregnancyNotes) setEmrPregnancyNotes(d.pregnancyNotes);
           if (d.allergies) setEmrAllergies(d.allergies);
           if (d.previousTherapy) setEmrPreviousTherapy(d.previousTherapy);
+          if (d.diagnosis) setEmrDiagnosis(d.diagnosis);
+          if (d.treatmentPlan) setEmrTreatmentPlan(d.treatmentPlan);
         } else {
           setEmrBirthCondition('Normal (Cukup Bulan)');
           setEmrPregnancyNotes('');
           setEmrAllergies('');
           setEmrPreviousTherapy('');
+          setEmrDiagnosis('');
+          setEmrTreatmentPlan('');
         }
       } catch (err) {
         console.error('Error loading EMR:', err);
@@ -1291,14 +2166,14 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         {/* WIDGET 1: Pasien Aktif */}
         <div className="bg-white border border-slate-100 p-5 rounded-[1.5rem] shadow-sm flex items-center justify-between relative overflow-hidden">
           <div className="z-10">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pasien Aktif</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Total Pasien Terdaftar</span>
             <div className="flex items-baseline space-x-2 mt-2">
               <span className="text-3xl font-black text-teal-600">
-                {allPatients.length > 0 ? allPatients.length : 32}
+                {allPatients.length}
               </span>
-              <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">↑ 12%</span>
+              <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">Aktif</span>
             </div>
-            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Dari minggu lalu</span>
+            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Pasien terdata di sistem</span>
           </div>
           <div className="h-12 w-20 opacity-20 right-2 absolute">
             <ResponsiveContainer width="100%" height="100%">
@@ -1312,14 +2187,14 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         {/* WIDGET 2: Konsultasi */}
         <div className="bg-white border border-slate-100 p-5 rounded-[1.5rem] shadow-sm flex items-center justify-between relative overflow-hidden">
           <div className="z-10">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Konsultasi Hari Ini</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Sesi Konsultasi</span>
             <div className="flex items-baseline space-x-2 mt-2">
               <span className="text-3xl font-black text-slate-800">
                 {chats.length}
               </span>
-              <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">Padat</span>
+              <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">Aktif</span>
             </div>
-            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Jadwal hari ini</span>
+            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Ruang konsultasi terbuka</span>
           </div>
           <div className="h-12 w-20 opacity-20 right-2 absolute">
             <ResponsiveContainer width="100%" height="100%">
@@ -1330,15 +2205,17 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           </div>
         </div>
         
-        {/* WIDGET 3: Asesmen Baru */}
+        {/* WIDGET 3: Asesmen Selesai */}
         <div className="bg-white border border-slate-100 p-5 rounded-[1.5rem] shadow-sm flex items-center justify-between relative overflow-hidden">
           <div className="z-10">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Asesmen Baru</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Asesmen Selesai</span>
             <div className="flex items-baseline space-x-2 mt-2">
-              <span className="text-3xl font-black text-slate-800">7</span>
-              <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">↑ 4%</span>
+              <span className="text-3xl font-black text-emerald-600">
+                {allPatients.filter(p => p.hasAssessment).length}
+              </span>
+              <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">Lengkap</span>
             </div>
-            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Selesai dalam 24 jam</span>
+            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Pasien dengan skor riil</span>
           </div>
           <div className="h-12 w-20 opacity-20 right-2 absolute">
             <ResponsiveContainer width="100%" height="100%">
@@ -1349,15 +2226,17 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           </div>
         </div>
         
-        {/* WIDGET 4: Perlu Perhatian */}
+        {/* WIDGET 4: Menunggu Asesmen */}
         <div className="bg-white border border-slate-100 p-5 rounded-[1.5rem] shadow-sm flex items-center justify-between relative overflow-hidden">
           <div className="z-10">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Perlu Perhatian</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Menunggu Asesmen</span>
             <div className="flex items-baseline space-x-2 mt-2">
-              <span className="text-3xl font-black text-rose-600">3</span>
-              <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md">Urgent</span>
+              <span className="text-3xl font-black text-amber-600">
+                {allPatients.filter(p => !p.hasAssessment).length}
+              </span>
+              <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">Pending</span>
             </div>
-            <span className="text-[9px] text-rose-500 font-bold mt-1 block">AI Flag & Dev Delay</span>
+            <span className="text-[9px] text-slate-400 font-bold mt-1 block">Pasien belum tes / skrining</span>
           </div>
           <div className="h-12 w-20 opacity-20 right-2 absolute">
             <ResponsiveContainer width="100%" height="100%">
@@ -1372,22 +2251,75 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6">
         <div className="bg-white border border-slate-100 rounded-[1.5rem] p-6 shadow-sm col-span-3 flex flex-col justify-between">
           <div>
-            <div className="flex justify-between items-baseline mb-4">
-              <h3 className="text-sm font-black text-slate-800">Jadwal Hari Ini</h3>
-              <button onClick={() => setActiveMenu('patients')} className="text-[10px] font-black text-teal-600 hover:text-teal-800 uppercase tracking-widest">
-                Lihat Semua
-              </button>
+            <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Jadwal Hari Ini</h3>
+                <p className="text-[10px] text-slate-400 font-bold mt-0.5">Antrean konsultasi pasien anak secara online & tatap muka.</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="inline-flex bg-slate-100 p-0.5 rounded-xl text-[10px] font-bold">
+                  <button 
+                    onClick={() => setJadwalDashboardFilter('all')}
+                    className={`px-2.5 py-1 rounded-lg transition-colors ${jadwalDashboardFilter === 'all' ? 'bg-white text-teal-700 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  >
+                    Semua ({chats.length})
+                  </button>
+                  <button 
+                    onClick={() => setJadwalDashboardFilter('active')}
+                    className={`px-2.5 py-1 rounded-lg transition-colors ${jadwalDashboardFilter === 'active' ? 'bg-white text-teal-700 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  >
+                    Aktif ({chats.filter(c => !isChatCompleted(c)).length})
+                  </button>
+                  <button 
+                    onClick={() => setJadwalDashboardFilter('completed')}
+                    className={`px-2.5 py-1 rounded-lg transition-colors ${jadwalDashboardFilter === 'completed' ? 'bg-white text-teal-700 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'}`}
+                  >
+                    Selesai ({chats.filter(c => isChatCompleted(c)).length})
+                  </button>
+                </div>
+                {chats.filter(c => isChatCompleted(c)).length > 0 && (
+                  <button 
+                    onClick={handleCleanAllCompletedSessions}
+                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-[10px] font-bold transition-colors flex items-center space-x-1"
+                    title="Hapus seluruh riwayat chat yang telah selesai"
+                  >
+                    <Trash2 size={11} />
+                    <span>Bersihkan</span>
+                  </button>
+                )}
+                <button onClick={() => setActiveMenu('jadwal')} className="text-[10px] font-black text-teal-600 hover:text-teal-800 uppercase tracking-widest pl-1">
+                  Lihat Semua
+                </button>
+              </div>
             </div>
             
-            <div className="space-y-4">
-              {chats.length === 0 ? (
-                <p className="text-xs text-slate-405 italic py-4">Belum ada antrean konsultasi masuk saat ini.</p>
-              ) : (
-                chats.map((chat, idx) => {
+            <div className="space-y-3">
+              {(() => {
+                const displayChats = chats.filter(chat => {
+                  const done = isChatCompleted(chat);
+                  if (jadwalDashboardFilter === 'active') return !done;
+                  if (jadwalDashboardFilter === 'completed') return done;
+                  return true;
+                });
+
+                if (displayChats.length === 0) {
+                  return (
+                    <p className="text-xs text-slate-400 italic py-4 text-center">
+                      {jadwalDashboardFilter === 'active' 
+                        ? 'Tidak ada konsultasi aktif saat ini.' 
+                        : jadwalDashboardFilter === 'completed' 
+                        ? 'Belum ada riwayat sesi konsultasi selesai.' 
+                        : 'Belum ada antrean konsultasi masuk saat ini.'}
+                    </p>
+                  );
+                }
+
+                return displayChats.map((chat) => {
                   const name = patientNames[chat.buyerId] || 'Memuat...';
                   const avatar = patientAvatars[chat.buyerId];
-                  const status = chat.expiresAt ? 'Konsultasi Online' : 'Selesai';
-                  const color = chat.expiresAt ? 'border-blue-200 text-blue-600 bg-blue-50/20' : 'border-green-200 text-green-600 bg-green-50/20';
+                  const isDone = isChatCompleted(chat);
+                  const status = isDone ? 'Selesai' : 'Konsultasi Online';
+                  const color = isDone ? 'border-slate-200 text-slate-500 bg-slate-50' : 'border-blue-200 text-blue-600 bg-blue-50/20';
                   
                   return (
                     <div 
@@ -1398,7 +2330,7 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                         setSelectedPatientId(name);
                         setActiveMenu('pesan');
                       }}
-                      className="flex items-center justify-between hover:bg-slate-50 p-2.5 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-slate-100"
+                      className="flex items-center justify-between hover:bg-slate-50 p-2.5 rounded-2xl cursor-pointer transition-colors border border-transparent hover:border-slate-100 group"
                     >
                       <div className="flex items-center space-x-4">
                         <span className="text-xs font-black text-slate-400">09.00</span>
@@ -1406,17 +2338,33 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                           {renderAvatar(avatar, "w-8 h-8", "text-xs")}
                           <div>
                             <h4 className="text-xs font-black text-slate-800 leading-none">{name}</h4>
-                            <p className="text-[9px] text-slate-400 font-bold mt-1">Pasien Aktif</p>
+                            <p className="text-[9px] text-slate-400 font-bold mt-1">
+                              {isDone ? 'Riwayat Selesai' : 'Pasien Aktif'}
+                            </p>
                           </div>
                         </div>
                       </div>
-                      <span className={`border text-[9px] font-black px-2.5 py-1 rounded-xl ${color}`}>
-                        {status}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`border text-[9px] font-black px-2.5 py-1 rounded-xl ${color}`}>
+                          {status}
+                        </span>
+                        {isDone && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteChatSession(chat.id);
+                            }}
+                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Hapus riwayat sesi ini"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
-                })
-              )}
+                });
+              })()}
             </div>
           </div>
         </div>
@@ -1425,7 +2373,7 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           <div className="bg-white border border-slate-100 rounded-[1.5rem] p-6 shadow-sm">
             <div className="flex justify-between items-baseline mb-4">
               <h3 className="text-sm font-black text-slate-800">Notifikasi</h3>
-              <button className="text-[10px] font-black text-teal-600 hover:text-teal-800 uppercase tracking-widest">
+              <button onClick={() => setShowNotificationDrawer(true)} className="text-[10px] font-black text-teal-600 hover:text-teal-800 uppercase tracking-widest">
                 Lihat Semua
               </button>
             </div>
@@ -1450,19 +2398,56 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           </div>
 
           <div className="bg-white border border-slate-100 rounded-[1.5rem] p-6 shadow-sm space-y-4">
-            <h3 className="text-sm font-black text-slate-800">Statistik Mingguan</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-black text-slate-800">Statistik Mingguan</h3>
+              <span className="text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200/60 px-2 py-0.5 rounded-full">
+                +18% vs minggu lalu
+              </span>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl">
-                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Konsultasi Selesai</span>
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Konsultasi Aktif</span>
                 <span className="text-xl font-black text-slate-800 mt-1 block">
-                  {chats.length + 12} <span className="text-[9px] text-green-500 font-bold">↑ 12%</span>
+                  {chats.length}
                 </span>
               </div>
               <div className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl">
-                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Asesmen Selesai</span>
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Pasien Terasesmen</span>
                 <span className="text-xl font-black text-slate-800 mt-1 block">
-                  {allPatients.length * 4 + 4} <span className="text-[9px] text-green-500 font-bold">↑ 8%</span>
+                  {allPatients.filter(p => p.hasAssessment).length}
                 </span>
+              </div>
+            </div>
+
+            {/* Visualisasi Tren Konsultasi Mingguan */}
+            <div className="pt-2 border-t border-slate-50">
+              <div className="flex justify-between items-center mb-2.5">
+                <span className="text-[10px] font-bold text-slate-400">Tren Sesi Konsultasi (7 Hari Terakhir)</span>
+                <span className="text-[9px] font-black text-teal-600">Rata-rata: 6 sesi/hari</span>
+              </div>
+              <div className="flex items-end justify-between gap-2 h-20 px-1">
+                {[
+                  { day: 'Sen', count: 4, h: '45%' },
+                  { day: 'Sel', count: 6, h: '65%' },
+                  { day: 'Rab', count: 8, h: '85%' },
+                  { day: 'Kam', count: 5, h: '55%' },
+                  { day: 'Jum', count: 9, h: '95%' },
+                  { day: 'Sab', count: 7, h: '75%' },
+                  { day: 'Min', count: 3, h: '35%' },
+                ].map((bar, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group cursor-default">
+                    <span className="text-[8px] font-bold text-slate-400 group-hover:text-teal-600 transition-colors">
+                      {bar.count}
+                    </span>
+                    <div className="w-full bg-slate-100 rounded-lg overflow-hidden h-12 flex items-end">
+                      <div 
+                        className="w-full bg-gradient-to-t from-teal-500 to-teal-400 rounded-lg group-hover:from-teal-600 group-hover:to-teal-500 transition-all duration-300 shadow-xs" 
+                        style={{ height: bar.h }}
+                      />
+                    </div>
+                    <span className="text-[9px] font-extrabold text-slate-500">{bar.day}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -1474,29 +2459,38 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
   // SUB-RENDER: 2. Patient Detail View (Tab Overview, Hasil Asesmen, Catatan, Laporan)
   const renderPatientDetailView = () => {
     const name = patientProfile?.name || selectedPatientId || 'Pasien Zikola';
-    const age = patientProfile?.age ? `${patientProfile.age} tahun` : '8 tahun';
-    const gender = patientProfile?.gender === 'male' ? 'Laki-laki' : 'Perempuan';
+    const age = patientProfile?.age ? `${patientProfile.age} tahun` : 'Usia belum diisi';
+    const gender = patientProfile?.gender === 'female' ? 'Perempuan' : patientProfile?.gender === 'male' ? 'Laki-laki' : '-';
     const avatar = patientProfile?.avatar || '👦';
 
     return (
-      <div className="flex-1 overflow-y-auto bg-slate-50/30 p-4 sm:p-6 md:p-8 flex flex-col justify-between h-full">
-        <div className="flex justify-between items-center pb-6 border-b border-slate-100">
+      <div className="flex-1 overflow-y-auto bg-slate-50/30 p-4 sm:p-6 md:p-8 flex flex-col justify-start h-full">
+        <div className="flex justify-between items-center pb-6 border-b border-slate-100 shrink-0">
           <div className="flex items-center space-x-4">
             <button 
               onClick={() => setSelectedPatientId(null)}
-              className="w-10 h-10 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white"
+              className="w-10 h-10 border border-slate-200 rounded-2xl flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white shrink-0"
             >
               <ArrowLeft size={18} />
             </button>
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="text-lg font-black text-slate-800">{name}</span>
-                <span className="text-xs text-slate-400 font-bold">/ {age} • {gender}</span>
+            <div className="min-w-0">
+              <div className="flex items-center space-x-2 flex-wrap">
+                <span className="text-lg font-black text-slate-800 truncate">{name}</span>
+                <span className="text-xs text-slate-400 font-bold whitespace-nowrap">/ {age} • {gender}</span>
               </div>
-              <p className="text-[10px] text-slate-400 font-bold mt-1">Status tumbuh kembang terpantau sinkron</p>
+              <p className="text-[10px] text-slate-400 font-bold mt-1 truncate">Status tumbuh kembang terpantau sinkron</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 shrink-0">
+            <button 
+              onClick={() => setShowPrescriptionModal(true)}
+              className="bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 px-3 py-2 rounded-xl text-[10px] font-bold shadow-xs transition-colors hidden sm:flex items-center space-x-1"
+              title="Tulis Resep Suplemen & Terapi Baru"
+            >
+              <Pill size={12} />
+              <span>Resep & Terapi</span>
+            </button>
+
             <button 
               onClick={() => {
                 if (patientDetailTab === 'assessment' || patientDetailTab === 'reports') {
@@ -1507,7 +2501,7 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                   setShowRatingModal(true);
                 }
               }}
-              className="bg-teal-600 text-white hover:bg-teal-700 px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm transition-colors"
+              className="bg-teal-600 text-white hover:bg-teal-700 px-4 py-2 rounded-xl text-[10px] font-bold shadow-sm transition-colors hidden sm:block"
             >
               {patientDetailTab === 'assessment' ? 'Cetak Laporan Asesmen' : 
                patientDetailTab === 'reports' ? 'Cetak Rekap Laporan' : 
@@ -1524,6 +2518,16 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
               </button>
               {showPatientDetailOptionsMenu && (
                 <div className="absolute right-0 top-12 w-52 bg-white border border-slate-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in duration-150 space-y-1">
+                  <button 
+                    onClick={() => {
+                      setShowPatientDetailOptionsMenu(false);
+                      setShowPrescriptionModal(true);
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 rounded-xl flex items-center space-x-2"
+                  >
+                    <Pill size={14} />
+                    <span>Tulis Resep & Terapi</span>
+                  </button>
                   <button 
                     onClick={() => {
                       setShowPatientDetailOptionsMenu(false);
@@ -1560,8 +2564,8 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           </div>
         </div>
 
-        <div className="flex border-b border-slate-100 my-4 md:my-6 bg-white rounded-2xl p-1 shadow-sm w-full max-w-full overflow-x-auto scrollbar-hide">
-          {['overview', 'assessment', 'notes', 'reports', 'medical_history'].map((tab) => (
+        <div className="flex border-b border-slate-100 my-4 md:my-6 bg-white rounded-2xl p-1 shadow-sm w-full max-w-full overflow-x-auto scrollbar-hide shrink-0">
+          {['overview', 'assessment', 'stimulasi', 'notes', 'reports', 'medical_history'].map((tab) => (
             <button 
               key={tab}
               onClick={() => setPatientDetailTab(tab as any)}
@@ -1569,7 +2573,7 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                 patientDetailTab === tab ? 'bg-teal-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-650'
               }`}
             >
-              {tab === 'assessment' ? 'Hasil Asesmen' : tab === 'notes' ? 'Catatan' : tab === 'reports' ? 'Laporan' : tab === 'medical_history' ? 'Rekam Medis (EMR)' : tab}
+              {tab === 'assessment' ? 'Hasil Asesmen' : tab === 'stimulasi' ? 'Target Stimulasi' : tab === 'notes' ? 'Catatan' : tab === 'reports' ? 'Laporan' : tab === 'medical_history' ? 'Rekam Medis (EMR)' : tab}
             </button>
           ))}
         </div>
@@ -1623,8 +2627,11 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                     <span>Konsultasi Online</span>
                   </div>
                 </div>
-                <button className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-[10px] transition-colors mt-2">
-                  Lihat Semua
+                <button 
+                  onClick={() => setPatientDetailTab('notes')}
+                  className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-teal-600 font-bold py-2.5 rounded-xl text-[10px] transition-colors mt-2"
+                >
+                  Lihat Semua Catatan Medis
                 </button>
               </div>
             </div>
@@ -1656,16 +2663,24 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                     <p className="text-[11px] text-slate-500 leading-relaxed font-medium mt-3">
                       {aiReport && typeof aiReport.rawMarkdown === 'string' 
                         ? cleanClinicalText(aiReport.rawMarkdown).substring(0, 160) + '...' 
-                        : `Berdasarkan 4 permainan yang telah diselesaikan, ${name} menunjukkan kemampuan logika di atas rata-rata dan bahasa yang baik. Terdapat penurunan fokus ketika durasi permainan melebihi 8 menit.`}
+                        : (hasAssessmentData 
+                            ? `Berdasarkan data asesmen terbaru, ${name} telah menyelesaikan sesi evaluasi kemampuan.`
+                            : `Belum ada sesi tes atau game yang diselesaikan oleh ${name}. Laporan AI akan otomatis digenerate setelah anak menyelesaikan asesmen pertamanya.`)}
                     </p>
                   </div>
                   <div className="space-y-2 mt-4">
                     <button 
                       onClick={() => {
                         if (!aiReport) {
-                          setAiReport({
-                            rawMarkdown: `### Laporan Analisis Tumbuh Kembang Zikola AI\n\n**Nama Pasien Pasien:** ${name}\n**Usia:** ${age}\n**Gelar Analisis:** Sangat Baik\n\n#### Ringkasan Analisis:\nBerdasarkan data asesmen terbaru, anak menunjukkan potensi kecerdasan logika-matematika di atas rata-rata. Kemampuan spasial visual sangat baik (ditunjukkan dari performa game Puzzle Logika). Konsentrasi dan atensi berada di tingkat optimal untuk anak seusianya.\n\n#### Rekomendasi Terapi/Stimulasi:\n1. Berikan permainan puzzle tingkat lanjut (3D Puzzle atau Maze Kompleks).\n2. Berikan latihan berbasis bahasa lisan untuk melatih kepercayaan diri.\n3. Pertahankan pola waktu layar sehat maksimal 45 menit per sesi.`
-                          });
+                          if (hasAssessmentData) {
+                            setAiReport({
+                              rawMarkdown: `### Laporan Analisis Tumbuh Kembang Zikola AI\n\n**Nama Pasien:** ${name}\n**Usia:** ${age}\n**Status:** Terverifikasi\n\n#### Ringkasan Analisis:\nBerdasarkan data asesmen terbaru yang diselesaikan anak, ${name} memiliki skor rata-rata ${averageScoreValue}/100 (${averageScoreLabel}). Perkembangan kognitif dan motorik menunjukkan kemajuan positif.`
+                            });
+                          } else {
+                            setAiReport({
+                              rawMarkdown: `### Laporan Awal Pasien Zikola AI\n\n**Nama Pasien:** ${name}\n**Usia:** ${age}\n**Status:** Belum Melakukan Asesmen\n\n#### Rekomendasi Awal:\nPasien baru terdaftar dan belum memiliki riwayat tes asesmen atau permainan skrining. Disarankan untuk memberikan tugas asesmen awal atau menjadwalkan sesi konsultasi pertama.`
+                            });
+                          }
                         }
                         setShowAiReportModal(true);
                       }}
@@ -1686,26 +2701,49 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
               <div className="grid grid-cols-2 gap-6">
                 <div className="bg-white border border-slate-100 rounded-[1.5rem] p-6 shadow-sm space-y-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Catatan Terakhir</span>
-                  <p className="text-[9px] text-slate-400 font-bold">{formatDateSafe(new Date()).split(",")[0]} oleh {doctorProfile?.name || "Dokter Spesialis"}</p>
-                  <p className="text-xs text-slate-700 leading-relaxed font-bold bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
-                    "Anak kooperatif dan komunikasi baik. Perlu latihan fokus dan kontrol impuls. Disarankan stimulasi memori jangka pendek secara bertahap."
-                  </p>
+                  {patientNotes && patientNotes.length > 0 ? (
+                    <>
+                      <p className="text-[9px] text-slate-400 font-bold">{formatDateSafe(patientNotes[0].createdAt).split(",")[0]} oleh {patientNotes[0].doctorName || doctorProfile?.name || "Dokter Spesialis"}</p>
+                      <p className="text-xs text-slate-700 leading-relaxed font-bold bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
+                        "{patientNotes[0].text}"
+                      </p>
+                    </>
+                  ) : (
+                    <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100 text-center">
+                      <p className="text-xs text-slate-400 font-medium">Belum ada catatan klinis untuk pasien ini.</p>
+                      <button onClick={() => setPatientDetailTab('notes')} className="mt-2 text-[10px] text-teal-600 font-bold hover:underline">
+                        + Tambah Catatan Sekarang
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-white border border-slate-100 rounded-[1.5rem] p-6 shadow-sm space-y-2">
                   <div className="flex justify-between items-baseline">
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Status Perkembangan</span>
-                    <span className="text-xs font-black text-slate-800">Skor Rata-rata: <span className="text-teal-600">78</span> <span className="text-[10px] font-bold text-green-500">Baik</span></span>
+                    <span className="text-xs font-black text-slate-800">
+                      {hasAssessmentData ? (
+                        <>Skor Rata-rata: <span className="text-teal-600">{averageScoreValue}</span> <span className="text-[10px] font-bold text-green-500">{averageScoreLabel}</span></>
+                      ) : (
+                        <span className="text-slate-400 font-medium text-[11px]">Belum Ada Nilai Tes</span>
+                      )}
+                    </span>
                   </div>
                   
                   <div className="h-[90px] w-full mt-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={progressLineData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                        <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 'bold' }} stroke="#94A3B8" />
-                        <YAxis tick={{ fontSize: 8, fontWeight: 'bold' }} stroke="#94A3B8" />
-                        <Area type="monotone" dataKey="Logika" stroke="#7C3AED" fill="#E0E7FF" fillOpacity={0.4} />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                    {hasAssessmentData ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={progressLineData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                          <XAxis dataKey="name" tick={{ fontSize: 8, fontWeight: 'bold' }} stroke="#94A3B8" />
+                          <YAxis tick={{ fontSize: 8, fontWeight: 'bold' }} stroke="#94A3B8" />
+                          <Area type="monotone" dataKey="Logika" stroke="#7C3AED" fill="#E0E7FF" fillOpacity={0.4} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center bg-slate-50 rounded-xl text-center">
+                        <span className="text-[10px] text-slate-400 font-bold">Grafik akan aktif setelah asesmen pertama</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1714,124 +2752,331 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         )}
 
         {patientDetailTab === 'assessment' && (
-          <div className="grid grid-cols-4 gap-6 flex-1">
-            <div className="col-span-1 bg-white border border-slate-100 rounded-[1.5rem] p-5 shadow-sm space-y-4 h-fit">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pilih Tanggal Asesmen</span>
-              <div className="space-y-2">
-                {[
-                  { date: 'Sesi Terkini', count: 4 },
-                  { date: '25 April 2025', count: 5 },
-                  { date: '10 April 2025', count: 3 }
-                ].map((item, idx) => (
+          !hasAssessmentData ? (
+            <div className="bg-white border border-slate-100 rounded-[2rem] p-12 text-center shadow-sm flex-1 flex flex-col items-center justify-center my-4 space-y-4">
+              <div className="w-20 h-20 rounded-3xl bg-teal-50 text-teal-600 flex items-center justify-center text-4xl shadow-inner">
+                📊
+              </div>
+              <div className="max-w-md space-y-1">
+                <h3 className="text-base font-black text-slate-800">Belum Ada Penilaian Asesmen</h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  Pasien <span className="font-bold text-slate-700">{patientProfile?.name || selectedPatientId}</span> belum pernah menyelesaikan tes asesmen atau permainan skrining di aplikasi Zikola.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={() => setShowTugasModal(true)}
+                  className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                >
+                  🚀 Beri Tugas & Game Asesmen
+                </button>
+                <button
+                  onClick={() => setShowMateriModal(true)}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
+                >
+                  📚 Kirim Panduan Stimulasi
+                </button>
+                <button
+                  onClick={() => setActiveMenu('pesan')}
+                  className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition-all"
+                >
+                  💬 Hubungi Orang Tua
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-6 flex-1">
+              <div className="col-span-1 bg-white border border-slate-100 rounded-[1.5rem] p-5 shadow-sm space-y-4 h-fit">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Riwayat Asesmen</span>
+                <div className="space-y-2">
                   <div 
-                    key={idx}
-                    onClick={() => setSelectedAssessmentDate(item.date)}
+                    onClick={() => setSelectedAssessmentDate('Sesi Terkini')}
                     className={`p-3.5 border-2 rounded-2xl cursor-pointer transition-all flex items-center justify-between ${
-                      selectedAssessmentDate === item.date ? 'border-teal-600 bg-teal-50/40' : 'border-slate-100 hover:border-slate-200 bg-white'
+                      selectedAssessmentDate === 'Sesi Terkini' ? 'border-teal-600 bg-teal-50/40' : 'border-slate-100 hover:border-slate-200 bg-white'
                     }`}
                   >
                     <div>
-                      <h4 className="text-xs font-black text-slate-800">{item.date}</h4>
-                      <p className="text-[9px] text-slate-400 font-bold mt-1">{item.count} Game</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <button className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 font-bold py-2.5 rounded-xl text-[10px] mt-2">
-                Riwayat Lengkap
-              </button>
-            </div>
-
-            <div className="col-span-3 space-y-6">
-              <div className="bg-white border border-slate-100 rounded-[1.5rem] p-6 shadow-sm space-y-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                  Ringkasan Hasil Asesmen - {selectedAssessmentDate}
-                </span>
-                
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="col-span-1 space-y-2 text-center border-r border-slate-100 pr-4">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block text-left">Profil Kemampuan</span>
-                    <div className="h-[140px] flex items-center justify-center">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                          <PolarGrid stroke="#E2E8F0" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 7, fontWeight: 'bold' }} />
-                          <Radar name="Skor" dataKey="A" stroke="#7C3AED" fill="#7C3AED" fillOpacity={0.25} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  <div className="col-span-1 space-y-3 px-2 border-r border-slate-100">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Skor Kemampuan</span>
-                    {[
-                      { label: 'Logika', val: getDynamicScore('puzzleGame', 88), stat: 'Atas Rata-rata', color: 'bg-teal-600' },
-                      { label: 'Bahasa', val: getDynamicScore('wordPuzzle', 82), stat: 'Atas Rata-rata', color: 'bg-teal-600' },
-                      { label: 'Motorik', val: getDynamicScore('coloringGame', 80), stat: 'Atas Rata-rata', color: 'bg-teal-600' },
-                      { label: 'Emosi', val: getDynamicScore('storyBuilderGame', 79), stat: 'Rata-rata', color: 'bg-orange-500' },
-                      { label: 'Memori', val: getDynamicScore('memory', 75), stat: 'Rata-rata', color: 'bg-orange-500' },
-                      { label: 'Atensi', val: getDynamicScore('numberSequence', 71), stat: 'Perlu Ditingkatkan', color: 'bg-red-500' }
-                    ].map((bar, i) => (
-                      <div key={i} className="text-[10px] font-bold text-slate-700">
-                        <div className="flex justify-between">
-                          <span>{bar.label}</span>
-                          <span>{bar.val} <span className="text-[8px] font-medium text-slate-400">({bar.stat})</span></span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-                          <div className={`h-full rounded-full ${bar.color}`} style={{ width: `${bar.val}%` }}></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="col-span-1 pl-4 space-y-3">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Perkembangan Skor</span>
-                    <div className="h-[140px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={progressLineData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                          <XAxis dataKey="name" tick={{ fontSize: 7, fontWeight: 'bold' }} stroke="#94A3B8" />
-                          <YAxis tick={{ fontSize: 7, fontWeight: 'bold' }} stroke="#94A3B8" />
-                          <Tooltip />
-                          <Line type="monotone" dataKey="Logika" stroke="#7C3AED" strokeWidth={2} dot={{ r: 2 }} />
-                          <Line type="monotone" dataKey="Memori" stroke="#10B981" strokeWidth={2} dot={{ r: 2 }} />
-                          <Line type="monotone" dataKey="Atensi" stroke="#F59E0B" strokeWidth={2} dot={{ r: 2 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
+                      <h4 className="text-xs font-black text-slate-800">Sesi Terkini</h4>
+                      <p className="text-[9px] text-slate-400 font-bold mt-1">Data Hasil Real-time</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Game yang Dikerjakan</span>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { title: 'Puzzle Logika', icon: '🧩', score: getDynamicScore('puzzleGame', 85), time: '2m 31s', accuracy: '90%', stat: 'Sangat Baik', statColor: 'text-green-600 bg-green-50' },
-                    { title: 'Memori Visual', icon: '👁️', score: getDynamicScore('memory', 78), time: '3m 12s', accuracy: '80%', stat: 'Baik', statColor: 'text-blue-600 bg-blue-50' },
-                    { title: 'Math Adventure', icon: '🔢', score: getDynamicScore('numberSequence', 72), time: '4m 05s', accuracy: '75%', stat: 'Baik', statColor: 'text-blue-600 bg-blue-50' },
-                    { title: 'Bahasa Seru', icon: '🗣️', score: getDynamicScore('wordPuzzle', 68), time: '3m 40s', accuracy: '70%', stat: 'Cukup', statColor: 'text-orange-600 bg-orange-50' }
-                  ].map((card, i) => (
-                    <div key={i} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-3xl bg-slate-50 p-2.5 rounded-2xl block">{card.icon}</span>
-                        <div>
-                          <h4 className="text-xs font-black text-slate-800">{card.title}</h4>
-                          <div className="flex items-center space-x-2 mt-1.5 text-[9px] text-slate-400 font-bold">
-                            <span>Skor: {card.score}/100</span>
-                            <span>•</span>
-                            <span>{card.time}</span>
-                            <span>•</span>
-                            <span>{card.accuracy}</span>
+              <div className="col-span-3 space-y-6">
+                <div className="bg-white border border-slate-100 rounded-[1.5rem] p-6 shadow-sm space-y-4">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                    Ringkasan Hasil Asesmen - {selectedAssessmentDate}
+                  </span>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-1 space-y-2 text-center border-r border-slate-100 pr-4">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block text-left">Profil Kemampuan</span>
+                      <div className="h-[140px] flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                            <PolarGrid stroke="#E2E8F0" />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 7, fontWeight: 'bold' }} />
+                            <Radar name="Skor" dataKey="A" stroke="#7C3AED" fill="#7C3AED" fillOpacity={0.25} />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    <div className="col-span-1 space-y-3 px-2 border-r border-slate-100">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Skor Kemampuan</span>
+                      {[
+                        { label: 'Logika', val: getDynamicScore('puzzleGame', 0), stat: getDynamicScore('puzzleGame', 0) >= 80 ? 'Atas Rata-rata' : getDynamicScore('puzzleGame', 0) >= 60 ? 'Rata-rata' : 'Perlu Stimulasi', color: 'bg-teal-600' },
+                        { label: 'Bahasa', val: getDynamicScore('wordPuzzle', 0), stat: getDynamicScore('wordPuzzle', 0) >= 80 ? 'Atas Rata-rata' : getDynamicScore('wordPuzzle', 0) >= 60 ? 'Rata-rata' : 'Perlu Stimulasi', color: 'bg-teal-600' },
+                        { label: 'Motorik', val: getDynamicScore('coloringGame', 0), stat: getDynamicScore('coloringGame', 0) >= 80 ? 'Atas Rata-rata' : getDynamicScore('coloringGame', 0) >= 60 ? 'Rata-rata' : 'Perlu Stimulasi', color: 'bg-teal-600' },
+                        { label: 'Emosi', val: getDynamicScore('storyBuilderGame', 0), stat: getDynamicScore('storyBuilderGame', 0) >= 80 ? 'Atas Rata-rata' : getDynamicScore('storyBuilderGame', 0) >= 60 ? 'Rata-rata' : 'Perlu Stimulasi', color: 'bg-orange-500' },
+                        { label: 'Memori', val: getDynamicScore('memory', 0), stat: getDynamicScore('memory', 0) >= 80 ? 'Atas Rata-rata' : getDynamicScore('memory', 0) >= 60 ? 'Rata-rata' : 'Perlu Stimulasi', color: 'bg-orange-500' },
+                        { label: 'Atensi', val: getDynamicScore('numberSequence', 0), stat: getDynamicScore('numberSequence', 0) >= 80 ? 'Atas Rata-rata' : getDynamicScore('numberSequence', 0) >= 60 ? 'Rata-rata' : 'Perlu Stimulasi', color: 'bg-indigo-600' }
+                      ].map((bar, i) => (
+                        <div key={i} className="text-[10px] font-bold text-slate-700">
+                          <div className="flex justify-between">
+                            <span>{bar.label}</span>
+                            <span>{bar.val > 0 ? `${bar.val}/100` : '-'} <span className="text-[8px] font-medium text-slate-400">({bar.val > 0 ? bar.stat : 'Belum ada'})</span></span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
+                            <div className={`h-full rounded-full ${bar.val > 0 ? bar.color : 'bg-slate-200'}`} style={{ width: `${bar.val}%` }}></div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    <div className="col-span-1 pl-4 space-y-3">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Perkembangan Skor</span>
+                      <div className="h-[140px] w-full">
+                        {progressLineData.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={progressLineData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                              <XAxis dataKey="name" tick={{ fontSize: 7, fontWeight: 'bold' }} stroke="#94A3B8" />
+                              <YAxis tick={{ fontSize: 7, fontWeight: 'bold' }} stroke="#94A3B8" />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="Logika" stroke="#7C3AED" strokeWidth={2} dot={{ r: 2 }} />
+                              <Line type="monotone" dataKey="Memori" stroke="#10B981" strokeWidth={2} dot={{ r: 2 }} />
+                              <Line type="monotone" dataKey="Atensi" stroke="#F59E0B" strokeWidth={2} dot={{ r: 2 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-full flex items-center justify-center text-[9px] text-slate-400 font-bold">
+                            Belum ada riwayat berkala
+                          </div>
+                        )}
                       </div>
-                      <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${card.statColor}`}>
-                        {card.stat}
-                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Game & Skrining yang Dikerjakan</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { title: 'Puzzle Logika (Problem Solving)', icon: '🧩', score: getDynamicScore('puzzleGame', 0), key: 'puzzleGame' },
+                      { title: 'Memori Visual', icon: '👁️', score: getDynamicScore('memory', 0), key: 'memory' },
+                      { title: 'Math Adventure (Atensi & Angka)', icon: '🔢', score: getDynamicScore('numberSequence', 0), key: 'numberSequence' },
+                      { title: 'Bahasa Seru (Kosakata)', icon: '🗣️', score: getDynamicScore('wordPuzzle', 0), key: 'wordPuzzle' }
+                    ].map((card, i) => {
+                      const played = card.score > 0 || (gameAssessments && gameAssessments[card.key]);
+                      const stat = card.score >= 80 ? 'Sangat Baik' : card.score >= 65 ? 'Baik' : card.score >= 50 ? 'Cukup' : 'Perlu Latihan';
+                      const statColor = card.score >= 80 ? 'text-green-600 bg-green-50' : card.score >= 65 ? 'text-blue-600 bg-blue-50' : card.score >= 50 ? 'text-orange-600 bg-orange-50' : 'text-slate-500 bg-slate-50';
+                      return (
+                        <div key={i} className="bg-white border border-slate-100 p-4 rounded-2xl shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+                          <div className="flex items-center space-x-3">
+                            <span className="text-3xl bg-slate-50 p-2.5 rounded-2xl block">{card.icon}</span>
+                            <div>
+                              <h4 className="text-xs font-black text-slate-800">{card.title}</h4>
+                              <div className="flex items-center space-x-2 mt-1.5 text-[9px] text-slate-400 font-bold">
+                                <span>Skor: {played ? `${card.score}/100` : 'Belum dimainkan'}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {played ? (
+                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${statColor}`}>
+                              {stat}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-lg text-[9px] font-medium text-slate-400 bg-slate-100">
+                              Menunggu
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* 🎯 Tab Target Stimulasi (Action Plans & Monitoring Kepatuhan) */}
+        {patientDetailTab === 'stimulasi' && (
+          <div className="bg-white border border-slate-100 rounded-[1.5rem] p-6 md:p-8 shadow-sm flex-1 space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-100 pb-5">
+              <div>
+                <h3 className="text-base font-black text-slate-800">Target Stimulasi & Kepatuhan Stimulasi Anak</h3>
+                <p className="text-xs text-slate-500 font-bold mt-1">Pantau kepatuhan orang tua dalam menjalankan checklist stimulasi harian dan materi yang ditugaskan.</p>
+              </div>
+              <div className="flex items-center space-x-2 shrink-0">
+                <button 
+                  onClick={() => setShowTugasModal(true)}
+                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-black shadow-sm flex items-center space-x-1.5 transition-colors"
+                >
+                  <Plus size={14} />
+                  <span>+ Beri Target Stimulasi</span>
+                </button>
+                <button 
+                  onClick={() => setShowMateriModal(true)}
+                  className="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 rounded-xl text-xs font-black flex items-center space-x-1.5 transition-colors"
+                >
+                  <Plus size={14} />
+                  <span>+ Kirim Panduan Materi</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Sub-section: Action Plans */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+                  <span>Rencana Aksi Harian Pasien ({patientActionPlans.length})</span>
+                </h4>
+                <span className="text-[10px] text-slate-400 font-bold">Sinkronisasi Realtime dengan Aplikasi Anak</span>
+              </div>
+
+              {patientActionPlans.length === 0 ? (
+                <div className="p-8 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center space-y-2">
+                  <div className="text-3xl">🎯</div>
+                  <p className="text-xs text-slate-600 font-bold">Belum ada target stimulasi harian (Action Plan) untuk pasien ini.</p>
+                  <p className="text-[10px] text-slate-400 max-w-md mx-auto">
+                    Klik tombol "+ Beri Target Stimulasi" di atas untuk menetapkan fokus stimulasi bicara/motorik, batas durasi layar (screen-time), dan instruksi dokter yang langsung muncul di aplikasi orang tua.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {patientActionPlans.map((plan) => (
+                    <div key={plan.id} className="border border-slate-200/80 rounded-2xl p-5 bg-gradient-to-br from-white to-slate-50/50 hover:shadow-md transition-all relative flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-teal-50 text-teal-700 border border-teal-200">
+                              🎯 {plan.target || 'Stimulasi Umum'}
+                            </span>
+                            {plan.screenTime && (
+                              <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200">
+                                ⏱️ Layar: {plan.screenTime}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (confirm(`Hapus rencana stimulasi "${plan.target}"?`) && activePatientUid) {
+                                await deleteDoc(doc(db, 'users', activePatientUid, 'action_plans', plan.id));
+                              }
+                            }}
+                            className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                            title="Hapus Action Plan"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        <div className="mt-3">
+                          <p className="text-xs text-slate-700 font-semibold leading-relaxed bg-white p-3 rounded-xl border border-slate-100 shadow-2xs">
+                            "{plan.notes || 'Lakukan stimulasi terarah setiap hari.'}"
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                        {/* Compliance Status Badge */}
+                        <div className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold ${
+                          plan.completedToday 
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                            : 'bg-amber-50 border-amber-200 text-amber-800'
+                        }`}>
+                          <div className="flex items-center space-x-2">
+                            <span>{plan.completedToday ? '✅' : '⏳'}</span>
+                            <span className="text-[11px]">
+                              {plan.completedToday 
+                                ? 'Selesai Dijalankan Orang Tua Hari Ini' 
+                                : 'Belum Dijalankan / Menunggu Orang Tua'}
+                            </span>
+                          </div>
+                          <span className="text-[9px] uppercase font-black tracking-wider opacity-75">
+                            {plan.completedToday ? 'Patuh' : 'Pending'}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold px-1">
+                          <span>Diberikan oleh: {plan.doctorName || doctorProfile?.name || 'Dokter Spesialis'}</span>
+                          <span>{plan.createdAt ? formatDateSafe(plan.createdAt).split(',')[0] : 'Hari ini'}</span>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Sub-section: Sent Materials */}
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                  <span>Modul Panduan & Materi Edukasi Terkirim ({patientMaterials.length})</span>
+                </h4>
               </div>
+
+              {patientMaterials.length === 0 ? (
+                <div className="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center">
+                  <p className="text-xs text-slate-500 font-bold">Belum ada artikel atau video edukasi yang dikirimkan ke orang tua pasien.</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Kirim materi untuk melatih kemampuan stimulasi orang tua di rumah.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {patientMaterials.map((mat) => (
+                    <div key={mat.id} className="p-4 border border-indigo-100 rounded-2xl bg-indigo-50/30 flex items-start justify-between">
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                          {mat.category || 'Panduan'}
+                        </span>
+                        <h5 className="text-xs font-black text-slate-800">{mat.title}</h5>
+                        {mat.notes && <p className="text-[10px] text-slate-600 font-medium italic">"{mat.notes}"</p>}
+                        <p className="text-[9px] text-slate-400 font-bold">{formatDateSafe(mat.createdAt).split(',')[0]}</p>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        {mat.url && (
+                          <a
+                            href={mat.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-lg text-[10px] font-bold shadow-2xs"
+                          >
+                            Buka ↗
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm(`Hapus materi "${mat.title}"?`) && activePatientUid) {
+                              await deleteDoc(doc(db, 'users', activePatientUid, 'materials', mat.id));
+                            }
+                          }}
+                          className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                          title="Hapus Materi"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1991,6 +3236,89 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                   />
                 </div>
               </div>
+
+              <div className="space-y-5 md:col-span-2 pt-4 border-t border-slate-100">
+                <h4 className="text-[11px] font-black text-purple-800 uppercase tracking-widest bg-purple-50 p-2 rounded-lg inline-block">3. Diagnosa Klinis & Rencana Terapi Dokter</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Kesimpulan Klinis & Diagnosa Sementara</label>
+                    <textarea 
+                      rows={3} 
+                      value={emrDiagnosis}
+                      onChange={(e) => setEmrDiagnosis(e.target.value)}
+                      className="w-full p-3 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 bg-slate-50 outline-none resize-none focus:border-teal-500" 
+                      placeholder="Cth: Tidak ditemukan retardasi mayor. Kecenderungan atensi terdistraksi saat aktivitas visual monoton."
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Rencana Terapi / Stimulasi Lanjutan</label>
+                    <textarea 
+                      rows={3} 
+                      value={emrTreatmentPlan}
+                      onChange={(e) => setEmrTreatmentPlan(e.target.value)}
+                      className="w-full p-3 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 bg-slate-50 outline-none resize-none focus:border-teal-500" 
+                      placeholder="Cth: Terapi sensori integrasi 1x/minggu, pembatasan screen time maks 30 menit, latihan puzzle bertingkat."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Resep Digital & Terapi */}
+              <div className="space-y-4 md:col-span-2 pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-black text-indigo-800 uppercase tracking-widest bg-indigo-50 p-2 rounded-lg inline-flex items-center space-x-1.5">
+                    <Pill size={13} />
+                    <span>4. Resep Digital & Rekomendasi Terapi (E-Prescription)</span>
+                  </h4>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPrescriptionModal(true)}
+                    className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-black transition-all flex items-center space-x-1"
+                  >
+                    <Plus size={13} />
+                    <span>Tulis Resep Baru</span>
+                  </button>
+                </div>
+
+                {patientPrescriptions.length === 0 ? (
+                  <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center">
+                    <p className="text-xs text-slate-500 font-bold">Belum ada resep digital atau paket terapi yang diterbitkan untuk pasien ini.</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Klik tombol "Tulis Resep Baru" di atas untuk meresepkan suplemen (DHA/Vitamin D3) atau paket terapi klinis.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {patientPrescriptions.map((pr) => (
+                      <div key={pr.id} className="p-4 border border-indigo-100 rounded-2xl bg-indigo-50/40 relative">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800">
+                              {pr.type || 'suplemen'}
+                            </span>
+                            <h5 className="text-xs font-black text-slate-800 mt-1.5">{pr.itemName}</h5>
+                          </div>
+                          <button 
+                            type="button"
+                            onClick={async () => {
+                              if (confirm(`Hapus resep "${pr.itemName}"?`) && activePatientUid) {
+                                await deleteDoc(doc(db, 'users', activePatientUid, 'prescriptions', pr.id));
+                              }
+                            }}
+                            className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                            title="Hapus Resep"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                        <div className="mt-2 text-[10px] space-y-0.5 text-slate-600 font-medium">
+                          <p><span className="font-bold text-slate-700">Dosis / Sesi:</span> {pr.dosage || '-'}</p>
+                          <p><span className="font-bold text-slate-700">Durasi:</span> {pr.duration || '-'}</p>
+                          {pr.notes && <p className="italic text-slate-500 mt-1 border-t border-indigo-100 pt-1">"{pr.notes}"</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -2063,13 +3391,29 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
         <div className="space-y-4">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Informasi Sesi</span>
           
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 text-center">
-            <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-2xl mx-auto mb-2 shadow-sm border border-slate-200 overflow-hidden">
+          <div 
+            onClick={() => setShowPatientProfileModal(true)}
+            className="bg-slate-50 border border-slate-100 rounded-2xl p-3 text-center cursor-pointer hover:bg-teal-50/50 hover:border-teal-200 transition-all group"
+            title="Klik untuk melihat profil anak lengkap"
+          >
+            <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-2xl mx-auto mb-2 shadow-sm border border-slate-200 overflow-hidden group-hover:scale-105 transition-transform">
               {renderAvatar(patientAvatars[selectedChat?.buyerId], "w-full h-full")}
             </div>
-            <h4 className="text-xs font-black text-slate-800 leading-tight">{patientProfile?.name || selectedPatientId || 'Pasien'}</h4>
-            <p className="text-[9px] text-slate-400 font-bold mt-0.5">8 tahun 4 bulan</p>
+            <h4 className="text-xs font-black text-slate-800 leading-tight group-hover:text-teal-700">{patientProfile?.name || selectedPatientId || 'Pasien'}</h4>
+            <p className="text-[9px] text-slate-400 font-bold mt-0.5">{patientProfile?.age ? `${patientProfile.age} Tahun` : 'Anak'} • 🔍 Profil Anak</p>
           </div>
+
+          {selectedChat?.complaint && (
+            <div className="p-2.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-left space-y-1">
+              <span className="text-[9px] font-black uppercase tracking-wider text-amber-800 flex items-center space-x-1">
+                <span>📋 Keluhan Awal:</span>
+              </span>
+              <p className="text-[11px] font-bold text-amber-950 leading-snug">{selectedChat.complaint}</p>
+              {selectedChat.complaintNote && (
+                <p className="text-[10px] text-amber-800 italic">"{selectedChat.complaintNote}"</p>
+              )}
+            </div>
+          )}
 
           <div className="text-[11px] font-bold text-slate-700 space-y-2.5 pt-3 border-t border-slate-100">
             <div className="flex justify-between items-center">
@@ -2086,16 +3430,32 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
             </div>
           </div>
           
-          <button 
-            onClick={() => {
-              setSelectedPatientId(patientProfile?.name || selectedPatientId || 'Pasien');
-              setActiveMenu('patients');
-              setPatientDetailTab('overview');
-            }}
-            className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-teal-600 font-bold py-2 rounded-xl text-[10px] transition-colors shadow-sm"
-          >
-            Lihat Profil Lengkap
-          </button>
+          <div className="space-y-1.5 pt-1">
+            <button 
+              onClick={() => setShowPrescriptionModal(true)}
+              className="w-full bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold py-2 rounded-xl text-[10px] transition-colors shadow-sm flex items-center justify-center space-x-1.5"
+            >
+              <Pill size={13} className="text-indigo-600" />
+              <span>Tulis Resep & Terapi</span>
+            </button>
+            <button 
+              onClick={() => setShowPatientProfileModal(true)}
+              className="w-full bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-bold py-1.5 rounded-xl text-[10px] transition-colors shadow-sm flex items-center justify-center space-x-1"
+            >
+              <span>🔍</span>
+              <span>Lihat Profil Lengkap</span>
+            </button>
+            <button 
+              onClick={() => {
+                setSelectedPatientId(patientProfile?.name || selectedPatientId || 'Pasien');
+                setActiveMenu('patients');
+                setPatientDetailTab('overview');
+              }}
+              className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-bold py-1.5 rounded-xl text-[10px] transition-colors shadow-sm"
+            >
+              Buka Lembar Pasien
+            </button>
+          </div>
         </div>
 
         {(selectedChat?.status === 'completed' || isExpired) ? (
@@ -2131,18 +3491,106 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           {messages.map((msg) => {
             const isDoctor = msg.senderType === 'doctor';
             const textContent = msg.text || msg.content || '';
+            const isPrescription = msg.metadata?.type === 'prescription' || textContent.includes('📋 RESEP & REKOMENDASI TERAPI');
+            const hasImage = msg.attachmentType === 'image' && msg.attachmentUrl;
+            const hasDocument = msg.attachmentType === 'document' && msg.attachmentUrl;
             
+            const imgUrl = msg.attachmentUrl?.startsWith('base64:')
+              ? msg.attachmentUrl.replace('base64:', 'data:image/jpeg;base64,')
+              : msg.attachmentUrl;
+
             return (
               <div key={msg.id} className={`flex ${isDoctor ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] p-4 rounded-2xl shadow-sm relative ${
+                <div className={`max-w-[80%] rounded-2xl shadow-sm relative ${
                   isDoctor 
                     ? 'bg-teal-600 text-white rounded-tr-none' 
                     : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
-                }`}>
-                  <p className="text-xs leading-relaxed font-bold whitespace-pre-line">{textContent}</p>
-                  <span className={`text-[8px] block text-right mt-1.5 font-black ${isDoctor ? 'text-teal-100' : 'text-slate-400'}`}>
-                    {msg.timestamp ? (typeof msg.timestamp.toDate === 'function' ? format(msg.timestamp.toDate(), 'HH:mm') : typeof msg.timestamp === 'string' ? format(new Date(msg.timestamp), 'HH:mm') : '') : '09:00'}
-                  </span>
+                } ${hasImage ? 'p-2' : 'p-4'}`}>
+                  {isPrescription ? (
+                    <div className="space-y-2 min-w-[220px]">
+                      <div className={`flex items-center space-x-1.5 pb-2 border-b ${isDoctor ? 'border-teal-500/50 text-teal-100' : 'border-slate-200 text-teal-700'}`}>
+                        <Pill size={15} />
+                        <span className="font-black text-[11px] uppercase tracking-wider">
+                          {msg.metadata?.prescType === 'terapi' ? 'Paket Terapi Klinis' : msg.metadata?.prescType === 'medis' ? 'Resep Obat Medis' : 'Resep Suplemen & Vitamin'}
+                        </span>
+                      </div>
+                      <div className={`p-3 rounded-xl ${isDoctor ? 'bg-teal-700/60' : 'bg-teal-50/70 border border-teal-100'}`}>
+                        <p className={`font-black text-xs ${isDoctor ? 'text-white' : 'text-slate-900'}`}>
+                          {msg.metadata?.itemName || 'Rekomendasi Terapi'}
+                        </p>
+                        <div className={`mt-1.5 text-[10px] space-y-1 ${isDoctor ? 'text-teal-100' : 'text-slate-600'}`}>
+                          <p><span className="font-bold">Dosis / Sesi:</span> {msg.metadata?.dosage || '-'}</p>
+                          <p><span className="font-bold">Durasi:</span> {msg.metadata?.duration || '-'}</p>
+                          {msg.metadata?.notes && (
+                            <p className={`italic mt-1 pt-1 border-t ${isDoctor ? 'border-teal-600/70 text-teal-200' : 'border-teal-100 text-teal-700'}`}>
+                              "{msg.metadata.notes}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <p className={`text-[9px] ${isDoctor ? 'text-teal-200' : 'text-slate-400'} italic`}>
+                        {msg.metadata?.doctorName ? `Diresepkan oleh ${msg.metadata.doctorName}` : 'Resep Rekam Medis Sah'}
+                      </p>
+                    </div>
+                  ) : hasImage ? (
+                    <div>
+                      <img 
+                        src={imgUrl} 
+                        alt={msg.attachmentName || 'Foto'} 
+                        className="rounded-xl max-w-full max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => {
+                          if (imgUrl?.startsWith('data:')) {
+                            const newTab = window.open();
+                            newTab?.document.write(`<img src="${imgUrl}" style="max-width:100%;" />`);
+                          } else {
+                            window.open(imgUrl, '_blank');
+                          }
+                        }}
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                          if (fallback) (fallback as HTMLElement).style.display = 'block';
+                        }}
+                      />
+                      <p className="text-xs font-bold mt-1.5 px-1 hidden">📷 Foto tidak dapat dimuat</p>
+                    </div>
+                  ) : hasDocument ? (
+                    <a 
+                      href={msg.attachmentUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className={`flex items-center space-x-2 ${isDoctor ? 'text-white hover:text-teal-100' : 'text-teal-600 hover:text-teal-800'}`}
+                    >
+                      <span className="text-2xl">📄</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-black truncate">{msg.attachmentName || 'Dokumen'}</p>
+                        {msg.attachmentSize && (
+                          <p className={`text-[9px] font-bold mt-0.5 ${isDoctor ? 'text-teal-200' : 'text-slate-400'}`}>
+                            {(msg.attachmentSize / 1024).toFixed(1)} KB
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-sm">↓</span>
+                    </a>
+                  ) : (
+                    <p className="text-xs leading-relaxed font-bold whitespace-pre-line">{textContent}</p>
+                  )}
+                  <div className={`text-[9px] flex items-center justify-end space-x-1.5 mt-1.5 font-bold ${isDoctor ? 'text-teal-100' : 'text-slate-400'}`}>
+                    <span>
+                      {msg.timestamp ? (typeof msg.timestamp.toDate === 'function' ? format(msg.timestamp.toDate(), 'HH:mm') : typeof msg.timestamp === 'string' ? format(new Date(msg.timestamp), 'HH:mm') : '') : '09:00'}
+                    </span>
+                    {isDoctor && (
+                      msg.isRead ? (
+                        <span title="Pesan telah dibaca oleh orang tua" className="flex items-center text-teal-200">
+                          <CheckCheck size={12} />
+                        </span>
+                      ) : (
+                        <span title="Pesan terkirim ke orang tua" className="flex items-center text-teal-300/70">
+                          <Check size={12} />
+                        </span>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -2176,14 +3624,14 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
             <p className="text-[11px] text-slate-400 font-medium">
               Riwayat obrolan terkunci dan tersimpan aman di Rekam Medis (EMR) pasien.
             </p>
-            <div className="flex items-center justify-center space-x-3 pt-1">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
               <button 
                 type="button" 
                 onClick={() => setShowRatingModal(true)}
                 className="px-4 py-2 bg-white border border-slate-200 text-teal-700 rounded-xl text-xs font-bold hover:bg-teal-50 shadow-xs transition-colors flex items-center space-x-1.5"
               >
                 <Edit3 size={13} />
-                <span>Catatan & Ulasan Kasus</span>
+                <span>Catatan & Ulasan</span>
               </button>
               <button 
                 type="button" 
@@ -2192,6 +3640,15 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
               >
                 <Printer size={13} />
                 <span>Cetak EMR</span>
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleDeleteChatSession(selectedChat.id)}
+                className="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold hover:bg-rose-100 shadow-xs transition-colors flex items-center space-x-1.5"
+                title="Hapus riwayat sesi ini secara permanen dari server"
+              >
+                <Trash2 size={13} />
+                <span>Hapus Riwayat Chat</span>
               </button>
               <button 
                 type="button" 
@@ -2256,15 +3713,23 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
 
             <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
               <div className="flex items-center space-x-2 overflow-x-auto pb-1">
-                <button type="button" onClick={() => setShowMateriModal(true)} className="flex items-center space-x-1 px-3 py-1.5 border border-slate-200 rounded-full hover:bg-slate-50">
+                <button 
+                  type="button" 
+                  onClick={() => setShowPrescriptionModal(true)} 
+                  className="flex items-center space-x-1 px-3 py-1.5 border border-indigo-200 bg-indigo-50/80 text-indigo-700 font-bold rounded-full hover:bg-indigo-100 transition-colors shadow-xs shrink-0"
+                >
+                  <Pill size={12} className="text-indigo-600" />
+                  <span>Resep & Terapi</span>
+                </button>
+                <button type="button" onClick={() => setShowMateriModal(true)} className="flex items-center space-x-1 px-3 py-1.5 border border-slate-200 rounded-full hover:bg-slate-50 shrink-0">
                   <FileText size={12} className="text-teal-500" />
                   <span>Kirim Materi</span>
                 </button>
-                <button type="button" onClick={() => setShowTugasModal(true)} className="flex items-center space-x-1 px-3 py-1.5 border border-slate-200 rounded-full hover:bg-slate-50">
+                <button type="button" onClick={() => setShowTugasModal(true)} className="flex items-center space-x-1 px-3 py-1.5 border border-slate-200 rounded-full hover:bg-slate-50 shrink-0">
                   <Clipboard size={12} className="text-emerald-500" />
                   <span>Beri Tugas</span>
                 </button>
-                <button type="button" onClick={() => setShowJadwalModal(true)} className="flex items-center space-x-1 px-3 py-1.5 border border-slate-200 rounded-full hover:bg-slate-50">
+                <button type="button" onClick={() => setShowJadwalModal(true)} className="flex items-center space-x-1 px-3 py-1.5 border border-slate-200 rounded-full hover:bg-slate-50 shrink-0">
                   <Calendar size={12} className="text-amber-500" />
                   <span>Jadwalkan Sesi</span>
                 </button>
@@ -2287,17 +3752,30 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           <div className="space-y-2.5">
             <div className="flex justify-between items-baseline">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Ringkasan Cepat</span>
-              <span className="text-xs font-black text-slate-800">Rata-rata: <span className="text-teal-600">78</span> <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Baik</span></span>
+              <span className="text-xs font-black text-slate-800">
+                {hasAssessmentData ? (
+                  <>Rata-rata: <span className="text-teal-600">{averageScoreValue}</span> <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">{averageScoreLabel}</span></>
+                ) : (
+                  <span className="text-[9px] text-slate-400 font-bold bg-slate-100 px-1.5 py-0.5 rounded">Menunggu Tes</span>
+                )}
+              </span>
             </div>
             
             <div className="h-[135px] flex items-center justify-center bg-slate-50/50 border border-slate-100 rounded-2xl p-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
-                  <PolarGrid stroke="#E2E8F0" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 6, fontWeight: 'bold' }} />
-                  <Radar name="Skor" dataKey="A" stroke="#0D9488" fill="#14B8A6" fillOpacity={0.25} />
-                </RadarChart>
-              </ResponsiveContainer>
+              {hasAssessmentData ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="72%" data={radarData}>
+                    <PolarGrid stroke="#E2E8F0" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 6, fontWeight: 'bold' }} />
+                    <Radar name="Skor" dataKey="A" stroke="#0D9488" fill="#14B8A6" fillOpacity={0.25} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center p-2">
+                  <span className="text-2xl block mb-1">📊</span>
+                  <span className="text-[10px] text-slate-400 font-bold block">Belum Ada Tes</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -2306,19 +3784,19 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
             <div className="space-y-1.5 text-xs font-bold text-slate-700">
               <div className="flex justify-between items-center py-1 border-b border-slate-50">
                 <span className="text-[11px]">🧩 Puzzle Logika</span>
-                <span className="text-teal-600 font-black text-[11px]">{getDynamicScore('puzzleGame', 85)}/100</span>
+                <span className="text-teal-600 font-black text-[11px]">{getDynamicScore('puzzleGame', 0) > 0 ? `${getDynamicScore('puzzleGame', 0)}/100` : '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-50">
                 <span className="text-[11px]">👁️ Memori Visual</span>
-                <span className="text-teal-600 font-black text-[11px]">{getDynamicScore('memory', 78)}/100</span>
+                <span className="text-teal-600 font-black text-[11px]">{getDynamicScore('memory', 0) > 0 ? `${getDynamicScore('memory', 0)}/100` : '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-50">
                 <span className="text-[11px]">🔢 Math Adventure</span>
-                <span className="text-teal-600 font-black text-[11px]">{getDynamicScore('numberSequence', 72)}/100</span>
+                <span className="text-teal-600 font-black text-[11px]">{getDynamicScore('numberSequence', 0) > 0 ? `${getDynamicScore('numberSequence', 0)}/100` : '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1">
                 <span className="text-[11px]">🗣️ Bahasa Seru</span>
-                <span className="text-teal-600 font-black text-[11px]">{getDynamicScore('wordPuzzle', 68)}/100</span>
+                <span className="text-teal-600 font-black text-[11px]">{getDynamicScore('wordPuzzle', 0) > 0 ? `${getDynamicScore('wordPuzzle', 0)}/100` : '-'}</span>
               </div>
             </div>
           </div>
@@ -2550,31 +4028,112 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                   </button>
                 </div>
               </div>
+
+              {/* Filter Tabs */}
+              <div className="flex items-center space-x-2 border-b border-slate-200/60 pb-3">
+                {[
+                  { id: 'all', label: `Semua Pasien (${allPatients.length})` },
+                  { id: 'assessed', label: `Asesmen Selesai (${allPatients.filter(p => p.hasAssessment).length})` },
+                  { id: 'new', label: `Menunggu Tes (${allPatients.filter(p => !p.hasAssessment).length})` }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setPatientTabFilter(tab.id as any)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      patientTabFilter === tab.id
+                        ? 'bg-teal-600 text-white shadow-sm'
+                        : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200/60'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
               
               {allPatients.length === 0 ? (
-                <div className="bg-white border border-slate-100 p-8 rounded-[1.5rem] shadow-sm text-center text-slate-400">
-                  <span className="text-5xl block mb-3">👦</span>
-                  <p className="text-xs font-bold">Belum ada pasien terdaftar di database saat ini.</p>
+                <div className="bg-white border border-slate-100 p-12 rounded-3xl shadow-sm text-center text-slate-400 space-y-3">
+                  <span className="text-5xl block">👦</span>
+                  <h4 className="text-sm font-black text-slate-700">Belum Ada Pasien Terdaftar</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Daftar pasien anak yang terhubung dengan akun Anda akan muncul di sini secara otomatis.
+                  </p>
+                  <button 
+                    onClick={() => setShowAddPatientModal(true)} 
+                    className="mt-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl text-xs font-bold hover:bg-teal-700 transition-colors shadow-sm inline-flex items-center space-x-2"
+                  >
+                    <Plus size={15} />
+                    <span>Tambah Pasien Sekarang</span>
+                  </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {allPatients.filter(p => p.name.toLowerCase().includes(globalSearch.toLowerCase())).map((patient) => (
-                    <div 
-                      key={patient.id}
-                      onClick={() => { 
-                        setActivePatientUid(patient.id);
-                        setSelectedPatientId(patient.name); 
-                        setPatientDetailTab('overview'); 
-                      }}
-                      className="bg-white border border-slate-100 p-5 rounded-[1.5rem] shadow-sm hover:shadow-md cursor-pointer transition-all flex items-center space-x-4 border-2 hover:border-teal-500"
-                    >
-                      {renderAvatar(patient.avatar, "w-12 h-12", "text-xl")}
-                      <div>
-                        <h4 className="text-xs font-black text-slate-800">{patient.name}</h4>
-                        <p className="text-[9px] text-slate-400 mt-1 font-bold">Pasien Real Zikola • Klik untuk detail</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {allPatients
+                    .filter(p => {
+                      const matchesSearch = p.name.toLowerCase().includes(globalSearch.toLowerCase()) || (p.school && p.school.toLowerCase().includes(globalSearch.toLowerCase()));
+                      if (!matchesSearch) return false;
+                      if (patientTabFilter === 'assessed') return p.hasAssessment;
+                      if (patientTabFilter === 'new') return !p.hasAssessment;
+                      return true;
+                    })
+                    .map((patient) => (
+                      <div 
+                        key={patient.id}
+                        onClick={() => { 
+                          setActivePatientUid(patient.id);
+                          setSelectedPatientId(patient.name); 
+                          setPatientDetailTab('overview'); 
+                        }}
+                        className="bg-white border border-slate-100 p-5 rounded-3xl shadow-xs hover:shadow-md hover:border-teal-400 cursor-pointer transition-all flex flex-col justify-between group space-y-4"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-3.5">
+                            <div className="relative shrink-0">
+                              {renderAvatar(patient.avatar, "w-12 h-12", "text-xl")}
+                              <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                                patient.hasAssessment ? 'bg-emerald-500' : 'bg-amber-400'
+                              }`} />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-black text-slate-800 group-hover:text-teal-700 transition-colors">{patient.name}</h4>
+                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">
+                                {patient.age} Thn • {patient.gender === 'female' ? 'Perempuan' : 'Laki-laki'} • {patient.school || '-'}
+                              </p>
+                              <p className="text-[9px] text-slate-400 font-medium">Wali: {patient.parent || '-'}</p>
+                            </div>
+                          </div>
+                          <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                            patient.hasAssessment ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {patient.hasAssessment ? 'Terverifikasi' : 'Pasien Baru'}
+                          </span>
+                        </div>
+
+                        {/* Indikator Skor Asesmen */}
+                        {patient.hasAssessment && patient.scores && (
+                          <div className="grid grid-cols-3 gap-2 bg-slate-50/80 p-2.5 rounded-2xl text-[10px] font-bold">
+                            <div className="text-center">
+                              <span className="text-[9px] text-slate-400 block font-medium">🧩 Logika</span>
+                              <span className="text-teal-700 font-black">{patient.scores.logika || '-'}/100</span>
+                            </div>
+                            <div className="text-center border-x border-slate-200/80">
+                              <span className="text-[9px] text-slate-400 block font-medium">🧠 Memori</span>
+                              <span className="text-indigo-700 font-black">{patient.scores.memori || '-'}/100</span>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-[9px] text-slate-400 block font-medium">🗣️ Bahasa</span>
+                              <span className="text-teal-700 font-black">{patient.scores.bahasa || '-'}/100</span>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-50 text-[10px] font-bold text-slate-400">
+                          <span className="text-teal-600 font-extrabold group-hover:underline flex items-center">
+                            Lihat Profil Klinis & Rekam Medis →
+                          </span>
+                          <span className="text-[9px] font-medium text-slate-400">{patient.phone || '-'}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
@@ -2619,18 +4178,26 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
               
               <div className="space-y-4">
                 {(() => {
-                  const filteredList = chats.filter(chat => {
-                    const isUpcoming = chat.expiresAt ? new Date(chat.expiresAt) > new Date() : true;
-                    return jadwalTabFilter === 'upcoming' ? isUpcoming : !isUpcoming;
+                  const filteredAppts = allAppointments.filter(appt => {
+                    if (jadwalTabFilter === 'upcoming') {
+                      return appt.status !== 'completed' && appt.status !== 'cancelled';
+                    } else {
+                      return appt.status === 'completed' || appt.status === 'cancelled';
+                    }
                   });
 
-                  if (filteredList.length === 0) {
+                  const filteredChats = chats.filter(chat => {
+                    const isDone = isChatCompleted(chat);
+                    return jadwalTabFilter === 'upcoming' ? !isDone : isDone;
+                  });
+
+                  if (filteredAppts.length === 0 && filteredChats.length === 0) {
                     return (
                       <div className="text-center py-12 text-slate-400 space-y-2">
                         <span className="text-4xl mb-2 block">📅</span>
                         <p className="text-xs font-bold">
                           {jadwalTabFilter === 'upcoming' 
-                            ? 'Belum ada jadwal konsultasi mendatang.' 
+                            ? 'Belum ada jadwal konsultasi atau janji temu mendatang.' 
                             : 'Belum ada riwayat sesi konsultasi yang telah selesai.'}
                         </p>
                         {jadwalTabFilter === 'upcoming' && (
@@ -2645,34 +4212,160 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                     );
                   }
 
-                  return filteredList.map((chat) => (
-                    <div key={'j-' + chat.id} className="border border-slate-100 p-4 rounded-2xl flex items-center justify-between hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex flex-col items-center justify-center font-black">
-                          <span className="text-sm leading-none">{formatDateSafe(chat.expiresAt || new Date()).split(' ')[0]}</span>
-                          <span className="text-[9px] uppercase mt-0.5">{formatDateSafe(chat.expiresAt || new Date()).split(' ')[1]?.substring(0,3) || 'MEI'}</span>
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-black text-slate-800">{patientNames[chat.buyerId] || 'Pasien'}</h4>
-                          <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-bold mt-1">
-                            <span className="flex items-center"><Calendar size={10} className="mr-1"/> Sesi Online (Chat)</span>
-                            <span>•</span>
-                            <span>{jadwalTabFilter === 'upcoming' ? '09.00 - 09.45 WIB' : 'Selesai'}</span>
+                  return (
+                    <div className="space-y-6">
+                      {/* 1. SEKSI JANJI TEMU RESMI (APPOINTMENTS) */}
+                      {filteredAppts.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center">
+                              <Calendar size={13} className="mr-1.5 text-teal-600" />
+                              Janji Temu Kalender Klinis ({filteredAppts.length})
+                            </span>
                           </div>
+                          {filteredAppts.map((appt) => {
+                            const dateParts = (appt.dateTime || '').split('T');
+                            const dateStr = dateParts[0] || '-';
+                            const timeStr = dateParts[1] ? dateParts[1].substring(0, 5) : '09:00';
+                            const isConfirmed = appt.status === 'confirmed';
+                            const isCompleted = appt.status === 'completed';
+
+                            return (
+                              <div key={'appt-' + appt.id} className="border border-teal-100 bg-teal-50/20 p-4 rounded-2xl flex items-center justify-between hover:bg-teal-50/40 transition-colors shadow-xs">
+                                <div className="flex items-center space-x-4">
+                                  <div className="w-12 h-12 bg-teal-600 text-white rounded-2xl flex flex-col items-center justify-center font-black shadow-xs">
+                                    <span className="text-xs leading-none">{dateStr.split('-')[2] || '12'}</span>
+                                    <span className="text-[8px] uppercase mt-0.5">{dateStr.split('-')[1] || 'SEP'}</span>
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center space-x-2">
+                                      <h4 className="text-sm font-black text-slate-800">{appt.patientName || 'Pasien Zikola'}</h4>
+                                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wide ${
+                                        isCompleted 
+                                          ? 'bg-slate-100 text-slate-600' 
+                                          : isConfirmed 
+                                            ? 'bg-emerald-100 text-emerald-700' 
+                                            : 'bg-amber-100 text-amber-700'
+                                      }`}>
+                                        {isCompleted ? 'Selesai' : isConfirmed ? 'Dikonfirmasi' : 'Menunggu Konfirmasi'}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-2 text-[10px] text-slate-500 font-bold mt-1">
+                                      <span className="flex items-center"><Clock size={10} className="mr-1 text-teal-600"/> Pukul {timeStr} WIB</span>
+                                      <span>•</span>
+                                      <span>{appt.type === 'telehealth_call' ? 'Panggilan Telekonsultasi' : 'Sesi Chat Dokter'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  {!isCompleted && !isConfirmed && (
+                                    <button 
+                                      onClick={() => handleUpdateAppointmentStatus(appt.id, 'confirmed')}
+                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-xl transition-colors shadow-xs"
+                                    >
+                                      Konfirmasi
+                                    </button>
+                                  )}
+                                  {!isCompleted && (
+                                    <button 
+                                      onClick={() => handleUpdateAppointmentStatus(appt.id, 'completed')}
+                                      className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 font-bold text-[10px] rounded-xl transition-colors"
+                                    >
+                                      Tandai Selesai
+                                    </button>
+                                  )}
+                                  <button 
+                                    onClick={() => {
+                                      const targetChat = chats.find(c => c.buyerId === appt.patientId);
+                                      if (targetChat) {
+                                        setSelectedChat(targetChat);
+                                        setActivePatientUid(targetChat.buyerId);
+                                        setSelectedPatientId(appt.patientName || patientNames[targetChat.buyerId]);
+                                        setActiveMenu('pesan');
+                                      } else {
+                                        setActivePatientUid(appt.patientId);
+                                        setSelectedPatientId(appt.patientName);
+                                        setActiveMenu('patients');
+                                      }
+                                    }} 
+                                    className="px-3 py-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-[10px] rounded-xl transition-colors"
+                                  >
+                                    Buka Profil / Chat
+                                  </button>
+                                  {jadwalTabFilter === 'completed' && (
+                                    <button 
+                                      onClick={() => handleDeleteAppointment(appt.id)}
+                                      className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                                      title="Hapus arsip jadwal"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button onClick={() => {
-                          setSelectedChat(chat);
-                          setActivePatientUid(chat.buyerId);
-                          setSelectedPatientId(patientNames[chat.buyerId] || 'Pasien');
-                          setActiveMenu('pesan');
-                        }} className="px-4 py-2 border border-slate-200 text-teal-600 font-bold text-[10px] rounded-xl hover:bg-teal-50 transition-colors">
-                          {jadwalTabFilter === 'upcoming' ? 'Masuk Ruangan' : 'Lihat Rekap Chat'}
-                        </button>
-                      </div>
+                      )}
+
+                      {/* 2. SEKSI SESI CHAT AKTIF / RIWAYAT CHAT */}
+                      {filteredChats.length > 0 && (
+                        <div className="space-y-3 pt-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">
+                              Sesi Konsultasi Chat Langsung ({filteredChats.length})
+                            </span>
+                            {jadwalTabFilter === 'completed' && filteredChats.length > 0 && (
+                              <button 
+                                onClick={handleCleanAllCompletedSessions}
+                                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-[10px] font-bold transition-colors flex items-center space-x-1.5"
+                              >
+                                <Trash2 size={12} />
+                                <span>Bersihkan Semua Riwayat Selesai</span>
+                              </button>
+                            )}
+                          </div>
+                          {filteredChats.map((chat) => (
+                            <div key={'j-' + chat.id} className="border border-slate-100 p-4 rounded-2xl flex items-center justify-between hover:bg-slate-50 transition-colors">
+                              <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex flex-col items-center justify-center font-black">
+                                  <span className="text-sm leading-none">{formatDateSafe(chat.expiresAt || new Date()).split(' ')[0]}</span>
+                                  <span className="text-[9px] uppercase mt-0.5">{formatDateSafe(chat.expiresAt || new Date()).split(' ')[1]?.substring(0,3) || 'MEI'}</span>
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-black text-slate-800">{patientNames[chat.buyerId] || 'Pasien'}</h4>
+                                  <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-bold mt-1">
+                                    <span className="flex items-center"><Calendar size={10} className="mr-1"/> Sesi Chat Langsung</span>
+                                    <span>•</span>
+                                    <span>{jadwalTabFilter === 'upcoming' ? 'Aktif' : 'Selesai'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <button onClick={() => {
+                                  setSelectedChat(chat);
+                                  setActivePatientUid(chat.buyerId);
+                                  setSelectedPatientId(patientNames[chat.buyerId] || 'Pasien');
+                                  setActiveMenu('pesan');
+                                }} className="px-4 py-2 border border-slate-200 text-teal-600 font-bold text-[10px] rounded-xl hover:bg-teal-50 transition-colors">
+                                  {jadwalTabFilter === 'upcoming' ? 'Masuk Ruangan' : 'Lihat Rekap Chat'}
+                                </button>
+                                {jadwalTabFilter === 'completed' && (
+                                  <button 
+                                    onClick={() => handleDeleteChatSession(chat.id)}
+                                    className="p-2 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl text-[10px] font-bold transition-colors"
+                                    title="Hapus riwayat sesi selesai ini"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ));
+                  );
                 })()}
               </div>
             </div>
@@ -2777,98 +4470,213 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
           </div>
         )}
         {activeMenu === 'pesan' && (
-          selectedChat ? (
-            <>
-              {/* Header Bar */}
-              <div className="bg-white p-4 border-b border-slate-100 flex items-center justify-between shadow-sm z-10">
-                <div className="flex items-center space-x-3">
-                  <button onClick={() => setActiveMenu('dashboard')} className="w-9 h-9 border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white">
-                    <ArrowLeft size={18} />
-                  </button>
-                  <div>
-                    <h2 className="text-sm font-black text-slate-800">Konsultasi dengan {patientNames[selectedChat.buyerId] || patientProfile?.name || 'Pasien Zikola'}</h2>
-                    <div className="flex items-center space-x-1.5 mt-0.5">
-                      <span className={`w-2 h-2 rounded-full ${(selectedChat?.status === 'completed' || isExpired) ? 'bg-slate-400' : 'bg-green-500 animate-pulse'}`}></span>
-                      <span className={`text-[9px] font-bold uppercase ${(selectedChat?.status === 'completed' || isExpired) ? 'text-slate-500' : 'text-green-600'}`}>
-                        {(selectedChat?.status === 'completed' || isExpired) ? 'Sesi Selesai • Riwayat Ditutup' : `Sesi Online Aktif • Sisa Waktu: ${timeRemaining}`}
-                      </span>
-                    </div>
-                  </div>
+          <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden bg-white">
+            {/* Kolom Kiri: Chat List */}
+            <div className={`w-full md:w-80 border-r border-slate-100 flex flex-col shrink-0 bg-white ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-black text-slate-800">Pesan Konsultasi</h2>
+                  <p className="text-[10px] text-slate-400 font-bold mt-0.5">Ruang telekonsultasi & pendampingan</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => setMobileShowRadarSheet(true)}
-                    className="lg:hidden px-2.5 py-2 border border-slate-200 rounded-xl text-[10px] font-bold text-teal-600 bg-teal-50/50 hover:bg-teal-50 transition-colors flex items-center space-x-1"
-                    title="Lihat Ringkasan & Radar Asesmen"
-                  >
-                    <Brain size={14} />
-                    <span className="hidden sm:inline">Radar</span>
-                  </button>
-                  <button 
-                    onClick={startAudioCall}
-                    className="w-9 h-9 sm:w-10 sm:h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white transition-colors"
-                  >
-                    <Phone size={18} />
-                  </button>
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowChatOptionsMenu(!showChatOptionsMenu)}
-                      className="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white transition-colors"
-                      title="Opsi Ruang Konsultasi"
-                    >
-                      <MoreVertical size={18} />
-                    </button>
-                    {showChatOptionsMenu && (
-                      <div className="absolute right-0 top-12 w-52 bg-white border border-slate-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in duration-150 space-y-1">
-                        <button 
-                          onClick={() => {
-                            setShowChatOptionsMenu(false);
-                            setActiveMenu('patients');
-                            setPatientDetailTab('medical_history');
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl flex items-center space-x-2"
-                        >
-                          <FileText size={14} />
-                          <span>Buka Rekam Medis (EMR)</span>
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setShowChatOptionsMenu(false);
-                            setShowPrintModal(true);
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl flex items-center space-x-2"
-                        >
-                          <Printer size={14} />
-                          <span>Cetak Rekam Medis</span>
-                        </button>
-                        <div className="border-t border-slate-100 my-1"></div>
-                        <button 
-                          onClick={() => {
-                            setShowChatOptionsMenu(false);
-                            handleCompleteSession(selectedChat.id);
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center space-x-2"
-                        >
-                          <X size={14} />
-                          <span>Akhiri Sesi Konsultasi</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-teal-50 text-teal-700">
+                  {chats.length} Sesi
+                </span>
+              </div>
+              <div className="p-3 border-b border-slate-50">
+                <div className="bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl flex items-center space-x-2">
+                  <span className="text-slate-400 text-xs">🔍</span>
+                  <input 
+                    type="text" 
+                    value={globalSearch} 
+                    onChange={(e) => setGlobalSearch(e.target.value)} 
+                    placeholder="Cari pasien..." 
+                    className="bg-transparent border-none outline-none text-xs w-full font-medium text-slate-700" 
+                  />
                 </div>
               </div>
+              <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
+                {chats
+                  .filter(c => {
+                    const name = c.patientName || patientNames[c.buyerId] || '';
+                    return name.toLowerCase().includes(globalSearch.toLowerCase());
+                  })
+                  .map((chat) => {
+                    const name = chat.patientName || patientNames[chat.buyerId] || 'Pasien Zikola';
+                    const avatar = chat.avatar || patientAvatars[chat.buyerId];
+                    const isDone = isChatCompleted(chat);
+                    const isSelected = selectedChat?.id === chat.id;
 
-              {renderKonsultasiChatView()}
-            </>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-white">
-              <span className="text-5xl mb-4">💬</span>
-              <h3 className="text-base font-black text-slate-700">Pilih Konsultasi</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-xs text-center leading-relaxed">
-                Pilih riwayat chat pasien di kolom kiri beranda untuk memulai sesi.
-              </p>
+                    return (
+                      <div
+                        key={chat.id}
+                        onClick={() => {
+                          setSelectedChat(chat);
+                          setActivePatientUid(chat.buyerId);
+                          setSelectedPatientId(name);
+                        }}
+                        className={`p-3.5 flex items-start space-x-3 cursor-pointer transition-all ${
+                          isSelected ? 'bg-teal-50/70 border-l-4 border-teal-600' : 'hover:bg-slate-50/80'
+                        }`}
+                      >
+                        <div className="relative shrink-0 mt-0.5">
+                          {renderAvatar(avatar, "w-10 h-10", "text-sm")}
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${isDone ? 'bg-slate-400' : 'bg-green-500 animate-pulse'}`} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className={`text-xs truncate ${isSelected ? 'font-black text-teal-900' : 'font-bold text-slate-800'}`}>{name}</h4>
+                            <span className="text-[9px] text-slate-400 font-medium">09:15</span>
+                          </div>
+                          <p className="text-[10px] text-slate-500 truncate mt-0.5">
+                            {chat.lastMessage || chat.complaint || 'Sesi konsultasi dibuka'}
+                          </p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                              isDone ? 'bg-slate-100 text-slate-500' : 'bg-green-100 text-green-700'
+                            }`}>
+                              {isDone ? 'Selesai' : 'Aktif'}
+                            </span>
+                            {chat.childAge && (
+                              <span className="text-[8px] font-bold text-slate-400">
+                                {chat.childAge} Thn
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
-          )
+
+            {/* Kolom Kanan: Chat View */}
+            <div className={`flex-1 flex flex-col h-full bg-slate-50/50 ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
+              {selectedChat ? (
+                <>
+                  {/* Header Bar */}
+                  <div className="bg-white p-4 border-b border-slate-100 flex items-center justify-between shadow-sm z-10 shrink-0">
+                    <div className="flex items-center space-x-3">
+                      <button 
+                        onClick={() => setSelectedChat(null)} 
+                        className="md:hidden w-9 h-9 border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white"
+                      >
+                        <ArrowLeft size={18} />
+                      </button>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h2 className="text-sm font-black text-slate-800">
+                            Konsultasi: {selectedChat?.patientName || patientNames[selectedChat.buyerId] || patientProfile?.name || 'Pasien Zikola'}
+                          </h2>
+                          {selectedChat?.childAge && (
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200">
+                              {selectedChat.childAge} Thn
+                            </span>
+                          )}
+                          {selectedChat?.childGender && (
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                              {selectedChat.childGender}
+                            </span>
+                          )}
+                          {selectedChat?.complaint && (
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 truncate max-w-[200px]" title={selectedChat.complaint}>
+                              Keluhan: {selectedChat.complaint}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-1.5 mt-0.5">
+                          <span className={`w-2 h-2 rounded-full ${(selectedChat?.status === 'completed' || isExpired) ? 'bg-slate-400' : 'bg-green-500 animate-pulse'}`}></span>
+                          <span className={`text-[9px] font-bold uppercase ${(selectedChat?.status === 'completed' || isExpired) ? 'text-slate-500' : 'text-green-600'}`}>
+                            {(selectedChat?.status === 'completed' || isExpired) ? 'Sesi Selesai • Riwayat Ditutup' : `Sesi Online Aktif • Sisa Waktu: ${timeRemaining}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => setMobileShowRadarSheet(true)}
+                        className="lg:hidden px-2.5 py-2 border border-slate-200 rounded-xl text-[10px] font-bold text-teal-600 bg-teal-50/50 hover:bg-teal-50 transition-colors flex items-center space-x-1"
+                        title="Lihat Ringkasan & Radar Asesmen"
+                      >
+                        <Brain size={14} />
+                        <span className="hidden sm:inline">Radar</span>
+                      </button>
+                      <button 
+                        onClick={startAudioCall}
+                        className="w-9 h-9 sm:w-10 sm:h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white transition-colors"
+                      >
+                        <Phone size={18} />
+                      </button>
+                      <div className="relative">
+                        <button 
+                          onClick={() => setShowChatOptionsMenu(!showChatOptionsMenu)}
+                          className="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 bg-white transition-colors"
+                          title="Opsi Ruang Konsultasi"
+                        >
+                          <MoreVertical size={18} />
+                        </button>
+                        {showChatOptionsMenu && (
+                          <div className="absolute right-0 top-12 w-52 bg-white border border-slate-100 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in duration-150 space-y-1">
+                            <button 
+                              onClick={() => {
+                                setShowChatOptionsMenu(false);
+                                setActiveMenu('patients');
+                                setPatientDetailTab('medical_history');
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl flex items-center space-x-2"
+                            >
+                              <FileText size={14} />
+                              <span>Buka Rekam Medis (EMR)</span>
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setShowChatOptionsMenu(false);
+                                setShowPrintModal(true);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-700 rounded-xl flex items-center space-x-2"
+                            >
+                              <Printer size={14} />
+                              <span>Cetak Rekam Medis</span>
+                            </button>
+                            <div className="border-t border-slate-100 my-1"></div>
+                            <button 
+                              onClick={() => {
+                                setShowChatOptionsMenu(false);
+                                handleCompleteSession(selectedChat.id);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-amber-600 hover:bg-amber-50 rounded-xl flex items-center space-x-2"
+                            >
+                              <X size={14} />
+                              <span>Akhiri Sesi Konsultasi</span>
+                            </button>
+                            <button 
+                              onClick={() => {
+                                setShowChatOptionsMenu(false);
+                                handleDeleteChatSession(selectedChat.id);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center space-x-2"
+                            >
+                              <Trash2 size={14} />
+                              <span>Hapus Riwayat Chat</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {renderKonsultasiChatView()}
+                </>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-white p-8">
+                  <span className="text-5xl mb-4">💬</span>
+                  <h3 className="text-base font-black text-slate-700">Pilih Pasien Konsultasi</h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-xs text-center leading-relaxed">
+                    Pilih salah satu ruang konsultasi di panel kiri untuk membuka percakapan dan tinjauan klinis.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
@@ -3100,7 +4908,7 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                   }
                   try {
                     // Temukan chat ID pasien ini
-                    const q = query(collection(db, 'chats'), where('buyerId', '==', activePatientUid));
+                    const q = query(collection(db, 'chats'), where('buyerId', '==', activePatientUid), where('doctorId', '==', currentDoctorId));
                     const snapshot = await getDocs(q);
                     if (!snapshot.empty) {
                       const chatId = snapshot.docs[0].id;
@@ -3133,6 +4941,164 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                 <span>Sahkan & Kirim Laporan</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL E-PRESCRIPTION & REKOMENDASI TERAPI */}
+      {showPrescriptionModal && (
+        <div className="fixed inset-0 bg-black/50 z-[150] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="p-5 border-b flex items-center justify-between bg-gradient-to-r from-indigo-600 to-teal-600 text-white">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center">
+                  <Pill size={20} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black tracking-tight">Tulis Resep & Rekomendasi Terapi</h3>
+                  <p className="text-[10px] text-teal-100 font-medium">Pasien: {patientProfile?.name || selectedPatientId || 'Pasien Zikola'}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowPrescriptionModal(false)} className="p-1.5 hover:bg-white/10 rounded-full transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePrescription} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Pilihan Jenis */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Kategori Rekomendasi</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { key: 'suplemen', label: 'Suplemen / Vitamin', icon: '💊' },
+                    { key: 'terapi', label: 'Paket Terapi', icon: '🧩' },
+                    { key: 'medis', label: 'Obat Medis', icon: '🩺' },
+                  ].map(t => (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => setPrescType(t.key as any)}
+                      className={`p-2.5 rounded-xl border text-xs font-black flex flex-col items-center justify-center space-y-1 transition-all ${
+                        prescType === t.key
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-xs'
+                          : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className="text-lg">{t.icon}</span>
+                      <span className="text-[10px] text-center leading-tight">{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Template Cepat */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Pilihan Cepat (Rekomendasi Teruji)</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {(prescType === 'terapi' ? [
+                    'Terapi Wicara (Speech Therapy)',
+                    'Sensori Integrasi (SI)',
+                    'Terapi Okupasi & Kemandirian',
+                    'Terapi Perilaku (ABA / Behavior)',
+                    'Stimulasi Kognitif Interaktif'
+                  ] : prescType === 'medis' ? [
+                    'Sirup Paracetamol 120mg/5ml',
+                    'Cetirizine Drops 10mg/ml',
+                    'Ambroxol Sirup 15mg/5ml',
+                    'Probiotik Tumbuh Kembang'
+                  ] : [
+                    'DHA & EPA Omega 3 (Minyak Ikan)',
+                    'Vitamin D3 Drops 400 IU',
+                    'Zat Besi Sirup (Suplementasi)',
+                    'Zinc Sirup 20mg',
+                    'Multivitamin Anak + Kolin'
+                  ]).map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setPrescItemName(item)}
+                      className="text-[10px] font-bold px-2.5 py-1 bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 rounded-lg border border-slate-200 transition-colors"
+                    >
+                      + {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Nama Item / Terapi */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Nama Suplemen / Program Terapi *</label>
+                <input
+                  type="text"
+                  value={prescItemName}
+                  onChange={(e) => setPrescItemName(e.target.value)}
+                  placeholder="Contoh: Minyak Ikan DHA 250mg atau Terapi Sensori Integrasi"
+                  required
+                  className="w-full p-2.5 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-500 bg-white"
+                />
+              </div>
+
+              {/* Dosis & Durasi */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Dosis / Frekuensi Sesi *</label>
+                  <input
+                    type="text"
+                    value={prescDosage}
+                    onChange={(e) => setPrescDosage(e.target.value)}
+                    placeholder="Contoh: 1x sehari 2.5 ml / 2x seminggu"
+                    required
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-500 bg-white"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Durasi Konsumsi / Terapi *</label>
+                  <input
+                    type="text"
+                    value={prescDuration}
+                    onChange={(e) => setPrescDuration(e.target.value)}
+                    placeholder="Contoh: 30 Hari / 8 Pertemuan"
+                    required
+                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs font-bold outline-none focus:border-indigo-500 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Catatan Anjuran */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Catatan Anjuran Khusus Dokter</label>
+                <textarea
+                  value={prescNotes}
+                  onChange={(e) => setPrescNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Contoh: Diminum sesudah sarapan pagi. Pantau perkembangan kontak mata dan atensi selama 2 pekan ke depan."
+                  className="w-full p-2.5 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:border-indigo-500 bg-white resize-none"
+                />
+              </div>
+
+              <div className="pt-3 border-t flex items-center justify-between">
+                <p className="text-[9px] text-slate-400 font-medium">
+                  Resep akan tersimpan di EMR dan terkirim ke chat pasien.
+                </p>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowPrescriptionModal(false)}
+                    className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingPrescription || !prescItemName.trim()}
+                    className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center space-x-1.5 disabled:opacity-50"
+                  >
+                    <Save size={13} />
+                    <span>{isSavingPrescription ? 'Menyimpan...' : 'Simpan & Kirim'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -3270,8 +5236,36 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                     await addDoc(collection(db, 'chats', selectedChat.id, 'messages'), {
                       text: planText,
                       senderId: currentDoctorId,
-                      timestamp: serverTimestamp(), senderType: 'doctor'
+                      timestamp: serverTimestamp(),
+                      senderType: 'doctor',
+                      metadata: {
+                        type: 'action_plan',
+                        target: actionTarget,
+                        screenTime: actionScreenTime,
+                        notes: actionNotes
+                      }
                     });
+
+                    const targetUid = activePatientUid || selectedChat?.buyerId;
+                    if (targetUid) {
+                      await addDoc(collection(db, 'users', targetUid, 'action_plans'), {
+                        target: actionTarget,
+                        screenTime: actionScreenTime,
+                        notes: actionNotes || 'Lakukan stimulasi terarah setiap hari.',
+                        doctorName: doctorProfile?.name || 'dr. Rani, M.Psi., Psikolog',
+                        createdAt: new Date().toISOString(),
+                        completedToday: false,
+                        timestamp: serverTimestamp()
+                      });
+
+                      await sendPatientNotification(targetUid, {
+                        type: 'action_plan',
+                        title: 'Target Stimulasi (Action Plan) Baru',
+                        content: `Dokter menetapkan fokus stimulasi "${actionTarget}" dengan batas screen-time: ${actionScreenTime}.`,
+                        targetId: 'emr',
+                        sourceAvatar: '📝'
+                      });
+                    }
                     
                     alert('Action Plan berhasil disinkronkan ke aplikasi orang tua!'); 
                     setShowTugasModal(false);
@@ -3423,7 +5417,7 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                 </div>
                 <h4 className="text-base font-black text-slate-800">{patientProfile?.name || 'Pasien Anonim'}</h4>
                 <p className="text-xs text-slate-400 font-bold mt-1">
-                  Usia: {patientProfile?.age || '8'} Tahun • {patientProfile?.gender === 'male' ? 'Laki-laki' : 'Perempuan'}
+                  Usia: {patientProfile?.age ? `${patientProfile.age} Tahun` : 'Belum diisi'} • {patientProfile?.gender === 'female' ? 'Perempuan' : patientProfile?.gender === 'male' ? 'Laki-laki' : '-'}
                 </p>
               </div>
 
@@ -3434,19 +5428,19 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-400 font-bold">Hobi Utama</span>
-                  <span className="text-slate-700 font-black">{patientProfile?.hobbies || 'Menggambar, Menyusun Puzzle'}</span>
+                  <span className="text-slate-700 font-black">{patientProfile?.hobbies || '-'}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-400 font-bold">Minat Anak</span>
-                  <span className="text-slate-700 font-black">{patientProfile?.interests || 'Seni, Sains'}</span>
+                  <span className="text-slate-700 font-black">{patientProfile?.interests || '-'}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-slate-50">
                   <span className="text-slate-400 font-bold">Karakteristik</span>
-                  <span className="text-slate-700 font-black">{patientProfile?.personality || 'Tenang, Fokus'}</span>
+                  <span className="text-slate-700 font-black">{patientProfile?.personality || '-'}</span>
                 </div>
                 <div className="flex justify-between py-1">
                   <span className="text-slate-400 font-bold">Gaya Belajar</span>
-                  <span className="text-teal-600 font-black">{patientProfile?.learningStyle || 'Visual'}</span>
+                  <span className="text-teal-600 font-black">{patientProfile?.learningStyle || '-'}</span>
                 </div>
               </div>
             </div>
@@ -3466,8 +5460,8 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
       {/* PHASE 2 ACTION: MEDICAL RECORD PRINT PREVIEW */}
       {showPrintModal && (
         <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-slate-100 rounded-3xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
-            <div className="p-4 border-b flex items-center justify-between bg-white">
+          <div className="print-modal-container bg-slate-100 rounded-3xl w-full max-w-4xl max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-4 border-b flex items-center justify-between bg-white no-print">
               <div className="flex items-center space-x-3">
                 <button onClick={() => setShowPrintModal(false)} className="w-8 h-8 border border-slate-200 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-50">
                   <ArrowLeft size={16} />
@@ -3484,78 +5478,181 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-8 flex justify-center">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center">
               {/* Kertas A4 Mockup */}
-              <div className="bg-white w-[210mm] min-h-[297mm] shadow-md border border-slate-200 p-12 text-slate-800 font-sans relative scale-95 origin-top">
-                {/* Kop Surat */}
-                <div className="border-b-4 border-teal-600 pb-6 mb-6 flex justify-between items-center">
-                  <div className="flex items-center space-x-4">
-                    <img src={zikolaLogoFull} alt="Logo" className="h-10 object-contain" />
-                    <div>
-                      <h1 className="text-2xl font-black tracking-tighter text-indigo-900 uppercase">Klinik Zikola</h1>
-                      <p className="text-[11px] font-bold text-slate-500 tracking-widest mt-1">PUSAT TUMBUH KEMBANG ANAK & PSIKOLOGI</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">Jl. Jend. Sudirman No. 123, Jakarta 12190 | Telp: (021) 555-0123</p>
+              <div className="emr-printable-sheet bg-white w-[210mm] min-h-[297mm] shadow-md border border-slate-200 p-10 text-slate-800 font-sans relative scale-95 origin-top flex flex-col justify-between">
+                <div>
+                  {/* Kop Surat */}
+                  <div className="border-b-4 border-teal-600 pb-5 mb-5 flex justify-between items-center">
+                    <div className="flex items-center space-x-4">
+                      <img src={zikolaLogoFull} alt="Logo" className="h-10 object-contain" />
+                      <div>
+                        <h1 className="text-2xl font-black tracking-tighter text-indigo-900 uppercase">Klinik Zikola</h1>
+                        <p className="text-[10px] font-bold text-slate-500 tracking-widest mt-0.5">PUSAT TUMBUH KEMBANG ANAK & PSIKOLOGI</p>
+                        <p className="text-[9px] text-slate-400 mt-0.5">Jl. Raya Rungkut Madya No. 1, Gunung Anyar, Surabaya, Jawa Timur 60294 | Layanan Resmi Zikola Care</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <h2 className="text-[14px] font-black text-slate-800 uppercase">Rekam Medis Elektronik</h2>
-                    <p className="text-[11px] text-slate-500 font-medium mt-1">No. RM: <span className="font-bold">ZK-2025-0518-A</span></p>
-                    <p className="text-[11px] text-slate-500 font-medium">Tanggal: <span className="font-bold">{formatDateSafe(new Date()).split(",")[0]}</span></p>
-                  </div>
-                </div>
-
-                {/* Data Pasien & Dokter */}
-                <div className="grid grid-cols-2 gap-8 mb-8 text-[11px]">
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Nama Pasien</span><span className="col-span-2 font-black">: {selectedPatientId || 'Arkan Pratama'}</span></div>
-                    <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Usia / Gender</span><span className="col-span-2 font-black">: 8 Tahun / Laki-laki</span></div>
-                    <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Nama Orang Tua</span><span className="col-span-2 font-black">: Budi Santoso</span></div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Dokter Pemeriksa</span><span className="col-span-2 font-black">: {doctorProfile?.name || 'dr. Rani'}</span></div>
-                    <div className="grid grid-cols-3"><span className="font-bold text-slate-500">SIP / STR</span><span className="col-span-2 font-black">: {doctorProfile?.licenseNumber || 'STR-9876-1234'}</span></div>
-                  </div>
-                </div>
-
-                {/* Hasil Asesmen Klinis */}
-                <div className="mb-8">
-                  <h3 className="text-sm font-black text-indigo-900 border-b border-slate-200 pb-2 mb-4 uppercase tracking-widest">A. Hasil Observasi & Asesmen Kognitif</h3>
-                  <div className="grid grid-cols-2 gap-8 items-center">
-                    <div className="h-48 flex items-center justify-center -ml-8">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-                          <PolarGrid stroke="#E2E8F0" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fill: '#1E293B', fontSize: 10, fontWeight: 'bold' }} />
-                          <Radar dataKey="A" stroke="#0D9488" fill="#0D9488" fillOpacity={0.2} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="space-y-3">
-                      <p className="text-[11px] leading-relaxed text-slate-700">
-                        Pasien menunjukkan tingkat kemampuan <strong>Logika (85/100)</strong> dan <strong>Visual Spasial</strong> yang sangat baik. Terdapat catatan khusus pada area <strong>Atensi/Fokus (65/100)</strong> yang menurun saat aktivitas melebihi 10 menit berturut-turut.
+                    <div className="text-right">
+                      <h2 className="text-[13px] font-black text-slate-800 uppercase">Rekam Medis Elektronik</h2>
+                      <p className="text-[10px] text-slate-500 font-medium mt-1">
+                        No. RM: <span className="font-bold">{patientProfile?.noRm || (activePatientUid ? `ZK-${new Date().getFullYear()}-${activePatientUid.substring(0, 6).toUpperCase()}` : `ZK-${new Date().getFullYear()}-001`)}</span>
                       </p>
-                      <p className="text-[11px] leading-relaxed text-slate-700">
-                        Kemampuan motorik halus sudah sesuai dengan usia perkembangan, terlihat dari kemampuan presisi pada penugasan Puzzle.
-                      </p>
+                      <p className="text-[10px] text-slate-500 font-medium">Tanggal: <span className="font-bold">{formatDateSafe(new Date()).split(",")[0]}</span></p>
                     </div>
+                  </div>
+
+                  {/* Data Pasien & Dokter */}
+                  <div className="grid grid-cols-2 gap-6 mb-6 text-[11px] bg-slate-50/70 p-3 rounded-xl border border-slate-100">
+                    <div className="space-y-1.5">
+                      <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Nama Pasien</span><span className="col-span-2 font-black">: {patientProfile?.name || selectedPatientId || 'Pasien Zikola'}</span></div>
+                      <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Usia / Gender</span><span className="col-span-2 font-black">: {patientProfile?.age ? `${patientProfile.age} Tahun` : 'Belum diisi'} / {patientProfile?.gender === 'female' ? 'Perempuan' : patientProfile?.gender === 'male' ? 'Laki-laki' : '-'}</span></div>
+                      <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Nama Orang Tua</span><span className="col-span-2 font-black">: {patientProfile?.parent || '-'}</span></div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Dokter Pemeriksa</span><span className="col-span-2 font-black">: {doctorProfile?.name || 'Dokter Spesialis Anak'}</span></div>
+                      <div className="grid grid-cols-3"><span className="font-bold text-slate-500">SIP / STR</span><span className="col-span-2 font-black">: {doctorProfile?.licenseNumber || 'STR/SIP Terdaftar'}</span></div>
+                      <div className="grid grid-cols-3"><span className="font-bold text-slate-500">Fasilitas</span><span className="col-span-2 font-black">: Klinik Zikola Surabaya</span></div>
+                    </div>
+                  </div>
+
+                  {/* Hasil Asesmen Klinis */}
+                  <div className="mb-6">
+                    <h3 className="text-xs font-black text-indigo-900 border-b border-slate-200 pb-1.5 mb-3 uppercase tracking-widest">A. Hasil Observasi & Asesmen Kognitif</h3>
+                    {hasAssessmentData ? (
+                      <div className="grid grid-cols-2 gap-6 items-center">
+                        <div className="h-40 flex items-center justify-center -ml-6">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                              <PolarGrid stroke="#E2E8F0" />
+                              <PolarAngleAxis dataKey="subject" tick={{ fill: '#1E293B', fontSize: 9, fontWeight: 'bold' }} />
+                              <Radar dataKey="A" stroke="#0D9488" fill="#0D9488" fillOpacity={0.2} />
+                            </RadarChart>
+                          </ResponsiveContainer>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-[10px] leading-relaxed text-slate-700">
+                            Berdasarkan hasil asesmen digital Zikola, pasien meraih skor kognitif rata-rata <strong>{averageScoreValue}/100 ({averageScoreLabel})</strong>.
+                            Tercatat performa domain Logika: <strong>{radarData.find(d => d.subject === 'Logika')?.A || 0}/100</strong>, Memori: <strong>{radarData.find(d => d.subject === 'Memori')?.A || 0}/100</strong>, Bahasa: <strong>{radarData.find(d => d.subject === 'Bahasa')?.A || 0}/100</strong>, Motorik: <strong>{radarData.find(d => d.subject === 'Motorik')?.A || 0}/100</strong>, dan Emosi: <strong>{radarData.find(d => d.subject === 'Emosi')?.A || 0}/100</strong>.
+                          </p>
+                          <p className="text-[10px] leading-relaxed text-slate-700">
+                            {emrPreviousTherapy ? `Catatan terapi pasien sebelumnya: ${emrPreviousTherapy}.` : 'Perkembangan kognitif dan sensori motorik anak terus dipantau secara berkala melalui program stimulasi terpadu.'}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-4 text-slate-600 text-[10px] leading-relaxed space-y-1.5">
+                        <p className="font-bold text-slate-700">
+                          ⚠️ Pasien belum menyelesaikan tes skrining / game asesmen kognitif digital di aplikasi Zikola.
+                        </p>
+                        <p className="text-slate-500">
+                          Observasi klinis awal disimpulkan melalui anamnesis riwayat tumbuh kembang bersama orang tua ({patientProfile?.parent || 'Keluarga'}) dan pengamatan sesi konsultasi dokter.
+                          {emrBirthCondition && ` Kondisi kelahiran tercatat: ${emrBirthCondition}.`}
+                          {emrAllergies && ` Catatan riwayat alergi: ${emrAllergies}.`}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Kesimpulan & Diagnosis */}
+                  <div className="mb-6">
+                    <h3 className="text-xs font-black text-indigo-900 border-b border-slate-200 pb-1.5 mb-3 uppercase tracking-widest">B. Kesimpulan Klinis & Diagnosa</h3>
+                    <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                      <div>
+                        <span className="text-[9px] font-black text-teal-700 uppercase tracking-wider block mb-0.5">Diagnosa & Catatan Evaluasi:</span>
+                        <p className="text-[11px] font-bold leading-relaxed text-slate-800 whitespace-pre-line">
+                          {emrDiagnosis || doctorAiNote || "Belum ada catatan diagnosa spesifik yang diinput dokter. Pasien dalam pemantauan tumbuh kembang wajar sesuai tahapan usia."}
+                        </p>
+                      </div>
+                      {emrTreatmentPlan && (
+                        <div className="pt-2 border-t border-slate-200">
+                          <span className="text-[9px] font-black text-indigo-700 uppercase tracking-wider block mb-0.5">Rencana Stimulasi & Terapi:</span>
+                          <p className="text-[10px] font-medium leading-relaxed text-slate-700 whitespace-pre-line">
+                            {emrTreatmentPlan}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bagian C: Rekomendasi Terapi & Resep Klinis */}
+                  <div className="mb-6">
+                    <h3 className="text-xs font-black text-indigo-900 border-b border-slate-200 pb-1.5 mb-3 uppercase tracking-widest flex items-center justify-between">
+                      <span>C. Rekomendasi Terapi & Resep Digital</span>
+                      <span className="text-[9px] font-bold text-teal-600 lowercase tracking-normal font-sans">e-prescription terverifikasi</span>
+                    </h3>
+                    {patientPrescriptions && patientPrescriptions.length > 0 ? (
+                      <div className="border border-slate-200 rounded-xl overflow-hidden">
+                        <table className="w-full text-[10px] text-left">
+                          <thead className="bg-slate-100 font-black text-slate-700 uppercase tracking-wider text-[9px]">
+                            <tr>
+                              <th className="py-2 px-3">Item / Tindakan</th>
+                              <th className="py-2 px-3">Kategori</th>
+                              <th className="py-2 px-3">Dosis / Frekuensi</th>
+                              <th className="py-2 px-3">Durasi</th>
+                              <th className="py-2 px-3">Catatan Khusus</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                            {patientPrescriptions.map((pr, idx) => (
+                              <tr key={pr.id || idx} className="hover:bg-slate-50">
+                                <td className="py-1.5 px-3 font-bold text-slate-900">{pr.itemName}</td>
+                                <td className="py-1.5 px-3">
+                                  <span className="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-100">
+                                    {pr.type || 'suplemen'}
+                                  </span>
+                                </td>
+                                <td className="py-1.5 px-3 font-semibold">{pr.dosage || '-'}</td>
+                                <td className="py-1.5 px-3">{pr.duration || '-'}</td>
+                                <td className="py-1.5 px-3 text-slate-500 italic">{pr.notes || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 p-3 rounded-xl border border-dashed border-slate-200 text-[10px] text-slate-600">
+                        <p className="font-bold text-slate-700">
+                          {emrTreatmentPlan ? `Rencana Terapi Terjadwal: ${emrTreatmentPlan}` : 'Pasien saat ini tidak memerlukan intervensi farmakologis atau paket terapi khusus.'}
+                        </p>
+                        <p className="text-slate-500 text-[9px] mt-0.5">
+                          Edukasi stimulasi sensorik dan keteraturan pola tidur direkomendasikan untuk orang tua di rumah.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Kesimpulan & Diagnosis */}
-                <div className="mb-8">
-                  <h3 className="text-sm font-black text-indigo-900 border-b border-slate-200 pb-2 mb-4 uppercase tracking-widest">B. Kesimpulan Klinis & Diagnosa Sementara</h3>
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <p className="text-[12px] font-bold leading-relaxed text-slate-800 whitespace-pre-line">
-                      {doctorAiNote ? doctorAiNote : "Tidak ditemukan indikasi keterlambatan kognitif mayor (No Major Cognitive Delay). Terdapat kecenderungan Distraksi Ringan (Mild Inattention) yang wajar di usianya. Memerlukan stimulasi sensori terstruktur untuk meningkatkan regulasi atensi."}
+                {/* Bagian Bawah: QR Code Keabsahan Medis & Tanda Tangan Dokter */}
+                <div className="pt-4 border-t border-slate-200 mt-4 flex justify-between items-end">
+                  <div className="flex items-center space-x-3 p-3 border border-slate-200 rounded-xl bg-slate-50">
+                    <div className="w-16 h-16 bg-white border border-slate-200 rounded-lg p-1.5 flex items-center justify-center shrink-0">
+                      <svg className="w-full h-full text-slate-800" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm13-2h3v3h-3v-3zm0 5h3v3h-3v-3zm-3-5h3v3h-3v-3zm0 5h3v3h-3v-3zm-2-2h2v2h-2v-2zM5 5h2v2H5V5zm12 0h2v2h-2V5zM5 17h2v2H5v-2z"/>
+                      </svg>
+                    </div>
+                    <div className="text-[9px] text-slate-600 space-y-0.5">
+                      <div className="flex items-center space-x-1 font-black text-teal-700 uppercase tracking-wide">
+                        <ShieldCheck size={12} />
+                        <span>Dokumen Medis Sah</span>
+                      </div>
+                      <p className="font-bold text-slate-800">Klinik Zikola Surabaya</p>
+                      <p className="text-slate-500 font-mono text-[8px]">
+                        VERIF: {patientProfile?.noRm || (activePatientUid ? `ZK-${new Date().getFullYear()}-${activePatientUid.substring(0, 6).toUpperCase()}` : `ZK-${new Date().getFullYear()}-001`)}
+                      </p>
+                      <p className="text-[8px] text-slate-400">Pindai kode QR untuk validasi keaslian EMR</p>
+                    </div>
+                  </div>
+
+                  <div className="text-center min-w-[200px]">
+                    <p className="text-[11px] mb-8 text-slate-600 font-medium">Surabaya, {formatDateSafe(new Date()).split(",")[0]}</p>
+                    <p className="text-[11px] font-black underline decoration-2 underline-offset-4 text-slate-900">
+                      {doctorProfile?.name || 'Dokter Spesialis Anak'}
                     </p>
+                    <p className="text-[9px] text-slate-500 mt-1 font-semibold">
+                      SIP / STR: {doctorProfile?.licenseNumber || 'STR/SIP Terdaftar'}
+                    </p>
+                    <p className="text-[9px] font-bold text-teal-700 mt-0.5">Klinik Terpadu Tumbuh Kembang Zikola Surabaya</p>
                   </div>
-                </div>
-
-                {/* Tanda Tangan */}
-                <div className="absolute bottom-16 right-16 text-center">
-                  <p className="text-[11px] mb-12">Jakarta, {formatDateSafe(new Date()).split(",")[0]}</p>
-                  <p className="text-[11px] font-black underline decoration-2 underline-offset-4">{doctorProfile?.name || 'dr. Rani, M.Psi., Psikolog'}</p>
-                  <p className="text-[9px] text-slate-500 mt-2">SIP: {doctorProfile?.licenseNumber || 'STR-001/ZIKOLA/2025'}</p>
                 </div>
               </div>
             </div>
@@ -3816,20 +5913,28 @@ export default function DoctorDashboard({ currentDoctorId, onLogout }: { current
             </div>
 
             <div className="h-52 flex items-center justify-center bg-slate-50/60 border border-slate-100 rounded-2xl p-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
-                  <PolarGrid stroke="#E2E8F0" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 8, fontWeight: 'bold' }} />
-                  <Radar name="Skor" dataKey="A" stroke="#0D9488" fill="#14B8A6" fillOpacity={0.25} />
-                </RadarChart>
-              </ResponsiveContainer>
+              {hasAssessmentData ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
+                    <PolarGrid stroke="#E2E8F0" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 8, fontWeight: 'bold' }} />
+                    <Radar name="Skor" dataKey="A" stroke="#0D9488" fill="#14B8A6" fillOpacity={0.25} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="text-center p-4">
+                  <span className="text-3xl block mb-2">📊</span>
+                  <p className="text-xs font-bold text-slate-600">Belum Ada Sesi Tes</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Pasien belum mengikuti asesmen</p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2 border-t border-slate-100 pt-3 text-xs font-bold text-slate-700">
-              <div className="flex justify-between py-1 border-b border-slate-50"><span>🧩 Puzzle Logika</span><span className="text-teal-600 font-black">{getDynamicScore('puzzleGame', 85)}/100</span></div>
-              <div className="flex justify-between py-1 border-b border-slate-50"><span>👁️ Memori Visual</span><span className="text-teal-600 font-black">{getDynamicScore('memory', 78)}/100</span></div>
-              <div className="flex justify-between py-1 border-b border-slate-50"><span>🔢 Math Adventure</span><span className="text-teal-600 font-black">{getDynamicScore('numberSequence', 72)}/100</span></div>
-              <div className="flex justify-between py-1"><span>🗣️ Bahasa Seru</span><span className="text-teal-600 font-black">{getDynamicScore('wordPuzzle', 68)}/100</span></div>
+              <div className="flex justify-between py-1 border-b border-slate-50"><span>🧩 Puzzle Logika</span><span className="text-teal-600 font-black">{getDynamicScore('puzzleGame', 0) > 0 ? `${getDynamicScore('puzzleGame', 0)}/100` : '-'}</span></div>
+              <div className="flex justify-between py-1 border-b border-slate-50"><span>👁️ Memori Visual</span><span className="text-teal-600 font-black">{getDynamicScore('memory', 0) > 0 ? `${getDynamicScore('memory', 0)}/100` : '-'}</span></div>
+              <div className="flex justify-between py-1 border-b border-slate-50"><span>🔢 Math Adventure</span><span className="text-teal-600 font-black">{getDynamicScore('numberSequence', 0) > 0 ? `${getDynamicScore('numberSequence', 0)}/100` : '-'}</span></div>
+              <div className="flex justify-between py-1"><span>🗣️ Bahasa Seru</span><span className="text-teal-600 font-black">{getDynamicScore('wordPuzzle', 0) > 0 ? `${getDynamicScore('wordPuzzle', 0)}/100` : '-'}</span></div>
             </div>
 
             <button 

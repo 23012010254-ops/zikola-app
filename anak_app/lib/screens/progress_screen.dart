@@ -9,15 +9,17 @@ import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import '../services/app_state.dart';
 import '../services/ai_report_service.dart';
 import '../services/assessment_engine.dart';
-import '../models/child_profile.dart';
+
 import '../theme/app_theme.dart';
 import '../widgets/custom_bottom_nav.dart';
 
 class ProgressScreen extends StatefulWidget {
-  const ProgressScreen({super.key});
+  final String? initialTab;
+  const ProgressScreen({super.key, this.initialTab});
 
   @override
   State<ProgressScreen> createState() => _ProgressScreenState();
@@ -25,6 +27,29 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   String _activeTab = 'current';
+  bool _tabInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTab != null) {
+      _activeTab = widget.initialTab!;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_tabInitialized) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map && args['tab'] is String) {
+        _activeTab = args['tab'] as String;
+      } else if (args is String) {
+        _activeTab = args;
+      }
+      _tabInitialized = true;
+    }
+  }
 
   void _generateAIReport() async {
     final appState = Provider.of<AppState>(context, listen: false);
@@ -35,8 +60,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
       final service = AIReportService();
       final providerKey = dotenv.env['AI_PROVIDER'] ?? 'mock';
       String apiKey = '';
-      if (providerKey == 'gemini') apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
-      else if (providerKey == 'openai') apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+      if (providerKey == 'gemini') {
+        apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+      } else if (providerKey == 'openai') apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
       else if (providerKey == 'anthropic') apiKey = dotenv.env['ANTHROPIC_API_KEY'] ?? '';
 
       final report = await service.generateReport(
@@ -108,8 +134,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
     }
 
     String rank = 'Pemula';
-    if (avgScore >= 90) rank = 'Luar Biasa';
-    else if (avgScore >= 80) rank = 'Sangat Baik';
+    if (avgScore >= 90) {
+      rank = 'Luar Biasa';
+    } else if (avgScore >= 80) rank = 'Sangat Baik';
     else if (avgScore >= 70) rank = 'Baik';
     else if (avgScore >= 60) rank = 'Cukup';
 
@@ -146,7 +173,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         _buildTabButton('current', 'Saat Ini', Icons.bar_chart_rounded),
                         _buildTabButton('weekly', 'Mingguan', Icons.calendar_today_rounded),
                         _buildTabButton('charts', 'Grafik', Icons.trending_up_rounded),
-                        _buildTabButton('emr', 'Rekam Medis', Icons.medical_services_rounded),
+                        _buildTabButton('emr', 'Medis', Icons.medical_services_rounded),
                       ],
                     ),
                   ),
@@ -160,7 +187,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    // ── User Identity ───────────────────────────────────────────────────────
+                    // â”€â”€ User Identity â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
                     Container(
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
@@ -169,7 +196,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF3B82F6).withOpacity(0.3),
+                            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
@@ -187,7 +214,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                   'Dashboard Perkembangan Pengguna',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -201,10 +228,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Level Saat Ini: ${completedTests > 0 ? completedTests : 1}',
+                                  'Level Saat Ini: ${appState.currentLevel}',
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.white.withOpacity(0.9),
+                                    color: Colors.white.withValues(alpha: 0.9),
                                   ),
                                 ),
                               ],
@@ -212,7 +239,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           ),
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -222,7 +249,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                   rank,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -243,13 +270,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     const SizedBox(height: 24),
 
                     // Waktu Layar Card
-                    _buildScreenTimeCard(appState),
-                    const SizedBox(height: 24),
+                    if (_activeTab != 'emr') ...[
+                      _buildScreenTimeCard(appState),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Tab Views
                     if (_activeTab == 'current') _buildCurrentTab(appState, avgScore, completedTests),
                     if (_activeTab == 'weekly') _buildWeeklyTab(appState),
                     if (_activeTab == 'charts') _buildChartsTab(appState),
+                    if (_activeTab == 'emr') _buildEmrTab(appState),
                   ],
                 ),
               ),
@@ -279,7 +309,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -319,8 +349,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     }
                   );
                   
-                  if (result == true || result is String) {
-                    if (result is String) {
+                  if (result == true || (result is String && result.length == 4)) {
+                    if (result is String && result.length == 4) {
                       await appState.setParentalPin(result);
                     }
                     await appState.resetTodayPlayTime();
@@ -475,7 +505,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           boxShadow: isToday
                               ? [
                                   BoxShadow(
-                                    color: const Color(0xFFF97316).withOpacity(0.3),
+                                    color: const Color(0xFFF97316).withValues(alpha: 0.3),
                                     blurRadius: 6,
                                     offset: const Offset(0, 2),
                                   )
@@ -510,14 +540,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
         onTap: () => setState(() => _activeTab = id),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
           decoration: BoxDecoration(
             color: isActive ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
             boxShadow: isActive
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     )
@@ -526,21 +556,23 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
-                size: 16,
+                size: 13,
                 color: isActive ? AppTheme.primaryBlue : AppTheme.textSecondary,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 3),
               Flexible(
                 child: Text(
                   label,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 10.5,
                     fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
                     color: isActive ? AppTheme.primaryBlue : AppTheme.textSecondary,
                   ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -878,7 +910,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Generate Laporan AI', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text('Buat Laporan AI', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -910,7 +942,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.1)),
+        border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.1)),
       ),
       child: child,
     );
@@ -968,7 +1000,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -989,7 +1021,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Hasil Analisis AI Gemini', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text('Dihasilkan: ${report.generatedAt.toLocal().toString().split('.')[0]}', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11)),
+                      Text('Dihasilkan: ${report.generatedAt.toLocal().toString().split('.')[0]}', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11)),
                     ],
                   ),
                 ),
@@ -1060,7 +1092,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
@@ -1231,7 +1263,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1343,7 +1375,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1374,14 +1406,36 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 30,
+                      reservedSize: 42,
                       getTitlesWidget: (value, meta) {
                         if (value.toInt() >= 0 && value.toInt() < data.length) {
+                          final String rawName = data[value.toInt()]['name'].toString();
+                          final List<String> parts = rawName.split('/');
                           return Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              data[value.toInt()]['name'],
-                              style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  parts[0],
+                                  style: TextStyle(
+                                    color: AppTheme.textPrimary,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                if (parts.length > 1)
+                                  Text(
+                                    '(${parts[1]})',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                              ],
                             ),
                           );
                         }
@@ -1493,12 +1547,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
         ],
-        border: Border.all(color: color.withOpacity(0.15)),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1538,7 +1592,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1552,7 +1606,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue.withOpacity(0.1),
+                  color: AppTheme.primaryBlue.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.tips_and_updates_rounded, color: AppTheme.primaryBlue, size: 20),
@@ -1597,251 +1651,1423 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  Widget _buildEmrTab(BuildContext context, AppState appState, ChildProfile profile) {
-    final uid = appState.uid;
-    if (uid == null) {
-      return const Center(child: Text('Silakan login untuk melihat rekam medis.'));
-    }
+  // ─── EMR & DIGITAL PRESCRIPTION TAB ───────────────────────────────────────────
+  Widget _buildEmrTab(AppState appState) {
+    final user = FirebaseAuth.instance.currentUser;
+    final childProfile = appState.childProfile;
+    final childName = childProfile.name.isNotEmpty ? childProfile.name : 'Pasien Anak';
+    final childAge = childProfile.age > 0 ? childProfile.age : 5;
+    final childGender = childProfile.gender.isNotEmpty ? childProfile.gender : 'Laki-laki';
+    final rmNumber = 'ZK-SBY-${(childName.hashCode.abs() % 900000 + 100000)}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 1. EMR Summary Card
-        StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('users').doc(uid).collection('emr').doc('latest').snapshots(),
-          builder: (context, snapshot) {
-            final data = snapshot.hasData && snapshot.data!.exists ? snapshot.data!.data() as Map<String, dynamic> : null;
-            final birthCondition = data?['birthCondition'] ?? 'Normal (Cukup Bulan)';
-            final allergies = data?['allergies'] ?? 'Tidak ada alergi';
-            final previousTherapy = data?['previousTherapy'] ?? 'Belum ada terapi sebelumnya';
+        // 1. Kop Medis Resmi Klinik Zikola Surabaya
+        _buildEmrClinicHeader(childName, childAge, childGender, rmNumber),
+        const SizedBox(height: 20),
 
-            return Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.badge_rounded, color: Color(0xFF2563EB), size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Rekam Medis Digital Pasien',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
-                            ),
-                            Text(
-                              'Terintegrasi dengan Portal Dokter Zikola',
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  _buildEmrRow('Kondisi Kelahiran', birthCondition),
-                  const SizedBox(height: 8),
-                  _buildEmrRow('Riwayat Alergi', allergies),
-                  const SizedBox(height: 8),
-                  _buildEmrRow('Riwayat Terapi', previousTherapy),
-                ],
-              ),
-            );
-          },
-        ),
-
+        // 2. Tugas Stimulasi & Materi Edukasi Dokter
+        _buildDoctorHomeworkAndMaterialsSection(user?.uid),
         const SizedBox(height: 24),
 
-        // 2. Doctor Notes Stream
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Catatan Klinis Dokter',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFECFDF5),
-                borderRadius: BorderRadius.circular(20),
+        // 3. Daftar Resep & Paket Terapi Aktif
+        _buildPrescriptionsSection(user?.uid),
+        const SizedBox(height: 24),
+
+        // 4. Rekam Medis (EMR) & Diagnosa Klinis Dokter
+        _buildEmrDetailsSection(user?.uid),
+        const SizedBox(height: 24),
+
+        // 5. Bantuan Konsultasi & Layanan Klinik Surabaya
+        _buildEmrContactActionCard(),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildEmrClinicHeader(String childName, int age, String gender, String rmNumber) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Top
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              child: const Text(
-                'Terverifikasi Dokter',
-                style: TextStyle(color: Color(0xFF059669), fontSize: 10, fontWeight: FontWeight.bold),
-              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('users')
-              .doc(uid)
-              .collection('notes')
-              .orderBy('createdAt', descending: true)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
-            }
-
-            final docs = snapshot.data?.docs ?? [];
-            if (docs.isEmpty) {
-              return Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  children: [
-                    const Text('📝', style: TextStyle(fontSize: 32)),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Belum Ada Catatan Dokter',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF334155)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Catatan evaluasi akan muncul setelah sesi konsultasi dengan dokter selesai.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                    ),
-                  ],
-                ),
-              );
-            }
-
-            return Column(
-              children: docs.map((doc) {
-                final note = doc.data() as Map<String, dynamic>;
-                final category = note['category'] ?? 'Konsultasi';
-                final text = note['text'] ?? '';
-                final doctorName = note['doctorName'] ?? 'Dokter Zikola';
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFF1F5F9)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: Colors.white.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
                   ),
+                  child: const Icon(Icons.local_hospital_rounded, color: Colors.white, size: 26),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const CircleAvatar(
-                                radius: 12,
-                                backgroundColor: Color(0xFFEFF6FF),
-                                child: Text('👨‍⚕️', style: TextStyle(fontSize: 12)),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                doctorName,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF0F172A)),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0FDF4),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              category,
-                              style: const TextStyle(color: Color(0xFF16A34A), fontSize: 9, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'KLINIK TUMBUH KEMBANG ZIKOLA',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 13,
+                          letterSpacing: 0.5,
+                        ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 2),
                       Text(
-                        text,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF334155), height: 1.4),
+                        'Pusat Layanan Terpadu Tumbuh Kembang Anak, Surabaya',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        'Layanan Resmi Zikola Care • Rekam Medis Elektronik (RME)',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 9.5,
+                        ),
                       ),
                     ],
                   ),
-                );
-              }).toList(),
-            );
-          },
-        ),
-
-        const SizedBox(height: 24),
-
-        // 3. Share Report Summary Button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              final summary = 'Rapor Tumbuh Kembang ${profile.name} (Usia ${profile.age} Thn): Perkembangan kognitif dan stimulasi terpantau baik di Aplikasi Zikola.';
-              Clipboard.setData(ClipboardData(text: summary));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Ringkasan rapor berhasil disalin ke clipboard! 📋'),
-                  duration: Duration(seconds: 2),
                 ),
-              );
-            },
-            icon: const Icon(Icons.share_rounded, size: 16),
-            label: const Text('Salin Ringkasan Rapor Tumbuh Kembang', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0D9488),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ],
             ),
+          ),
+
+          // Patient Data Bar
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildEmrDataCell('NO. REKAM MEDIS', rmNumber, isBold: true, isHighlight: true),
+                    _buildEmrDataCell('TANGGAL CETAK', DateFormat('dd MMM yyyy').format(DateTime.now())),
+                  ],
+                ),
+                const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildEmrDataCell('NAMA PASIEN ANAK', childName, isBold: true),
+                    _buildEmrDataCell('USIA / GENDER', '$age Thn / $gender'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.verified_user_rounded, color: Color(0xFF16A34A), size: 14),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Tervalidasi Resmi: Pasien Aktif Terdaftar di Zikola Care Center Surabaya',
+                          style: TextStyle(
+                            color: Color(0xFF15803D),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmrDataCell(String label, String value, {bool isBold = false, bool isHighlight = false}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF94A3B8),
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12.5,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w500,
+            color: isHighlight ? const Color(0xFF0284C7) : const Color(0xFF1E293B),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildEmrRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-        Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-      ],
+  // ─── TUGAS STIMULASI & MATERI EDUKASI DOKTER ───────────────────────────────────
+  Widget _buildDoctorHomeworkAndMaterialsSection(String? uid) {
+    if (uid == null) {
+      return _buildHomeworkEmptyCard();
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('action_plans')
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, planSnap) {
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('materials')
+              .orderBy('createdAt', descending: true)
+              .snapshots(),
+          builder: (context, matSnap) {
+            if (planSnap.connectionState == ConnectionState.waiting && matSnap.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            }
+
+            final planDocs = planSnap.data?.docs ?? [];
+            final matDocs = matSnap.data?.docs ?? [];
+            final totalCount = planDocs.length + matDocs.length;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFCCFBF1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFF0F766E), size: 18),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Tugas Stimulasi & Edukasi',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (totalCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D9488),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$totalCount Item',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (totalCount == 0)
+                  _buildHomeworkEmptyCard()
+                else ...[
+                  if (planDocs.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'Rencana Stimulasi Mandiri (Action Plan)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                    ...planDocs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return _buildActionPlanCard(uid, doc.id, data);
+                    }),
+                    const SizedBox(height: 8),
+                  ],
+                  if (matDocs.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8, top: 4),
+                      child: Text(
+                        'Materi & Panduan Klinis Terlampir',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey.shade700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                    ...matDocs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return _buildMaterialCard(data);
+                    }),
+                  ],
+                ],
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
+  Widget _buildHomeworkEmptyCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDFA),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFCCFBF1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFCCFBF1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.menu_book_rounded, color: Color(0xFF0D9488), size: 20),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Panduan Stimulasi Standar Zikola',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF115E59),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Dokter spesialis belum memberikan tugas stimulasi khusus untuk sesi ini. Berikut panduan stimulasi harian dasar:',
+            style: TextStyle(fontSize: 11.5, color: Color(0xFF134E4A), height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF0D9488)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Screen-time maksimal 1 jam per hari dengan pendampingan aktif',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF334155), fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: const [
+                    Icon(Icons.check_circle_outline, size: 14, color: Color(0xFF0D9488)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Aktivitas bercerita dan tanya jawab interaktif 15 menit sebelum tidur',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF334155), fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionPlanCard(String uid, String docId, Map<String, dynamic> data) {
+    final target = data['target']?.toString() ?? 'Stimulasi Harian';
+    final screenTime = data['screenTime']?.toString() ?? 'Maks. 1 Jam per Hari';
+    final notes = data['notes']?.toString() ?? 'Ikuti stimulasi dengan konsisten di rumah.';
+    final doctorName = data['doctorName']?.toString() ?? 'Dokter Spesialis';
+    final completedToday = data['completedToday'] == true;
+    final createdAt = data['createdAt'];
+
+    String dateStr = '-';
+    if (createdAt is String && createdAt.isNotEmpty) {
+      try {
+        final parsed = DateTime.parse(createdAt);
+        dateStr = DateFormat('dd MMM yyyy').format(parsed);
+      } catch (_) {
+        dateStr = createdAt;
+      }
+    } else if (createdAt is Timestamp) {
+      dateStr = DateFormat('dd MMM yyyy').format(createdAt.toDate());
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: completedToday ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+          width: completedToday ? 1.5 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: completedToday ? const Color(0xFF10B981).withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: completedToday ? const Color(0xFFF0FDF4) : const Color(0xFFF0FDFA),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      completedToday ? Icons.check_circle_rounded : Icons.flag_rounded,
+                      size: 16,
+                      color: completedToday ? const Color(0xFF16A34A) : const Color(0xFF0D9488),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      target.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: completedToday ? const Color(0xFF15803D) : const Color(0xFF0F766E),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  dateStr,
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Screen Time Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFDE68A)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.screen_lock_portrait_rounded, size: 14, color: Color(0xFFD97706)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Batas Layar: $screenTime',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF92400E),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Doctor notes
+                Text(
+                  notes,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: Color(0xFF334155),
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Footer & Interactive Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Dr: $doctorName',
+                      style: TextStyle(fontSize: 10.5, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                    ),
+                    InkWell(
+                      onTap: () async {
+                        try {
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(uid)
+                              .collection('action_plans')
+                              .doc(docId)
+                              .update({
+                            'completedToday': !completedToday,
+                            'lastCompletedAt': DateTime.now().toIso8601String(),
+                          });
+                        } catch (e) {
+                          debugPrint('Error updating action plan checklist: $e');
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: completedToday ? const Color(0xFFDCFCE7) : const Color(0xFF0D9488),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              completedToday ? Icons.check_circle : Icons.radio_button_unchecked,
+                              size: 14,
+                              color: completedToday ? const Color(0xFF16A34A) : Colors.white,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              completedToday ? 'Selesai Hari Ini' : 'Tandai Selesai',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: completedToday ? const Color(0xFF16A34A) : Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMaterialCard(Map<String, dynamic> data) {
+    final title = data['title']?.toString() ?? 'Materi Edukasi';
+    final desc = data['desc']?.toString() ?? 'Panduan stimulasi tumbuh kembang anak.';
+    final icon = data['icon']?.toString() ?? '📚';
+    final doctorName = data['doctorName']?.toString() ?? 'Dokter Spesialis';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(icon, style: const TextStyle(fontSize: 22)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  desc,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    color: Color(0xFF64748B),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Disusun oleh: $doctorName',
+                      style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontStyle: FontStyle.italic),
+                    ),
+                    InkWell(
+                      onTap: () {
+                        _showMaterialDetailDialog(title, desc, icon, doctorName);
+                      },
+                      child: const Text(
+                        'Baca Panduan →',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4F46E5),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMaterialDetailDialog(String title, String desc, String icon, String doctorName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Panduan Klinis Resmi • $doctorName',
+                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF475569), fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                desc,
+                style: const TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF334155)),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.lightbulb_rounded, color: Color(0xFF16A34A), size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Praktikkan secara konsisten 15-30 menit setiap hari bersama anak untuk hasil optimal.',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF166534), fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrescriptionsSection(String? uid) {
+    if (uid == null) {
+      return _buildPrescriptionsEmptyCard();
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('prescriptions')
+          .orderBy('createdAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.medication_rounded, color: Color(0xFF0284C7), size: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Resep & Terapi Aktif',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+                if (docs.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0284C7),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${docs.length} Aktif',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (docs.isEmpty)
+              _buildPrescriptionsEmptyCard()
+            else
+              ...docs.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return _buildPrescriptionDetailCard(data);
+              }),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPrescriptionsEmptyCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.medical_information_outlined, color: Color(0xFF94A3B8), size: 28),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Belum Ada Resep atau Terapi Baru',
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Resep suplemen, obat medis, atau jadwal terapi yang diberikan oleh dokter saat konsultasi akan langsung muncul di sini.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5,
+              color: Color(0xFF64748B),
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrescriptionDetailCard(Map<String, dynamic> data) {
+    final type = data['type']?.toString() ?? 'suplemen';
+    final itemName = data['itemName']?.toString() ?? 'Resep Terapi';
+    final dosage = data['dosage']?.toString() ?? '-';
+    final duration = data['duration']?.toString() ?? '-';
+    final notes = data['notes']?.toString() ?? '-';
+    final doctorName = data['doctorName']?.toString() ?? 'Dokter Spesialis Anak';
+    final createdAt = data['createdAt'];
+
+    String dateStr = '-';
+    if (createdAt is Timestamp) {
+      dateStr = DateFormat('dd MMM yyyy').format(createdAt.toDate());
+    }
+
+    final isTerapi = type == 'terapi';
+    final isMedis = type == 'medis';
+
+    final badgeBg = isTerapi ? const Color(0xFFF3E8FF) : isMedis ? const Color(0xFFFEE2E2) : const Color(0xFFECFDF5);
+    final badgeColor = isTerapi ? const Color(0xFF7E22CE) : isMedis ? const Color(0xFFB91C1C) : const Color(0xFF047857);
+    final typeTitle = isTerapi ? 'PAKET TERAPI KLINIS' : isMedis ? 'RESEP OBAT MEDIS' : 'SUPLEMEN TUMBUH KEMBANG';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: badgeBg.withValues(alpha: 0.45),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: badgeColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    typeTitle,
+                    style: TextStyle(
+                      color: badgeColor,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                Text(
+                  dateStr,
+                  style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  itemName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '⏱️ DOSIS & ATURAN',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              dosage,
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(height: 24, width: 1, color: const Color(0xFFCBD5E1)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '📅 DURASI',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF64748B)),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              duration,
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (notes.isNotEmpty && notes != '-') ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFEF3C7)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('📝', style: TextStyle(fontSize: 12)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            notes,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF78350F),
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Diresepkan oleh: $doctorName',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontStyle: FontStyle.italic,
+                          color: Color(0xFF64748B),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        '✓ Terverifikasi',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          color: Color(0xFF2563EB),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmrDetailsSection(String? uid) {
+    if (uid == null) {
+      return _buildEmrDetailsEmptyCard();
+    }
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('emr')
+          .doc('latest')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
+        if (data == null || !snapshot.data!.exists) {
+          return _buildEmrDetailsEmptyCard();
+        }
+
+        final diagnosis = data['diagnosis']?.toString() ?? '';
+        final treatmentPlan = data['treatmentPlan']?.toString() ?? '';
+        final birthCondition = data['birthCondition']?.toString() ?? 'Normal (Cukup Bulan)';
+        final pregnancyNotes = data['pregnancyNotes']?.toString() ?? '';
+        final allergies = data['allergies']?.toString() ?? '';
+        final previousTherapy = data['previousTherapy']?.toString() ?? '';
+        final updatedBy = data['updatedBy']?.toString() ?? 'Tim Dokter Spesialis Anak Zikola';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFFD97706), size: 18),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Hasil Diagnosa & Rencana Terapi',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Card Diagnosa Dokter
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.medical_services_rounded, color: Color(0xFF0284C7), size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'DIAGNOSA KLINIS DOKTER',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0284C7),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    diagnosis.isNotEmpty ? diagnosis : 'Hasil observasi perkembangan anak berjalan baik sesuai tonggak usianya.',
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const Divider(color: Color(0xFFF1F5F9)),
+                  const SizedBox(height: 6),
+
+                  const Row(
+                    children: [
+                      Icon(Icons.psychology_rounded, color: Color(0xFF7C3AED), size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'RENCANA TINDAKAN & STIMULASI RUMAH',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF7C3AED),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    treatmentPlan.isNotEmpty ? treatmentPlan : 'Lanjutkan stimulasi sensori motorik harian dan batasi paparan layar gawai sesuai anjuran aplikasi.',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: Color(0xFF334155),
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Riwayat Kelahiran & Medis
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Riwayat Medis Pasien',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildEmrHistoryRow('Kondisi Lahir', birthCondition),
+                  if (pregnancyNotes.isNotEmpty) _buildEmrHistoryRow('Catatan Kehamilan', pregnancyNotes),
+                  _buildEmrHistoryRow('Riwayat Alergi', allergies.isNotEmpty ? allergies : 'Tidak ada riwayat alergi'),
+                  if (previousTherapy.isNotEmpty) _buildEmrHistoryRow('Terapi Sebelumnya', previousTherapy),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Tanda Tangan & Verifikasi Medis
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFBBF7D0)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF16A34A).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'DIVERIFIKASI DOKTER SPESIALIS',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF15803D),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          updatedBy,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF14532D),
+                          ),
+                        ),
+                        const Text(
+                          'SIP/SBY/2024/0981 • Klinik Terpadu Tumbuh Kembang Zikola, Surabaya',
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            color: Color(0xFF166534),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEmrDetailsEmptyCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF1F5F9),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.assignment_outlined, color: Color(0xFF94A3B8), size: 28),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Rekam Medis Siap Disinkronkan',
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF334155),
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Saat dokter spesialis mengisi lembar evaluasi atau rekam medis digital dari Portal Dokter, hasil diagnosa dan stimulasi akan otomatis tercatat permanen di sini.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 11.5,
+              color: Color(0xFF64748B),
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmrHistoryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+            ),
+          ),
+          const Text(': ', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmrContactActionCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFBBF7D0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.support_agent_rounded, color: Color(0xFF16A34A), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Layanan Terpadu Klinik Zikola Surabaya',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF15803D),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Butuh penyesuaian resep atau konsultasi lanjutan? Tim dokter spesialis kami siap membantu memantau tumbuh kembang ananda.',
+            style: TextStyle(fontSize: 11, color: Color(0xFF166534), height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/consultation'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0284C7),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+              ),
+              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+              label: const Text('Konsultasi dengan Dokter Spesialis', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

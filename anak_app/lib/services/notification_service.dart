@@ -8,10 +8,35 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class NotificationService {
+import 'package:flutter/widgets.dart';
+
+class NotificationService with WidgetsBindingObserver {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
+
+  static const int kAutoReminderId = 888;
+  static const int kPeriodicReminderId = 889;
+  static int _reminderTemplateIndex = 0;
+
+  static const List<Map<String, String>> _reminderTemplates = [
+    {
+      'title': 'KULA Kangen Kamu! 🌟',
+      'body': 'Ayo asah logika & selesaikan 1 puzzle seru hari ini bareng KULA! 🚀',
+    },
+    {
+      'title': 'Waktunya Bermain & Belajar! 🎮',
+      'body': 'Ada tantangan seru menanti Si Kecil hari ini! Raih stiker bintang baru ⭐',
+    },
+    {
+      'title': 'Sudah Cek Rapor Hari Ini? 📊',
+      'body': 'Luangkan 5 menit untuk stimulasi perkembangan kognitif Si Kecil bersama ZiKOLA.',
+    },
+    {
+      'title': 'Game Asah Otak Baru! 🧩',
+      'body': 'Yuk latih fokus dan daya ingat anak lewat game edukasi interaktif!',
+    },
+  ];
 
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -19,8 +44,34 @@ class NotificationService {
   bool _initialized = false;
   bool get isInitialized => _initialized;
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (kDebugMode) {
+        print("[NotificationService] App resumed, clearing reminder tray...");
+      }
+      // Bersihkan notifikasi reminder saat user kembali membuka aplikasi
+      _localNotificationsPlugin.cancel(kAutoReminderId, tag: 'zikola_reminder');
+      _localNotificationsPlugin.cancel(kPeriodicReminderId, tag: 'zikola_reminder');
+      _localNotificationsPlugin.cancel(kAutoReminderId);
+      _localNotificationsPlugin.cancel(kPeriodicReminderId);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      if (kDebugMode) {
+        print("[NotificationService] App closed or minimized, arming auto reminder...");
+      }
+      // Jadwalkan otomatis notifikasi 1x saat aplikasi ditinggalkan / ditutup
+      scheduleSmartAutoReminders(delay: const Duration(seconds: 15));
+      setupPeriodicBackgroundReminders();
+    }
+  }
+
   Future<void> initialize() async {
     if (_initialized) return;
+
+    // Register lifecycle observer
+    WidgetsBinding.instance.addObserver(this);
 
     // 1. Initialize Timezones
     tz.initializeTimeZones();
@@ -41,7 +92,7 @@ class NotificationService {
 
     // 2. Android Settings
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+        AndroidInitializationSettings('@drawable/ic_notification');
 
     // 3. iOS/Darwin Settings
     const DarwinInitializationSettings initializationSettingsDarwin =
@@ -84,7 +135,7 @@ class NotificationService {
             'anak_app_reminders',
             'Pengingat Harian & Stimulasi',
             description: 'Pengingat harian melatih perkembangan anak',
-            importance: Importance.high,
+            importance: Importance.max,
             playSound: true,
             enableVibration: true,
           ),
@@ -101,13 +152,19 @@ class NotificationService {
 
         // Request permissions on Android 13+
         await androidPlugin.requestNotificationsPermission();
+        try {
+          await androidPlugin.requestExactAlarmsPermission();
+        } catch (_) {}
       }
 
-      // 5. Set up Firebase Cloud Messaging
-      await setupFirebaseMessaging();
+      // 5. Schedule Smart Auto Reminders (Otomatis & Berkala, Hanya 1 Notifikasi Rapi)
+      await scheduleSmartAutoReminders(delay: const Duration(seconds: 15));
+      await setupPeriodicBackgroundReminders();
 
-      // 6. Schedule Default Daily Reminders
-      await scheduleDefaultDailyReminders();
+      // 6. Set up Firebase Cloud Messaging (non-blocking)
+      setupFirebaseMessaging().catchError((e) {
+        if (kDebugMode) print("FCM Setup deferred error: $e");
+      });
 
       if (kDebugMode) {
         print("[NotificationService] Initialized successfully with all channels.");
@@ -289,6 +346,169 @@ class NotificationService {
       platformDetails,
       payload: chatId != null ? 'chat:$chatId' : 'chat',
     );
+  }
+
+  // Schedule smart automatic reminder (otomatis di background, lebih sering, tapi 1x notifikasi rapi di tray)
+  Future<void> scheduleSmartAutoReminders({Duration delay = const Duration(seconds: 15)}) async {
+    if (!_initialized) await initialize();
+
+    // Pilih template pesan berikutnya secara berputar agar selalu variatif
+    final template = _reminderTemplates[_reminderTemplateIndex % _reminderTemplates.length];
+    _reminderTemplateIndex++;
+
+    final String title = template['title']!;
+    final String body = template['body']!;
+
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'anak_app_reminders',
+      'Pengingat Harian & Stimulasi',
+      channelDescription: 'Pengingat otomatis melatih perkembangan anak',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      onlyAlertOnce: false,
+      ticker: title,
+      icon: '@drawable/ic_notification',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
+      color: const Color(0xFF2563EB),
+      tag: 'zikola_reminder',
+      groupKey: 'com.anakapp.zikola.smart_reminders',
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'ZiKOLA',
+      ),
+    );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    final NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    // 1. Batalkan notifikasi lama di slot ID kAutoReminderId (agar tidak menumpuk, selalu 1x)
+    await _localNotificationsPlugin.cancel(kAutoReminderId, tag: 'zikola_reminder');
+    await _localNotificationsPlugin.cancel(kAutoReminderId);
+
+    // 2. Jadwalkan alarm otomatis dekat (15 detik) setelah aplikasi ditutup
+    final scheduledTime = tz.TZDateTime.now(tz.local).add(delay);
+    try {
+      await _localNotificationsPlugin.zonedSchedule(
+        kAutoReminderId,
+        title,
+        body,
+        scheduledTime,
+        platformDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+      if (kDebugMode) {
+        print("[NotificationService] Scheduled 1x auto reminder in ${delay.inSeconds}s (exact)");
+      }
+    } catch (e) {
+      try {
+        await _localNotificationsPlugin.zonedSchedule(
+          kAutoReminderId,
+          title,
+          body,
+          scheduledTime,
+          platformDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+        if (kDebugMode) {
+          print("[NotificationService] Scheduled 1x auto reminder in ${delay.inSeconds}s (inexact fallback)");
+        }
+      } catch (err) {
+        if (kDebugMode) {
+          print("[NotificationService] Failed to schedule auto reminder: $err");
+        }
+      }
+    }
+  }
+
+  // Setup repeating periodic reminder di background (otomatis terus menerus meski aplikasi tidak dibuka)
+  Future<void> setupPeriodicBackgroundReminders({
+    Duration interval = const Duration(hours: 2),
+  }) async {
+    if (!_initialized) await initialize();
+
+    final template = _reminderTemplates[(_reminderTemplateIndex + 1) % _reminderTemplates.length];
+    final String title = template['title']!;
+    final String body = template['body']!;
+
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'anak_app_reminders',
+      'Pengingat Harian & Stimulasi',
+      channelDescription: 'Pengingat otomatis melatih perkembangan anak',
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      onlyAlertOnce: false,
+      ticker: title,
+      icon: '@drawable/ic_notification',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/launcher_icon'),
+      color: const Color(0xFF2563EB),
+      tag: 'zikola_reminder',
+      groupKey: 'com.anakapp.zikola.smart_reminders',
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: 'ZiKOLA',
+      ),
+    );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    final NotificationDetails platformDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    try {
+      await _localNotificationsPlugin.periodicallyShowWithDuration(
+        kPeriodicReminderId,
+        title,
+        body,
+        interval,
+        platformDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      if (kDebugMode) {
+        print("[NotificationService] Setup repeating periodic reminder every ${interval.inHours}h (exact)");
+      }
+    } catch (e) {
+      try {
+        await _localNotificationsPlugin.periodicallyShowWithDuration(
+          kPeriodicReminderId,
+          title,
+          body,
+          interval,
+          platformDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+        if (kDebugMode) {
+          print("[NotificationService] Setup repeating periodic reminder every ${interval.inHours}h (inexact fallback)");
+        }
+      } catch (err) {
+        if (kDebugMode) {
+          print("[NotificationService] Failed to setup periodic reminder: $err");
+        }
+      }
+    }
   }
 
   // Schedule default daily reminders for parents & children

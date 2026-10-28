@@ -88,7 +88,7 @@ List<Map<String, dynamic>> serializeLines(List<DrawnLine> lines) {
   return lines.map((line) {
     return {
       'points': line.points.map((p) => {'x': p.dx, 'y': p.dy}).toList(),
-      'color': line.color.value,
+      'color': line.color.toARGB32(),
       'width': line.width,
     };
   }).toList();
@@ -118,7 +118,7 @@ Map<Offset, Color> computeFilledGridPoints(List<DrawnLine> lines, double canvasW
   final List<List<bool>> boundaries = List.generate(gridW, (_) => List.filled(gridH, false));
   for (var line in lines) {
     // Skip fill actions and eraser lines
-    if (line.width == -99.0 || line.color.value == 0xFFFFFFFF) continue;
+    if (line.width == -99.0 || line.color.toARGB32() == 0xFFFFFFFF) continue;
 
     for (int i = 0; i < line.points.length - 1; i++) {
       final p1 = line.points[i];
@@ -289,7 +289,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? activeColor.withOpacity(0.15) : Colors.grey.shade100,
+            color: isSelected ? activeColor.withValues(alpha: 0.15) : Colors.grey.shade100,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected ? activeColor : Colors.transparent,
@@ -391,7 +391,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
   @override
   void initState() {
     super.initState();
-    AudioService().playGameBGM();
+    AudioService().playHomeBGM();
   }
 
   @override
@@ -1077,7 +1077,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
           const Offset(192, 50),
           const Offset(202, 40),
         ]),
-        color: color.withOpacity(0.6),
+        color: color.withValues(alpha: 0.6),
         width: 3.0 * scaleBrush,
       ));
     } else if (promptText.contains('Bintang')) {
@@ -1114,7 +1114,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
           const Offset(55, 80),
           const Offset(60, 70),
         ]),
-        color: color.withOpacity(0.7),
+        color: color.withValues(alpha: 0.7),
         width: 3.0 * scaleBrush,
       ));
       // Bintang Kecil Kanan
@@ -1132,7 +1132,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
           const Offset(235, 80),
           const Offset(240, 70),
         ]),
-        color: color.withOpacity(0.7),
+        color: color.withValues(alpha: 0.7),
         width: 3.0 * scaleBrush,
       ));
     } else if (promptText.contains('Awan')) {
@@ -1160,7 +1160,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
           const Offset(130, 160),
           const Offset(150, 165),
         ]),
-        color: color.withOpacity(0.6),
+        color: color.withValues(alpha: 0.6),
         width: 3.0 * scaleBrush,
       ));
       // Rintik Hujan
@@ -1422,12 +1422,12 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
       // Garis Cone
       lines.add(DrawnLine(
         points: scalePoints([const Offset(130, 160), const Offset(150, 250)]),
-        color: Colors.brown.withOpacity(0.5),
+        color: Colors.brown.withValues(alpha: 0.5),
         width: 3.0 * scaleBrush,
       ));
       lines.add(DrawnLine(
         points: scalePoints([const Offset(170, 160), const Offset(150, 250)]),
-        color: Colors.brown.withOpacity(0.5),
+        color: Colors.brown.withValues(alpha: 0.5),
         width: 3.0 * scaleBrush,
       ));
       // Es Krim Bawah
@@ -1586,7 +1586,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
       // Insang
       lines.add(DrawnLine(
         points: scalePoints([const Offset(190, 130), const Offset(185, 170)]),
-        color: color.withOpacity(0.7),
+        color: color.withValues(alpha: 0.7),
         width: 3.0 * scaleBrush,
       ));
       // Ekor Ikan
@@ -2106,7 +2106,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
       _voteLogs = [];
       _selectedVoteStars = 0;
     });
-    AudioService().playGameBGM();
+    AudioService().playHomeBGM();
   }
 
   void _startBotPrep() {
@@ -2411,7 +2411,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFFEC4899), Color(0xFF8B5CF6)]),
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [BoxShadow(color: Colors.pink.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))],
+                  boxShadow: [BoxShadow(color: Colors.pink.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
                 ),
                 child: Row(
                   children: [
@@ -2446,7 +2446,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF2563EB)]),
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))],
+                  boxShadow: [BoxShadow(color: Colors.blue.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
                 ),
                 child: Row(
                   children: [
@@ -2498,7 +2498,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(30),
-                boxShadow: [BoxShadow(color: Colors.pink.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+                boxShadow: [BoxShadow(color: Colors.pink.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 8))],
               ),
               child: Column(
                 children: [
@@ -2520,7 +2520,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2545,7 +2545,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2562,7 +2562,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                   ..._botOpponents.map((opp) {
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: opp['color'].withOpacity(0.2),
+                        backgroundColor: opp['color'].withValues(alpha: 0.2),
                         child: Text(opp['avatar'], style: const TextStyle(fontSize: 20)),
                       ),
                       title: Text(opp['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -2620,7 +2620,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               decoration: BoxDecoration(
                 gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)]),
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.blue.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(
                 children: [
@@ -2645,7 +2645,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2675,7 +2675,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2776,7 +2776,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: Text(
@@ -2866,7 +2866,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade200, width: 2),
                     borderRadius: BorderRadius.circular(24),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10)],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(22),
@@ -2900,7 +2900,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                                 _userLines.add(fillLine);
                               });
                               _updateUserFilledPoints(_lastCanvasWidth, _lastCanvasHeight);
-                              AudioService().playAchievement();
+                              AudioService().playBubble();
                               return;
                             }
 
@@ -2912,7 +2912,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                               );
                               _userLines.add(_currentLine!);
                             });
-                            AudioService().playClick();
+                            AudioService().playSwish();
                           },
                           onPanUpdate: _drawingSubmitted ? null : (details) {
                             if (_isBucketMode) return;
@@ -2945,7 +2945,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -2))],
                   borderRadius: const BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24)),
                 ),
                 child: Column(
@@ -2967,7 +2967,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                                 color: color,
                                 shape: BoxShape.circle,
                                 border: Border.all(color: isSelected ? Colors.black : Colors.grey.shade200, width: isSelected ? 3 : 1),
-                                boxShadow: isSelected ? [BoxShadow(color: color.withOpacity(0.4), blurRadius: 6)] : [],
+                                boxShadow: isSelected ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 6)] : [],
                               ),
                               child: color == Colors.white
                                   ? const Center(child: Icon(Icons.cleaning_services, size: 18, color: Colors.grey))
@@ -2981,51 +2981,58 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.brush, color: !_isBucketMode ? Colors.blueAccent : Colors.grey),
-                              onPressed: _drawingSubmitted ? null : () {
-                                AudioService().playClick();
-                                setState(() {
-                                  _isBucketMode = false;
-                                });
-                              },
-                              tooltip: 'Mode Kuas',
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.format_color_fill, color: _isBucketMode ? Colors.blueAccent : Colors.grey),
-                              onPressed: _drawingSubmitted ? null : () {
-                                AudioService().playClick();
-                                setState(() {
-                                  _isBucketMode = true;
-                                });
-                              },
-                              tooltip: 'Mode Ember Cat',
-                            ),
-                            const SizedBox(width: 8),
-                            if (!_isBucketMode) ...[
-                              const Icon(Icons.line_weight, color: Colors.grey, size: 20),
-                              Slider(
-                                value: _brushWidth,
-                                min: 3.0,
-                                max: 15.0,
-                                activeColor: Colors.blueAccent,
-                                onChanged: _drawingSubmitted ? null : (val) {
+                        Expanded(
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.brush, color: !_isBucketMode ? Colors.blueAccent : Colors.grey),
+                                onPressed: _drawingSubmitted ? null : () {
+                                  AudioService().playClick();
                                   setState(() {
-                                    _brushWidth = val;
+                                    _isBucketMode = false;
                                   });
                                 },
+                                tooltip: 'Mode Kuas',
                               ),
-                            ] else
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 8.0),
-                                child: Text(
-                                  'Mode Ember Cat Aktif 🪣',
-                                  style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                              IconButton(
+                                icon: Icon(Icons.format_color_fill, color: _isBucketMode ? Colors.blueAccent : Colors.grey),
+                                onPressed: _drawingSubmitted ? null : () {
+                                  AudioService().playClick();
+                                  setState(() {
+                                    _isBucketMode = true;
+                                  });
+                                },
+                                tooltip: 'Mode Ember Cat',
+                              ),
+                              const SizedBox(width: 4),
+                              if (!_isBucketMode) ...[
+                                const Icon(Icons.line_weight, color: Colors.grey, size: 20),
+                                Expanded(
+                                  child: Slider(
+                                    value: _brushWidth,
+                                    min: 3.0,
+                                    max: 15.0,
+                                    activeColor: Colors.blueAccent,
+                                    onChanged: _drawingSubmitted ? null : (val) {
+                                      setState(() {
+                                        _brushWidth = val;
+                                      });
+                                    },
+                                  ),
                                 ),
-                              ),
-                          ],
+                              ] else
+                                const Expanded(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 8.0),
+                                    child: Text(
+                                      'Mode Ember Cat Aktif 🪣',
+                                      style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                         Row(
                           children: [
@@ -3056,7 +3063,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
           ),
           if (_drawingSubmitted)
             Container(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               child: Center(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 32),
@@ -3149,9 +3156,9 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 decoration: BoxDecoration(
-                  color: artistThemeColor.withOpacity(0.2),
+                  color: artistThemeColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: artistThemeColor.withOpacity(0.5)),
+                  border: Border.all(color: artistThemeColor.withValues(alpha: 0.5)),
                 ),
                 child: Text(currentArtistName, style: TextStyle(color: artistThemeColor, fontWeight: FontWeight.w900, fontSize: 16)),
               ),
@@ -3159,7 +3166,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               Expanded(
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 24),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 15)]),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 15)]),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: LayoutBuilder(
@@ -3264,7 +3271,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
         Container(
           height: 90,
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(16)),
           child: _voteLogs.isEmpty
               ? const Center(child: Text('Menunggu penilaian...', style: TextStyle(color: Colors.grey, fontSize: 13)))
               : ListView.builder(
@@ -3310,9 +3317,9 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                       margin: const EdgeInsets.only(bottom: 12),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: item['isPlayer'] ? Colors.blue.shade900.withOpacity(0.4) : Colors.white.withOpacity(0.05),
+                        color: item['isPlayer'] ? Colors.blue.shade900.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: item['isPlayer'] ? Colors.blue : Colors.white.withOpacity(0.1), width: item['isPlayer'] ? 2 : 1),
+                        border: Border.all(color: item['isPlayer'] ? Colors.blue : Colors.white.withValues(alpha: 0.1), width: item['isPlayer'] ? 2 : 1),
                       ),
                       child: Row(
                         children: [
@@ -3352,7 +3359,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               Container(
                 height: 110,
                 width: 110,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 10)]),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 10)]),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: LayoutBuilder(
@@ -3387,7 +3394,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
                             _startBotLobby();
                           }
                         },
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.1), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.1), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                         child: const Text('KEMBALI KE LOBBY', style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -3456,7 +3463,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
               decoration: BoxDecoration(
                 gradient: const LinearGradient(colors: [Color(0xFF3B82F6), Color(0xFF2563EB)]),
                 borderRadius: BorderRadius.circular(24),
-                boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))],
+                boxShadow: [BoxShadow(color: Colors.blue.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
               ),
               child: const Column(
                 children: [
@@ -3473,7 +3480,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> with TickerProv
             // Join Room Section
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)]),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10)]),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

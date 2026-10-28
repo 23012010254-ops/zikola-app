@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { db } from '../lib/firebase';
-import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import {
   ChevronLeft, User, Mail, Lock, Eye, EyeOff, Phone, FileText, Building2,
   Stethoscope, Wallet, Camera, Upload, X, CheckCircle, ArrowRight
@@ -16,12 +17,14 @@ interface DoctorRegisterProps {
     googleUid?: string;
   } | null;
   onBack: () => void;
-  onRegisterSuccess: (doctorId: string) => void;
+  onRegisterSuccess: () => void;
 }
 
 export default function DoctorRegister({ initialData, onBack, onRegisterSuccess }: DoctorRegisterProps) {
   const [step, setStep] = useState(1);
   const totalSteps = 3;
+  const signedInUser = auth.currentUser;
+  const needsPassword = !signedInUser;
 
   // Form Fields (Pre-fill with Google data if available)
   const [fullName, setFullName] = useState(initialData?.name || '');
@@ -39,8 +42,6 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
   const [photo, setPhoto] = useState<string>(initialData?.photoUrl || '');
   const [photoPreview, setPhotoPreview] = useState<string>(initialData?.photoUrl || '');
   const [specialty, setSpecialty] = useState('Psikolog Anak'); // Default to psychologist since Zikola is child psychologist portal
-  const [securityPin, setSecurityPin] = useState('');
-  const [showSecurityPin, setShowSecurityPin] = useState(false);
   const [bio, setBio] = useState('');
   const [price, setPrice] = useState('150000');
   const [available, setAvailable] = useState(true);
@@ -88,13 +89,6 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const hashPassword = async (pwd: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(pwd);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-  };
-
   const validateStep1 = (): boolean => {
     const errors: Record<string, string> = {};
     
@@ -105,11 +99,13 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
     
     if (!phone.trim()) errors.phone = 'Nomor telepon wajib diisi';
     
-    if (!password) errors.password = 'Kata sandi wajib diisi';
-    else if (password.length < 8) errors.password = 'Kata sandi minimal 8 karakter';
-    
-    if (password !== confirmPassword) errors.confirmPassword = 'Konfirmasi kata sandi tidak cocok';
-    
+    if (needsPassword) {
+      if (!password) errors.password = 'Kata sandi wajib diisi';
+      else if (password.length < 8) errors.password = 'Kata sandi minimal 8 karakter';
+
+      if (password !== confirmPassword) errors.confirmPassword = 'Konfirmasi kata sandi tidak cocok';
+    }
+
     if (!licenseNumber.trim()) errors.licenseNumber = 'Nomor STR / SIP wajib diisi';
     
     if (!agreedToTerms) errors.agreedToTerms = 'Anda harus menyetujui Syarat & Ketentuan';
@@ -121,8 +117,6 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
   const validateStep2 = (): boolean => {
     const errors: Record<string, string> = {};
     if (!photo) errors.photo = 'Foto profil wajib diunggah';
-    if (!securityPin) errors.securityPin = 'PIN Keamanan wajib diisi';
-    else if (securityPin.length !== 6 || !/^\d+$/.test(securityPin)) errors.securityPin = 'PIN harus 6 digit angka';
     if (!bio.trim()) errors.bio = 'Bio / Deskripsi diri wajib diisi';
     else if (bio.length < 20) errors.bio = 'Bio minimal 20 karakter';
     if (!price) errors.price = 'Biaya konsultasi wajib diisi';
@@ -150,33 +144,24 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
     setError('');
 
     try {
-      const generatedUsername = fullName.toLowerCase().trim().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-      
-      // Check username uniqueness
-      const credQuery = query(collection(db, 'doctor_credentials'), where('username', '==', generatedUsername));
-      const existing = await getDocs(credQuery);
-      if (!existing.empty) {
-        setError('Nama lengkap ini sudah terdaftar. Silakan hubungi admin jika ini kesalahan.');
-        setIsSubmitting(false);
-        setStep(1);
-        return;
-      }
+      const user = signedInUser
+        ?? (await createUserWithEmailAndPassword(auth, email.trim(), password)).user;
+      const uid = user.uid;
+      const accountEmail = (user.email || email).toLowerCase().trim();
 
-      const doctorId = `doctor_${Date.now()}`;
-      const hashedPwd = await hashPassword(password);
-
-      // Save credentials
-      await setDoc(doc(db, 'doctor_credentials', doctorId), {
-        username: generatedUsername,
-        email: email.toLowerCase().trim(),
-        password: hashedPwd,
-        securityPin: await hashPassword(securityPin),
-        doctorId,
+      // Role record. firestore.rules only accept verified: false from clients;
+      // an admin flips it to true after checking the STR/SIP.
+      await setDoc(doc(db, 'doctor_accounts', uid), {
+        doctorId: uid,
+        verified: false,
+        email: accountEmail,
+        name: fullName.trim(),
+        licenseNumber: licenseNumber.trim(),
         createdAt: new Date().toISOString(),
       });
 
-      // Save doctor profile
-      await setDoc(doc(db, 'doctors', doctorId), {
+      // Public profile, hidden from the parent app until verified.
+      await setDoc(doc(db, 'doctors', uid), {
         name: fullName.trim(),
         specialty: specialty,
         hospital: hospital.trim() || 'Zikola Clinic',
@@ -189,18 +174,26 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
         bio: bio.trim(),
         price: parseInt(price) || 150000,
         available: available,
-        email: email.toLowerCase().trim(),
+        email: accountEmail,
         phone: phone.trim(),
         rating: 5.0,
         ratingCount: 0,
-        verified: true,
+        verified: false,
         registeredAt: new Date().toISOString(),
       });
 
-      onRegisterSuccess(doctorId);
+      onRegisterSuccess();
     } catch (err: any) {
       console.error('Registration error:', err);
-      setError('Terjadi kesalahan saat mendaftar. Silakan coba lagi.');
+      if (err?.code === 'auth/email-already-in-use') {
+        setError('Email ini sudah terdaftar. Silakan masuk melalui halaman login.');
+        setStep(1);
+      } else if (err?.code === 'auth/weak-password') {
+        setError('Kata sandi terlalu lemah. Gunakan minimal 8 karakter.');
+        setStep(1);
+      } else {
+        setError('Terjadi kesalahan saat mendaftar. Silakan coba lagi.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -307,6 +300,7 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  readOnly={!needsPassword}
                   placeholder="Masukkan email profesional Anda"
                   className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-100 transition-all shadow-sm"
                 />
@@ -335,6 +329,7 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
               {renderFieldError('phone')}
             </div>
 
+            {needsPassword && (<>
             {/* Kata Sandi */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">Kata Sandi</label>
@@ -377,6 +372,7 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
               </div>
               {renderFieldError('confirmPassword')}
             </div>
+            </>)}
 
             {/* Nomor STR / SIP */}
             <div className="space-y-1.5">
@@ -504,29 +500,6 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
               </div>
             </div>
 
-            {/* PIN Keamanan */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-600 ml-1">PIN Keamanan (6 Digit)</label>
-              <div className="relative group">
-                <input
-                  type={showSecurityPin ? 'text' : 'password'}
-                  maxLength={6}
-                  pattern="\d*"
-                  value={securityPin}
-                  onChange={(e) => setSecurityPin(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Buat 6 digit PIN pemulihan sandi"
-                  className="w-full pl-11 pr-11 py-2.5 bg-white border border-slate-200 rounded-xl outline-none text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-100 transition-all shadow-sm"
-                />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Lock size={18} />
-                </div>
-                <button type="button" onClick={() => setShowSecurityPin(!showSecurityPin)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  {showSecurityPin ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              {renderFieldError('securityPin')}
-            </div>
-
             {/* Bio */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-600 ml-1">Bio / Deskripsi Singkat</label>
@@ -596,7 +569,7 @@ export default function DoctorRegister({ initialData, onBack, onRegisterSuccess 
             <div>
               <h3 className="text-xl font-black text-slate-800">Semua Data Siap!</h3>
               <p className="text-sm text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
-                Kredensial dan data profil Anda telah tervalidasi dengan lengkap. Klik tombol di bawah untuk menyelesaikan pendaftaran Anda.
+                Data profil Anda sudah lengkap. Setelah mendaftar, tim Zikola akan memverifikasi STR/SIP Anda sebelum akun bisa mengakses data pasien.
               </p>
             </div>
 

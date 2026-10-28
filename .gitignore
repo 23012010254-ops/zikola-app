@@ -56,3 +56,9 @@ anak_app/ios/ServiceDefinitions.json
 # Temporary scripts
 _update_source/
 scratch/
+
+# Local archive of debug/scratch files (safe to delete)
+_arsip_rapikan/
+
+# Secrets
+anak_app/.env

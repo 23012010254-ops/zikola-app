@@ -297,26 +297,26 @@ class AIReportService {
 
     return '''## 🌟 Halo, Mama/Papa $childName!
 
-Terima kasih sudah memberikan waktu bermain yang menyenangkan untuk ${childName}! Kami telah menganalisis perjalanan bermainnya dan punya kabar baik untuk dibagikan. 😊
+Terima kasih sudah memberikan waktu bermain yang menyenangkan untuk $childName! Kami telah menganalisis perjalanan bermainnya dan punya kabar baik untuk dibagikan. 😊
 
 ---
 
-## 📊 Ringkasan Profil ${childName} (${childAge} tahun)
+## 📊 Ringkasan Profil $childName ($childAge tahun)
 
-$childName menunjukkan **semangat belajar yang tinggi** dan **keterlibatan yang aktif** sepanjang sesi permainan. Berdasarkan data dari ${completedDomains}, $childName sedang berada pada jalur perkembangan yang sangat positif! Domain terkuatnya adalah **${strongest}**, yang menunjukkan potensi luar biasa di area tersebut.
+$childName menunjukkan **semangat belajar yang tinggi** dan **keterlibatan yang aktif** sepanjang sesi permainan. Berdasarkan data dari $completedDomains, $childName sedang berada pada jalur perkembangan yang sangat positif! Domain terkuatnya adalah **$strongest**, yang menunjukkan potensi luar biasa di area tersebut.
 
 ---
 
-## 💪 Kekuatan Utama ${childName}
+## 💪 Kekuatan Utama $childName
 
-**1. ${strongest} — Potensi Unggulan** 🏆
+**1. $strongest — Potensi Unggulan** 🏆
 $strengthAdvice
 
 **2. Semangat & Keterlibatan Bermain** 🎮
-${childName} menunjukkan keterlibatan yang konsisten dalam setiap sesi permainan. Ini adalah indikator positif tentang motivasi intrinsik dan rasa ingin tahu yang sehat untuk usianya.
+$childName menunjukkan keterlibatan yang konsisten dalam setiap sesi permainan. Ini adalah indikator positif tentang motivasi intrinsik dan rasa ingin tahu yang sehat untuk usianya.
 
 **3. Kemampuan Kognitif** 🧠
-Dengan skor kognitif **${cogScore}/100 (${cogClassif})**, ${cogInterpret['conclusion']}
+Dengan skor kognitif **$cogScore/100 ($cogClassif)**, ${cogInterpret['conclusion']}
 
 ---
 
@@ -364,7 +364,7 @@ Beberapa area menunjukkan skor di bawah rata-rata. Hal ini normal dan bisa terja
 
 Setiap anak berkembang dengan caranya yang unik dan istimewa. Yang paling penting adalah cinta, dukungan, dan waktu berkualitas yang kalian berikan setiap hari. $childName beruntung memiliki orang tua yang peduli seperti kalian! 
 
-**Teruskan permainan! Setiap sesi adalah investasi untuk masa depan ${childName}.** 🌟
+**Teruskan permainan! Setiap sesi adalah investasi untuk masa depan $childName.** 🌟
 
 ---
 *Laporan ini dihasilkan berdasarkan data bermain di aplikasi Zikola. Ini adalah panduan awal, bukan diagnosis klinis. Untuk evaluasi komprehensif, konsultasikan dengan profesional.*''';

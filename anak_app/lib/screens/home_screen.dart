@@ -1,12 +1,16 @@
 import 'dart:convert';
+import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
-import '../theme/app_theme.dart';
 import '../widgets/custom_bottom_nav.dart';
-import '../models/test_result.dart';
 import '../services/chat_notification_service.dart';
 import '../services/audio_service.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,7 +19,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late ValueNotifier<Offset> _fabPosition;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -23,103 +27,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String? _lastAvatarBase64;
   bool _showFab = true;
 
-  final List<Map<String, dynamic>> _testCategories = [
-    {
-      'id': 'cognitive-test',
-      'title': 'Kognitif',
-      'icon': '🧠',
-      'bgColor': const Color(0xFFDBEAFE), // blue100
-      'iconColor': AppTheme.blue600,
-    },
-    {
-      'id': 'linguistic-test',
-      'title': 'Linguistik',
-      'icon': '📝',
-      'bgColor': const Color(0xFFFFEDD5), // orange100
-      'iconColor': AppTheme.orange600,
-    },
-    {
-      'id': 'personality-test',
-      'title': 'Kepribadian',
-      'icon': '🎭',
-      'bgColor': const Color(0xFFF3E8FF), // purple100
-      'iconColor': const Color(0xFF9333EA), // purple600
-    },
-    {
-      'id': 'motor-tips',
-      'title': 'Motorik',
-      'icon': '🎯',
-      'bgColor': const Color(0xFFDCFCE7), // green100 (inferred)
-      'iconColor': AppTheme.green500,
-    },
-    {
-      'id': 'game',
-      'title': 'Game',
-      'icon': '🎮',
-      'bgColor': const Color(0xFFFCE7F3), // pink100
-      'iconColor': const Color(0xFFDB2777), // pink600
-    }
-  ];
-
-  List<Map<String, dynamic>> _getRecentTests(TestResults results) {
-    final tests = [
-      {
-        'id': 'cognitive',
-        'title': 'Kognitif',
-        'icon': '🧠',
-        'bgColor': const Color(0xFFEFF6FF), // blue50
-        'progressColor': AppTheme.blue500,
-        'data': results.cognitive,
-      },
-      {
-        'id': 'linguistic',
-        'title': 'Linguistik',
-        'icon': '📝',
-        'bgColor': const Color(0xFFFFF7ED), // orange50
-        'progressColor': AppTheme.orange500,
-        'data': results.linguistic,
-      },
-      {
-        'id': 'personality',
-        'title': 'Kepribadian',
-        'icon': '🎭',
-        'bgColor': const Color(0xFFFAF5FF), // purple50
-        'progressColor': const Color(0xFF9333EA), // purple500 -> purple600
-        'data': results.personality,
-      },
-      {
-        'id': 'motor',
-        'title': 'Motorik',
-        'icon': '🎯',
-        'bgColor': const Color(0xFFF0FDF4), // green50
-        'progressColor': AppTheme.green500,
-        'data': results.motor,
-      }
-    ];
-
-    List<Map<String, dynamic>> recent = [];
-    for (var test in tests) {
-      final data = test['data'] as dynamic;
-      if (data != null && data.completed == true) {
-        if (test['id'] == 'personality') {
-          recent.add({
-            ...test,
-            'scoreText': 'Selesai',
-            'totalText': 'Selesai',
-            'progress': 1.0,
-          });
-        } else {
-          recent.add({
-            ...test,
-            'scoreText': '${data.score}',
-            'totalText': '${data.total}',
-            'progress': data.total > 0 ? (data.score / data.total).clamp(0.0, 1.0) : 0.0,
-          });
-        }
-      }
-    }
-    return recent;
-  }
+  // Phase 4: Weather & Easter Egg
+  late AnimationController _weatherController;
+  Timer? _easterEggTimer;
+  bool _showEasterEgg = false;
+  double _easterEggX = -100;
+  double _easterEggY = 200;
+  bool? _previewNightMode = false; // Default to Day Mode so morning sunshine and clouds are immediately visible
 
   @override
   void initState() {
@@ -128,28 +42,61 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-    
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    _pulseAnimation = const AlwaysStoppedAnimation(1.0);
+
+    // Weather Controller: Gerak halus & melayang berkesinambungan
+    _weatherController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 35),
+    )..repeat();
+
+    // Easter Egg Spawner
+    _startEasterEggTimer();
+
+  }
+
+  void _startEasterEggTimer() {
+    _easterEggTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (!mounted) return;
+      if (!_showEasterEgg) {
+        setState(() {
+          _showEasterEgg = true;
+          // random Y position
+          _easterEggY = 100 + (DateTime.now().second * 10).toDouble() % 400;
+          _easterEggX = -20; // peaks out
+        });
+        // Auto hide after 5 seconds
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted && _showEasterEgg) {
+            setState(() => _showEasterEgg = false);
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _weatherController.dispose();
+    _easterEggTimer?.cancel();
     _fabPosition.dispose();
     _pulseController.dispose();
     super.dispose();
   }
 
   MemoryImage? _getAvatarImage(String? base64) {
-    if (base64 == null) return null;
+    if (base64 == null || base64.isEmpty) return null;
     if (base64 == _lastAvatarBase64 && _cachedAvatar != null) {
       return _cachedAvatar;
     }
-    _lastAvatarBase64 = base64;
-    _cachedAvatar = MemoryImage(base64Decode(base64));
-    return _cachedAvatar;
+    try {
+      _lastAvatarBase64 = base64;
+      _cachedAvatar = MemoryImage(base64Decode(base64));
+      return _cachedAvatar;
+    } catch (_) {
+      return null;
+    }
   }
 
   Widget _buildParentModeToggle(BuildContext context, AppState appState) {
@@ -174,16 +121,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             }
           );
           
-          if (result == true || result is String) {
-            if (result is String) {
+          if (result == true || (result is String && result.length == 4)) {
+            if (result is String && result.length == 4) {
               await appState.setParentalPin(result);
             }
             appState.setParentMode(true);
+            AudioService().stopBGM();
             await AudioService().playClick();
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Mode Orang Tua Aktif! 🛡️'),
+                  backgroundColor: Color(0xFFF97316),
                   duration: Duration(seconds: 2),
                 ),
               );
@@ -191,32 +140,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           }
         }
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: appState.isParentMode ? const Color(0xFFF97316).withOpacity(0.15) : const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(12),
+          color: appState.isParentMode ? const Color(0xFFF97316).withValues(alpha: 0.15) : const Color(0xFFFFF7ED),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: appState.isParentMode ? const Color(0xFFF97316) : Colors.transparent,
+            color: appState.isParentMode ? const Color(0xFFF97316) : const Color(0xFFFED7AA),
             width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFF97316).withValues(alpha: 0.08),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              appState.isParentMode ? Icons.security_rounded : Icons.lock_outline_rounded,
-              color: appState.isParentMode ? const Color(0xFFEA580C) : const Color(0xFF64748B),
-              size: 18,
+              appState.isParentMode ? Icons.security_rounded : Icons.lock_rounded,
+              color: const Color(0xFFEA580C),
+              size: 14,
             ),
             const SizedBox(width: 4),
-            Text(
+            const Text(
               'Orang Tua',
               style: TextStyle(
-                color: appState.isParentMode ? const Color(0xFFEA580C) : const Color(0xFF64748B),
+                color: Color(0xFFEA580C),
                 fontSize: 11,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w900,
+                fontFamily: 'Nunito',
               ),
             ),
           ],
@@ -234,6 +190,891 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     Navigator.pushNamed(context, route);
   }
 
+  Widget _buildMockupHeader(BuildContext context, AppState appState, String greetingPrefix, String childName, bool isNightMode) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Left: ZIKOLA Official 3D Inflatable Logo (Tap to Switch Day/Night Mode)
+          GestureDetector(
+            onTap: () {
+              AudioService().playPop();
+              Navigator.pushNamed(context, '/photo-booth');
+            },
+            onLongPress: () => Navigator.pushNamed(context, '/motor-tips'),
+            child: Image.asset(
+              'assets/images/zikola_3d_logo.png',
+              height: 44,
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          // Right Controls: [🔒 Orang Tua (PIN)] + [🔔 Bell] + [Avatar]
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. PIN-Protected Parent Mode Toggle
+              _buildParentModeToggle(context, appState),
+              const SizedBox(width: 8),
+
+              // 2. Notification Bell
+              GestureDetector(
+                onTap: () {
+                  AudioService().playClick();
+                  Navigator.pushNamed(context, '/notifications');
+                },
+                onLongPress: () {
+                  AudioService().playClick();
+                  Navigator.pushNamed(context, '/onboarding');
+                },
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: isNightMode ? const Color(0xFF1E293B) : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isNightMode ? const Color(0xFF334155) : const Color(0xFFF1F5F9), 
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isNightMode ? 0.3 : 0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.notifications_outlined,
+                        color: isNightMode ? Colors.white : const Color(0xFF1E293B),
+                        size: 20,
+                      ),
+                      if (appState.totalUnreadNotifications > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFEF4444),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // 3. Profile Avatar
+              GestureDetector(
+                onTap: () {
+                  AudioService().playClick();
+                  Navigator.pushNamed(context, '/child-selector');
+                },
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: appState.childProfile.avatarBase64 != null
+                        ? Image(image: _getAvatarImage(appState.childProfile.avatarBase64!)!, fit: BoxFit.cover)
+                        : Image.asset('assets/images/characters/character_round_green.png', fit: BoxFit.cover),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroMockupBanner(BuildContext context, AppState appState) {
+    return Container(
+      width: double.infinity,
+      height: 195,
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFFFBEB), // warm pastel cream
+            Color(0xFFEFF6FF), // soft pastel sky blue
+          ],
+        ),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            // Left content
+            Positioned(
+              top: 20,
+              left: 20,
+              bottom: 20,
+              right: 140,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Kenali Potensi\nTerbaik Si Kecil',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF1E3A8A),
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Bersama ZIKOLA, bantu anak mengembangkan kemampuan kognitif, bahasa, dan kepribadiannya.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                          height: 1.35,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      AudioService().playPop();
+                      _navigateTo('test-room');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Mulai Asesmen',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Icon(Icons.arrow_forward_rounded, size: 15),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Right Mascot
+            Positioned(
+              right: 4,
+              bottom: 0,
+              top: 8,
+              width: 150,
+              child: Image.asset(
+                'assets/images/kula_hero_mascot.png',
+                fit: BoxFit.contain,
+                alignment: Alignment.bottomRight,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRingkasanPerkembanganSection(BuildContext context, AppState appState) {
+    final results = appState.testResults;
+    final cognitive = results.cognitive;
+    final linguistic = results.linguistic;
+    final personalityDone = results.personality.completed;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.bar_chart_rounded,
+                        color: Color(0xFF2563EB),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Ringkasan Perkembangan',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF1E293B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Pantau progres si kecil.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF64748B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  AudioService().playClick();
+                  Navigator.pushNamed(context, '/progress');
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Detail',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                      SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 14,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // 3 Domain Cards Row
+          Row(
+            children: [
+              // 1. Kognitif
+              Expanded(
+                child: _buildDomainSummaryCard(
+                  title: 'Kognitif',
+                  scoreText: cognitive.completed ? '${cognitive.score}' : null,
+                  isFinished: false,
+                  iconAsset: 'assets/images/emoji/games/brain.png',
+                  iconBgColor: const Color(0xFFFEE2E2),
+                  progressColor: const Color(0xFFF87171),
+                  progressValue: cognitive.completed ? (cognitive.percentage / 100).clamp(0.0, 1.0) : 0.0,
+                  onTap: () => Navigator.pushNamed(context, '/cognitive-test'),
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // 2. Linguistik
+              Expanded(
+                child: _buildDomainSummaryCard(
+                  title: 'Linguistik',
+                  scoreText: linguistic.completed ? '${linguistic.score}' : null,
+                  isFinished: false,
+                  iconAsset: 'assets/images/emoji/games/books.png',
+                  iconBgColor: const Color(0xFFE0F2FE),
+                  progressColor: const Color(0xFF3B82F6),
+                  progressValue: linguistic.completed ? (linguistic.percentage / 100).clamp(0.0, 1.0) : 0.0,
+                  onTap: () => Navigator.pushNamed(context, '/linguistic-test'),
+                ),
+              ),
+              const SizedBox(width: 10),
+
+              // 3. Kepribadian
+              Expanded(
+                child: _buildDomainSummaryCard(
+                  title: 'Kepribadian',
+                  scoreText: null,
+                  isFinished: personalityDone,
+                  iconAsset: 'assets/images/emoji/games/palette.png',
+                  iconBgColor: const Color(0xFFF3E8FF),
+                  progressColor: const Color(0xFFA855F7),
+                  progressValue: personalityDone ? 1.0 : 0.0,
+                  onTap: () => Navigator.pushNamed(context, '/personality-test'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDomainSummaryCard({
+    required String title,
+    // null = test not taken yet.
+    required String? scoreText,
+    required bool isFinished,
+    required String iconAsset,
+    required Color iconBgColor,
+    required Color progressColor,
+    required double progressValue,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        AudioService().playPop();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Image.asset(iconAsset, fit: BoxFit.contain),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: Color(0xFF94A3B8),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1E293B),
+                ),
+                maxLines: 1,
+              ),
+            ),
+            const SizedBox(height: 2),
+            if (!isFinished && scoreText == null)
+              const Text(
+                'Mulai tes',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF94A3B8),
+                ),
+              )
+            else if (isFinished)
+              Text(
+                'Selesai',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: progressColor,
+                ),
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    scoreText!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  const Text(
+                    'Skor',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progressValue,
+                minHeight: 5,
+                backgroundColor: const Color(0xFFE2E8F0),
+                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCepatSection(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // 1. Tes & Latihan
+          Expanded(
+            child: _buildQuickNavItem(
+              icon: Icons.assignment_rounded,
+              iconColor: const Color(0xFF2563EB),
+              iconBgColor: const Color(0xFFEFF6FF),
+              title: 'Tes &\nLatihan',
+              onTap: () => _navigateTo('test-room'),
+            ),
+          ),
+          _buildVerticalSeparator(),
+
+          // 2. Game Edukasi
+          Expanded(
+            child: _buildQuickNavItem(
+              icon: Icons.sports_esports_rounded,
+              iconColor: const Color(0xFF16A34A),
+              iconBgColor: const Color(0xFFDCFCE7),
+              title: 'Game\nEdukasi',
+              onTap: () => Navigator.pushNamed(context, '/game'),
+            ),
+          ),
+          _buildVerticalSeparator(),
+
+          // 3. Koleksi Stiker
+          Expanded(
+            child: _buildQuickNavItem(
+              icon: Icons.auto_awesome_rounded,
+              iconColor: const Color(0xFF8B5CF6),
+              iconBgColor: const Color(0xFFF3E8FF),
+              title: 'Koleksi\nStiker',
+              onTap: () => Navigator.pushNamed(context, '/stickers'),
+            ),
+          ),
+          _buildVerticalSeparator(),
+
+          // 4. Komunitas Diskusi
+          Expanded(
+            child: _buildQuickNavItem(
+              icon: Icons.people_alt_rounded,
+              iconColor: const Color(0xFFD97706),
+              iconBgColor: const Color(0xFFFEF3C7),
+              title: 'Komunitas\nDiskusi',
+              onTap: () => Navigator.pushNamed(context, '/community'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerticalSeparator() {
+    return Container(
+      width: 1,
+      height: 48,
+      color: const Color(0xFFF1F5F9),
+    );
+  }
+
+  Widget _buildQuickNavItem({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        AudioService().playPop();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: iconBgColor,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1E293B),
+                  height: 1.2,
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, size: 13, color: Color(0xFF94A3B8)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRekomendasiSection(BuildContext context, bool isNightMode) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.star_rounded,
+                  color: Color(0xFFFBBF24),
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Rekomendasi Untukmu',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: isNightMode ? Colors.white : const Color(0xFF1E293B),
+                  ),
+                ),
+              ],
+            ),
+            GestureDetector(
+              onTap: () {
+                AudioService().playClick();
+                Navigator.pushNamed(context, '/game');
+              },
+              child: Row(
+                children: [
+                  Text(
+                    'Lihat Semua',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: isNightMode ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(
+                    Icons.chevron_right_rounded, 
+                    size: 16, 
+                    color: isNightMode ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Featured Card
+        GestureDetector(
+          onTap: () {
+            AudioService().playPop();
+            Navigator.pushNamed(context, '/desert-road-logic');
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFEFF6FF), // soft blue
+                  Color(0xFFF8FAFC), // white
+                ],
+              ),
+              border: Border.all(color: const Color(0xFFDBEAFE), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.04),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Illustration
+                Image.asset(
+                  'assets/images/recom_math_icon.png',
+                  width: 58,
+                  height: 58,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 14),
+
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Latihan Logika Matematika',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Yuk, asah kemampuan berpikir logis melalui permainan yang seru!',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // Arrow Button
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xFF2563EB),
+                    size: 22,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTodayChallengeMiniCard(BuildContext context, AppState appState) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🎯 Misi Hari Ini',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+              ),
+              GestureDetector(
+                onTap: () {
+                  AudioService().playClick();
+                  Navigator.pushNamed(context, '/daily-challenge');
+                },
+                child: const Text(
+                  'Lihat Misi',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...appState.todayChallenges.take(2).map((challenge) {
+            final double progressVal = challenge.target > 0 
+                ? (challenge.progress / challenge.target).clamp(0.0, 1.0)
+                : 0.0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Text(challenge.emoji, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          challenge.title,
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                        ),
+                        const SizedBox(height: 3),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: progressVal,
+                            backgroundColor: const Color(0xFFE2E8F0),
+                            color: challenge.isCompleted ? const Color(0xFF10B981) : const Color(0xFF2563EB),
+                            minHeight: 4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${challenge.progress}/${challenge.target}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: challenge.isCompleted ? const Color(0xFF10B981) : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
@@ -247,13 +1088,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
 
     final childName = appState.childProfile.name;
-    final recentTests = _getRecentTests(appState.testResults);
+    final hour = DateTime.now().hour;
+    final isNightMode = _previewNightMode ?? (hour >= 18 || hour < 6);
+    final greetingPrefix = isNightMode ? 'Selamat Malam,' : (hour < 12 ? 'Selamat Pagi,' : 'Selamat Siang,');
+
+
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isNightMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       body: SafeArea(
         child: Stack(
           children: [
+            _buildWeatherLayer(isNightMode),
             Column(
               children: [
                 // Offline mode indicator
@@ -278,471 +1124,53 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
 
-                // Premium Header
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Selamat Datang,',
-                              style: TextStyle(fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w600),
-                            ),
-                            Text(
-                              '$childName! 👋',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B), height: 1.2),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            // Level, XP, Streak indicators
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.amber.shade100,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Text('🔥', style: TextStyle(fontSize: 10)),
-                                        const SizedBox(width: 2),
-                                        Text(
-                                          '${appState.currentStreak} Hari',
-                                          style: TextStyle(color: Colors.amber.shade900, fontSize: 10, fontWeight: FontWeight.bold),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade100,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      '🌟 Lvl ${appState.currentLevel}',
-                                      style: TextStyle(color: Colors.blue.shade900, fontSize: 10, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '${appState.totalXP} XP',
-                                    style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          _buildParentModeToggle(context, appState),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(context, '/notifications'),
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
-                                  child: const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B), size: 22),
-                                ),
-                                if (appState.totalUnreadNotifications > 0)
-                                  Positioned(
-                                    right: -4,
-                                    top: -4,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(5),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 1.5),
-                                      ),
-                                      child: Text(
-                                        appState.totalUnreadNotifications > 9 ? '9+' : appState.totalUnreadNotifications.toString(),
-                                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(context, '/child-selector'),
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3C7),
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-                                image: appState.childProfile.avatarBase64 != null
-                                  ? DecorationImage(image: _getAvatarImage(appState.childProfile.avatarBase64!)!, fit: BoxFit.cover)
-                                  : null,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-                              child: appState.childProfile.avatarBase64 == null 
-                                ? Center(child: Text(appState.childProfile.avatar, style: const TextStyle(fontSize: 22)))
-                                : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                // Mockup Header: Zikola Logo, Greeting, Notification with badge
+                _buildMockupHeader(context, appState, greetingPrefix, childName, isNightMode),
 
+            // Scrollable Body matching reference mockup
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Premium Banner
-                    if (appState.showTesYukBanner) ...[
-                      Stack(
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(28),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF6366F1), Color(0xFF3B82F6)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(32),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF3B82F6).withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                )
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Test Yuk! 🚀',
-                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Ayo cari tahu seberapa hebat kamu hari ini!',
-                                  style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
-                                ),
-                                const SizedBox(height: 24),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    SizedBox(
-                                      width: 120,
-                                      height: 36,
-                                      child: Stack(
-                                        children: [
-                                          Positioned(child: _buildAvatarStackItem('👦', Colors.white, const Color(0xFF6366F1))),
-                                          Positioned(left: 20, child: _buildAvatarStackItem('👧', Colors.white, const Color(0xFF6366F1))),
-                                          Positioned(left: 40, child: _buildAvatarStackItem('👦', Colors.white, const Color(0xFF6366F1))),
-                                          Positioned(left: 60, child: _buildAvatarStackItem('+1', const Color(0xFFFBBF24), const Color(0xFF6366F1), isText: true)),
-                                        ],
-                                      ),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () => _navigateTo('test-room'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFF59E0B),
-                                        foregroundColor: Colors.white,
-                                        elevation: 5,
-                                        shadowColor: const Color(0xFFF59E0B).withOpacity(0.5),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                                      ),
-                                      child: const Text('Mulai!', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: () {
-                                appState.setTesYukBannerDismissed();
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.25),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close_rounded,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
+                    // 1. Hero Banner: "Kenali Potensi Terbaik Si Kecil" with Mascot KULA
+                    _buildHeroMockupBanner(context, appState),
+                    const SizedBox(height: 18),
+
+                    // 2. Ringkasan Perkembangan (Kognitif, Linguistik, Kepribadian)
+                    _buildRingkasanPerkembanganSection(context, appState),
+                    const SizedBox(height: 20),
+
+                    // 3. Menu Cepat: Tes & Latihan, Game Edukasi, Konsultasi Psikolog, Komunitas Orang Tua
+                    _buildMenuCepatSection(context),
+                    const SizedBox(height: 20),
+
+                    // 4. Rekomendasi Untukmu (Latihan Logika Matematika)
+                    _buildRekomendasiSection(context, isNightMode),
+                    const SizedBox(height: 16),
+
+                    // 5. Active Prescription & Therapy Banner (if active)
+                    _buildActivePrescriptionReminder(context),
+
+                    // 6. Misi Hari Ini (Daily Challenge mini card if active)
+                    if (appState.todayChallenges.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _buildTodayChallengeMiniCard(context, appState),
                     ],
 
-                    // Misi Hari Ini (Daily Challenge Card)
-                    if (appState.todayChallenges.isNotEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  '🎯 Misi Hari Ini',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
-                                ),
-                                GestureDetector(
-                                  onTap: () => Navigator.pushNamed(context, '/daily-challenge'),
-                                  child: const Text(
-                                    'Lihat Misi',
-                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF3B82F6)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            ...appState.todayChallenges.map((challenge) {
-                              final double progressVal = challenge.target > 0 
-                                  ? (challenge.progress / challenge.target).clamp(0.0, 1.0)
-                                  : 0.0;
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: challenge.isCompleted ? const Color(0xFFDCFCE7) : const Color(0xFFEFF6FF),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Text(challenge.emoji, style: const TextStyle(fontSize: 14)),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            challenge.title,
-                                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(3),
-                                            child: LinearProgressIndicator(
-                                              value: progressVal,
-                                              backgroundColor: const Color(0xFFE2E8F0),
-                                              color: challenge.isCompleted ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
-                                              minHeight: 6,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      '${challenge.progress}/${challenge.target}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: challenge.isCompleted ? const Color(0xFF10B981) : const Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }).toList(),
-                          ],
-                        ),
-                      ),
                     const SizedBox(height: 28),
-
-                    Text('Kategori Belajar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: _testCategories.map((category) {
-                        return GestureDetector(
-                          onTap: () => _navigateTo(category['id'] as String),
-                          child: Column(
-                            children: [
-                              Container(
-                                width: 54,
-                                height: 54,
-                                decoration: BoxDecoration(
-                                  color: category['bgColor'] as Color,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (category['bgColor'] as Color).withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    )
-                                  ],
-                                ),
-                                child: Center(
-                                  child: Text(category['icon'] as String, style: const TextStyle(fontSize: 24)),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                category['title'] as String,
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF475569)),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 40),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Baru Saja', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B))),
-                        Text('Lihat Semua', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: const Color(0xFF3B82F6))),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    if (recentTests.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(32),
-                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text('📝', style: TextStyle(fontSize: 44)),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Belum ada petualangan',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF475569)),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Ayo mulai petualangan pertamamu sekarang!',
-                              style: TextStyle(fontSize: 14, color: const Color(0xFF64748B), fontWeight: FontWeight.w500),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      Column(
-                        children: recentTests.map((test) {
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 16),
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: (test['bgColor'] as Color).withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(32),
-                              border: Border.all(color: Colors.white, width: 2),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 52,
-                                  height: 52,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
-                                  ),
-                                  child: Center(
-                                    child: Text(test['icon'] as String, style: const TextStyle(fontSize: 24)),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        test['title'] as String,
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B)),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Container(
-                                        height: 10,
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.5), borderRadius: BorderRadius.circular(5)),
-                                        child: FractionallySizedBox(
-                                          alignment: Alignment.centerLeft,
-                                          widthFactor: test['progress'] as double,
-                                          child: Container(
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(colors: [test['progressColor'] as Color, (test['progressColor'] as Color).withOpacity(0.8)]),
-                                              borderRadius: BorderRadius.circular(5),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 20),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '${test['scoreText']}',
-                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: const Color(0xFF1E293B)),
-                                    ),
-                                    Text(
-                                      'Skor',
-                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: const Color(0xFF64748B)),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
-            ), // Expanded
-          ],
-        ), // outer Column
+            )
+              ],
+            ), // outer Column
+
+        if (_showEasterEgg && !appState.isParentMode)
+          _buildEasterEgg(),
+
 
         // Draggable FAB for Consultation
             if (_showFab && appState.isParentMode)
@@ -784,8 +1212,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     }
                                   );
                                   
-                                  if (result == true || result is String) {
-                                    if (result is String) {
+                                  if (result == true || (result is String && result.length == 4)) {
+                                    if (result is String && result.length == 4) {
                                       await appState.setParentalPin(result);
                                     }
                                     appState.setParentMode(true);
@@ -820,12 +1248,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   color: activeChat != null ? const Color(0xFF1E40AF) : Colors.white, // Blue 800 if active
                                   borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                    color: activeChat != null ? Colors.blueAccent : const Color(0xFF16A34A).withOpacity(0.1), 
+                                    color: activeChat != null ? Colors.blueAccent : const Color(0xFF16A34A).withValues(alpha: 0.1), 
                                     width: 1.5
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(activeChat != null ? 0.2 : 0.08),
+                                      color: Colors.black.withValues(alpha: activeChat != null ? 0.2 : 0.08),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     ),
@@ -837,7 +1265,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        color: activeChat != null ? Colors.white.withOpacity(0.2) : const Color(0xFFDCFCE7),
+                                        color: activeChat != null ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFDCFCE7),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Text('👨‍⚕️', style: TextStyle(fontSize: 16)),
@@ -858,7 +1286,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         Text(
                                           activeChat != null ? 'Sesi Aktif' : 'Konsultasi Sekarang',
                                           style: TextStyle(
-                                            color: activeChat != null ? Colors.white70 : const Color(0xFF16A34A).withOpacity(0.7), 
+                                            color: activeChat != null ? Colors.white70 : const Color(0xFF16A34A).withValues(alpha: 0.7), 
                                             fontSize: 8, 
                                             fontWeight: FontWeight.bold
                                           ),
@@ -901,26 +1329,616 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildAvatarStackItem(String content, Color bgColor, Color borderColor, {bool isText = false}) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: bgColor,
-        shape: BoxShape.circle,
-        border: Border.all(color: borderColor, width: 2),
+  Widget _buildCloudWidget({
+    required double width,
+    required double height,
+    double opacity = 0.95,
+  }) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // 1. Soft sky drop shadow underneath
+          Positioned(
+            left: 2,
+            right: 2,
+            bottom: -3,
+            child: Container(
+              height: height * 0.52,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(height * 0.35),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.18 * opacity),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 2. Cloud Base Pill (Smooth base)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: height * 0.56,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: opacity),
+                borderRadius: BorderRadius.circular(height * 0.35),
+                border: Border.all(
+                  color: const Color(0xFFBAE6FD).withValues(alpha: 0.70 * opacity),
+                  width: 1.0,
+                ),
+              ),
+            ),
+          ),
+          // 3. Fluffy Circle Left
+          Positioned(
+            left: width * 0.08,
+            bottom: height * 0.12,
+            child: Container(
+              width: height * 0.68,
+              height: height * 0.68,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: opacity),
+                border: Border.all(
+                  color: const Color(0xFFBAE6FD).withValues(alpha: 0.65 * opacity),
+                  width: 0.8,
+                ),
+              ),
+            ),
+          ),
+          // 4. Fluffy Circle Center (Highest Peak)
+          Positioned(
+            left: width * 0.28,
+            bottom: height * 0.24,
+            child: Container(
+              width: height * 0.90,
+              height: height * 0.90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: opacity),
+                border: Border.all(
+                  color: const Color(0xFFBAE6FD).withValues(alpha: 0.65 * opacity),
+                  width: 0.8,
+                ),
+              ),
+            ),
+          ),
+          // 5. Fluffy Circle Right
+          Positioned(
+            left: width * 0.58,
+            bottom: height * 0.10,
+            child: Container(
+              width: height * 0.64,
+              height: height * 0.64,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: opacity),
+                border: Border.all(
+                  color: const Color(0xFFBAE6FD).withValues(alpha: 0.65 * opacity),
+                  width: 0.8,
+                ),
+              ),
+            ),
+          ),
+          // 6. Center Fill Mask (seamlessly blends internal lines)
+          Positioned(
+            left: width * 0.12,
+            right: width * 0.12,
+            bottom: height * 0.08,
+            top: height * 0.26,
+            child: Container(
+              color: Colors.white.withValues(alpha: opacity),
+            ),
+          ),
+        ],
       ),
-      child: Center(
-        child: Text(
-          content,
-          style: TextStyle(
-            fontSize: isText ? 12 : 14,
-            fontWeight: isText ? FontWeight.bold : FontWeight.normal,
-            color: isText ? Colors.white : Colors.black,
+    );
+  }
+
+  Widget _buildAnimatedSun(double t) {
+    // 360 rotation over cycle
+    final double rayAngle = t * 2 * math.pi;
+    // Breathing pulse for the halo and sun (0.97 to 1.04)
+    final double pulse = 1.0 + 0.035 * math.sin(t * 4 * math.pi);
+    // Subtle ray brightness pulsation
+    final double raysOpacity = (0.70 + 0.25 * math.sin(t * 2 * math.pi)).clamp(0.0, 1.0);
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() {
+          _previewNightMode = true;
+        });
+      },
+      child: Transform.scale(
+        scale: pulse,
+        child: SizedBox(
+          width: 130,
+          height: 130,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // 1. Ambient Sun Rays Corona Glow
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFFFDE047).withValues(alpha: 0.45),
+                      const Color(0xFFF59E0B).withValues(alpha: 0.18),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+
+              // 2. Rotating Sun Rays (Sinarnya yang memancar keluar)
+              Transform.rotate(
+                angle: rayAngle,
+                child: Opacity(
+                  opacity: raysOpacity,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: List.generate(12, (index) {
+                      final double angle = index * (math.pi / 6);
+                      return Transform.rotate(
+                        angle: angle,
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: Container(
+                            margin: const EdgeInsets.only(top: 6),
+                            width: 5,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              gradient: const LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  Color(0xFFFDE047),
+                                  Color(0x00F59E0B),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ),
+
+              // 3. Sun Core Disk (Matahari Pagi Cerah 3D)
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    center: Alignment(-0.25, -0.25),
+                    radius: 0.85,
+                    colors: [
+                      Color(0xFFFFFBEB), // Highlight lembut
+                      Color(0xFFFEF08A), // Kuning cerah
+                      Color(0xFFFBBF24), // Emas
+                      Color(0xFFF59E0B), // Oranye hangat
+                    ],
+                    stops: [0.0, 0.35, 0.70, 1.0],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.55),
+                      blurRadius: 16,
+                      spreadRadius: 3,
+                    ),
+                    BoxShadow(
+                      color: const Color(0xFFFEF08A).withValues(alpha: 0.75),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    width: 2.0,
+                  ),
+                ),
+                child: const Center(
+                  child: Text(
+                    '☀️',
+                    style: TextStyle(fontSize: 28),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildWeatherLayer(bool isNightMode) {
+    if (isNightMode) {
+      // Night Mode: Starry Sky with Glowing Crescent Moon & Ambient Nebula (Animated Twinkle)
+      return AnimatedBuilder(
+        animation: _weatherController,
+        builder: (context, child) {
+          final t = _weatherController.value;
+          return Stack(
+            children: [
+              // 1. Ambient Cosmic Glow
+              Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 260,
+                  height: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                        const Color(0xFF1E3A8A).withValues(alpha: 0.06),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 260,
+                left: -60,
+                child: Container(
+                  width: 240,
+                  height: 240,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF818CF8).withValues(alpha: 0.10),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 2. Glowing Crescent Moon (Bulan Sabit Bersinar dengan Tap Switch)
+              Positioned(
+                top: 15,
+                right: 80,
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _previewNightMode = false;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFDE047).withValues(alpha: 0.35 + 0.15 * math.sin(t * 2 * math.pi)),
+                          blurRadius: 26,
+                          spreadRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: const Text('🌙', style: TextStyle(fontSize: 26)),
+                  ),
+                ),
+              ),
+
+              // 3. Sparkling Stars (Bintang-Bintang Berkelap-Kelip)
+              Positioned(
+                top: 20,
+                left: 115,
+                child: Opacity(
+                  opacity: (0.5 + 0.5 * math.sin(t * 4 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('✨', style: TextStyle(fontSize: 15)),
+                ),
+              ),
+              Positioned(
+                top: 55,
+                left: 180,
+                child: Opacity(
+                  opacity: (0.6 + 0.4 * math.cos(t * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Icon(Icons.star_rounded, color: Color(0xFFFEF08A), size: 14),
+                ),
+              ),
+              Positioned(
+                top: 42,
+                right: 25,
+                child: Opacity(
+                  opacity: (0.5 + 0.5 * math.sin((t + 0.2) * 4 * math.pi)).clamp(0.0, 1.0),
+                  child: const Icon(Icons.star_rounded, color: Color(0xFFBAE6FD), size: 11),
+                ),
+              ),
+              Positioned(
+                top: 105,
+                left: 28,
+                child: Opacity(
+                  opacity: (0.6 + 0.4 * math.sin((t + 0.5) * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Icon(Icons.star_rounded, color: Color(0xFFFDE047), size: 14),
+                ),
+              ),
+              Positioned(
+                top: 135,
+                right: 45,
+                child: Opacity(
+                  opacity: (0.5 + 0.5 * math.cos((t + 0.3) * 4 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('⭐', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+              Positioned(
+                top: 200,
+                left: 16,
+                child: Opacity(
+                  opacity: (0.6 + 0.4 * math.sin((t + 0.7) * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Icon(Icons.star_rounded, color: Colors.white70, size: 12),
+                ),
+              ),
+              Positioned(
+                top: 270,
+                right: 20,
+                child: Opacity(
+                  opacity: (0.5 + 0.5 * math.sin((t + 0.4) * 4 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('✨', style: TextStyle(fontSize: 15)),
+                ),
+              ),
+              Positioned(
+                top: 350,
+                left: 24,
+                child: Opacity(
+                  opacity: (0.6 + 0.4 * math.cos((t + 0.6) * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Icon(Icons.star_rounded, color: Color(0xFFFEF08A), size: 15),
+                ),
+              ),
+              Positioned(
+                top: 430,
+                right: 18,
+                child: Opacity(
+                  opacity: (0.5 + 0.5 * math.sin((t + 0.8) * 4 * math.pi)).clamp(0.0, 1.0),
+                  child: const Icon(Icons.star_rounded, color: Color(0xFFBAE6FD), size: 12),
+                ),
+              ),
+              Positioned(
+                top: 510,
+                left: 30,
+                child: Opacity(
+                  opacity: (0.5 + 0.5 * math.cos((t + 0.1) * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('⭐', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+              Positioned(
+                top: 600,
+                right: 32,
+                child: Opacity(
+                  opacity: (0.6 + 0.4 * math.sin((t + 0.9) * 4 * math.pi)).clamp(0.0, 1.0),
+                  child: const Icon(Icons.star_rounded, color: Color(0xFFFDE047), size: 14),
+                ),
+              ),
+              Positioned(
+                top: 680,
+                left: 18,
+                child: Opacity(
+                  opacity: (0.5 + 0.5 * math.sin((t + 0.3) * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('✨', style: TextStyle(fontSize: 14)),
+                ),
+              ),
+              Positioned(
+                top: 750,
+                right: 60,
+                child: Opacity(
+                  opacity: (0.6 + 0.4 * math.cos((t + 0.5) * 4 * math.pi)).clamp(0.0, 1.0),
+                  child: const Icon(Icons.star_rounded, color: Colors.white70, size: 12),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // Day Mode: Warm Radiant Sun with Rotating Rays, Gentle Floating Clouds & Morning Sparkles
+      return AnimatedBuilder(
+        animation: _weatherController,
+        builder: (context, child) {
+          final t = _weatherController.value;
+
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 0. Soft Pastel Morning Sky Gradient
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 380,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFFBAE6FD).withValues(alpha: 0.35),
+                        const Color(0xFFE0F2FE).withValues(alpha: 0.18),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 1. Ambient Morning Sun Corona Glow
+              Positioned(
+                top: -45,
+                left: 70,
+                child: Container(
+                  width: 280,
+                  height: 280,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFFFEF08A).withValues(alpha: 0.38),
+                        const Color(0xFFFED7AA).withValues(alpha: 0.20),
+                        const Color(0xFFBAE6FD).withValues(alpha: 0.08),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.45, 0.75, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 2. Fresh Sky Blue Ambient Tint di Kiri Atas
+              Positioned(
+                top: -40,
+                left: -50,
+                child: Container(
+                  width: 260,
+                  height: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF38BDF8).withValues(alpha: 0.14),
+                        const Color(0xFFE0F2FE).withValues(alpha: 0.05),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // 3. Matahari & Sinarnya yang Memancar dan Berputar Lembut (Di Celah Header Atas)
+              Positioned(
+                top: 0,
+                left: 110,
+                child: _buildAnimatedSun(t),
+              ),
+
+              // 4. Awan-Awan Lucu Bergerak Tipis (Gentle Floating Clouds)
+              // Cloud 1: Kiri Atas (Awan Utama yang Mengapung Halus di Bawah Logo)
+              Positioned(
+                top: 52 + math.cos(t * 2 * math.pi) * 3.5,
+                left: 10 + math.sin(t * 2 * math.pi) * 16.0,
+                child: _buildCloudWidget(width: 90, height: 42, opacity: 0.95),
+              ),
+
+              // Cloud 2: Kanan Atas (Di Bawah Avatar/Bel)
+              Positioned(
+                top: 56 + math.sin((t + 0.3) * 2 * math.pi) * 3.0,
+                right: 12 + math.sin((t + 0.3) * 2 * math.pi) * -14.0,
+                child: _buildCloudWidget(width: 80, height: 38, opacity: 0.90),
+              ),
+
+              // Cloud 3: Kiri Tengah (Melayang Lembut di Samping Ringkasan Perkembangan)
+              Positioned(
+                top: 255 + math.cos((t + 0.6) * 2 * math.pi) * 4.0,
+                left: -14 + math.sin((t + 0.6) * 2 * math.pi) * 18.0,
+                child: _buildCloudWidget(width: 96, height: 44, opacity: 0.88),
+              ),
+
+              // Cloud 4: Kanan Tengah (Di Samping Menu Cepat)
+              Positioned(
+                top: 470 + math.sin((t + 0.8) * 2 * math.pi) * 3.0,
+                right: -12 + math.sin((t + 0.8) * 2 * math.pi) * -16.0,
+                child: _buildCloudWidget(width: 86, height: 40, opacity: 0.85),
+              ),
+
+              // Cloud 5: Kiri Bawah (Di Samping Rekomendasi)
+              Positioned(
+                top: 670 + math.cos((t + 0.45) * 2 * math.pi) * 3.5,
+                left: 10 + math.sin((t + 0.45) * 2 * math.pi) * 14.0,
+                child: _buildCloudWidget(width: 80, height: 36, opacity: 0.82),
+              ),
+
+              // 5. Kilauan Cahaya Pagi / Sparkles yang Berkelap-Kelip Tipis
+              Positioned(
+                top: 25,
+                left: 110,
+                child: Opacity(
+                  opacity: (0.45 + 0.45 * math.sin(t * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('✨', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+              Positioned(
+                top: 145,
+                right: 32,
+                child: Opacity(
+                  opacity: (0.40 + 0.45 * math.cos(t * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('⭐', style: TextStyle(fontSize: 13, color: Color(0xFFFBBF24))),
+                ),
+              ),
+              Positioned(
+                top: 380,
+                left: 20,
+                child: Opacity(
+                  opacity: (0.35 + 0.40 * math.sin((t + 0.5) * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('✨', style: TextStyle(fontSize: 14)),
+                ),
+              ),
+              Positioned(
+                top: 590,
+                right: 25,
+                child: Opacity(
+                  opacity: (0.35 + 0.40 * math.cos((t + 0.5) * 3 * math.pi)).clamp(0.0, 1.0),
+                  child: const Text('⭐', style: TextStyle(fontSize: 13, color: Color(0xFFFBBF24))),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildEasterEgg() {
+    return Positioned(
+      left: _easterEggX,
+      top: _easterEggY,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.heavyImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Hore! Kamu menemukan Zikola! +5 XP 🌟')),
+          );
+          setState(() {
+            _showEasterEgg = false;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(seconds: 1),
+          child: Image.asset(
+            'assets/images/stickers/hehe.png',
+            width: 80,
+            height: 80,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Average score of the logic games the child has actually played (0–100).
+  double _logicScore(AppState appState) {
+    final g = appState.gameAssessments;
+    final played = [g.patternRecognition, g.numberSequence, g.puzzleGame]
+        .where((a) => a.totalPlayed > 0)
+        .toList();
+    if (played.isEmpty) return 0;
+    final avg = played.map((a) => a.averageScore).reduce((a, b) => a + b) / played.length;
+    return avg.toDouble().clamp(0.0, 100.0);
   }
 
   Widget _buildParentDashboard(BuildContext context, AppState appState) {
@@ -988,7 +2006,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Beralih kembali ke Mode Anak 🧒'),
-                            backgroundColor: Color(0xFF0D9488),
+                            backgroundColor: Color(0xFF2563EB),
                             duration: Duration(seconds: 2),
                           ),
                         );
@@ -997,14 +2015,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
+                            colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                              color: const Color(0xFF2563EB).withValues(alpha: 0.25),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -1021,6 +2039,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 color: Colors.white,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 11,
+                                fontFamily: 'Nunito',
                               ),
                             ),
                           ],
@@ -1044,14 +2063,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF0F766E), Color(0xFF0D9488), Color(0xFF14B8A6)],
+                          colors: [Color(0xFF1E40AF), Color(0xFF2563EB), Color(0xFF4F46E5)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0D9488).withValues(alpha: 0.3),
+                            color: const Color(0xFF2563EB).withValues(alpha: 0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -1062,18 +2081,43 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         children: [
                           Row(
                             children: [
-                              Container(
-                                width: 52,
-                                height: 52,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    childGender == 'female' ? '👧' : '👦',
-                                    style: const TextStyle(fontSize: 26),
+                              GestureDetector(
+                                onTap: () => Navigator.pushNamed(context, '/profile'),
+                                child: Container(
+                                  width: 52,
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 2),
+                                  ),
+                                  child: Center(
+                                    child: (appState.childProfile.avatarBase64 != null &&
+                                            appState.childProfile.avatarBase64!.isNotEmpty &&
+                                            _getAvatarImage(appState.childProfile.avatarBase64!) != null)
+                                        ? ClipOval(
+                                            child: Image(
+                                              image: _getAvatarImage(appState.childProfile.avatarBase64!)!,
+                                              width: 48,
+                                              height: 48,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          )
+                                        : appState.childProfile.avatar.startsWith('assets/')
+                                            ? ClipOval(
+                                                child: Image.asset(
+                                                  appState.childProfile.avatar,
+                                                  width: 44,
+                                                  height: 44,
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              )
+                                            : Text(
+                                                appState.childProfile.avatar.isNotEmpty
+                                                    ? appState.childProfile.avatar
+                                                    : (childGender == 'female' ? '👧' : '👦'),
+                                                style: const TextStyle(fontSize: 26),
+                                              ),
                                   ),
                                 ),
                               ),
@@ -1089,6 +2133,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         fontWeight: FontWeight.w900,
                                         color: Colors.white,
                                         letterSpacing: -0.3,
+                                        fontFamily: 'Nunito',
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -1098,6 +2143,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.white.withValues(alpha: 0.85),
+                                        fontFamily: 'Nunito',
                                       ),
                                     ),
                                   ],
@@ -1119,6 +2165,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         color: Colors.white,
                                         fontWeight: FontWeight.w900,
                                         fontSize: 11,
+                                        fontFamily: 'Nunito',
                                       ),
                                     ),
                                   ],
@@ -1128,21 +2175,48 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           ),
 
                           const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _buildGrowthMiniStat('🧩 Logika', results.cognitive.completed ? '${results.cognitive.percentage.round()}%' : '85%'),
-                                Container(width: 1, height: 24, color: Colors.white.withValues(alpha: 0.2)),
-                                _buildGrowthMiniStat('🗣️ Bahasa', results.linguistic.completed ? '${results.linguistic.percentage.round()}%' : '78%'),
-                                Container(width: 1, height: 24, color: Colors.white.withValues(alpha: 0.2)),
-                                _buildGrowthMiniStat('🎯 Motorik', results.motor.completed ? '${results.motor.percentage.round()}%' : '90%'),
-                              ],
+                          SizedBox(
+                            height: 200,
+                            child: RadarChart(
+                              RadarChartData(
+                                radarShape: RadarShape.polygon,
+                                tickCount: 3,
+                                ticksTextStyle: const TextStyle(color: Colors.transparent),
+                                gridBorderData: const BorderSide(color: Colors.white38, width: 1.5),
+                                tickBorderData: const BorderSide(color: Colors.white24, width: 1),
+                                titleTextStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  fontFamily: 'Nunito',
+                                ),
+                                getTitle: (index, angle) {
+                                  switch (index) {
+                                    case 0: return const RadarChartTitle(text: 'Kognitif');
+                                    case 1: return const RadarChartTitle(text: 'Linguistik');
+                                    case 2: return const RadarChartTitle(text: 'Motorik');
+                                    case 3: return const RadarChartTitle(text: 'Emosi');
+                                    case 4: return const RadarChartTitle(text: 'Logika');
+                                    default: return const RadarChartTitle(text: '');
+                                  }
+                                },
+                                dataSets: [
+                                  RadarDataSet(
+                                    fillColor: Colors.white.withValues(alpha: 0.35),
+                                    borderColor: Colors.white,
+                                    borderWidth: 2.5,
+                                    entryRadius: 4,
+                                    dataEntries: [
+                                      // Real data only; untested domains stay at 0.
+                                      RadarEntry(value: results.cognitive.completed ? results.cognitive.percentage : 0),
+                                      RadarEntry(value: results.linguistic.completed ? results.linguistic.percentage : 0),
+                                      RadarEntry(value: results.motor.completed ? results.motor.percentage : 0),
+                                      RadarEntry(value: (results.personality.emotionalScore?.toDouble() ?? 0).clamp(0.0, 100.0)),
+                                      RadarEntry(value: _logicScore(appState)),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
 
@@ -1151,15 +2225,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             onTap: () => Navigator.pushNamed(context, '/progress'),
                             child: Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(18),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.06),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
+                                    color: Colors.black.withValues(alpha: 0.08),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
@@ -1169,13 +2243,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                   Text(
                                     'Buka Rapor & Analisis AI Lengkap',
                                     style: TextStyle(
-                                      color: Color(0xFF0F766E),
+                                      color: Color(0xFF2563EB),
                                       fontWeight: FontWeight.w900,
                                       fontSize: 12,
+                                      fontFamily: 'Nunito',
                                     ),
                                   ),
                                   SizedBox(width: 6),
-                                  Icon(Icons.arrow_forward_rounded, color: Color(0xFF0F766E), size: 14),
+                                  Icon(Icons.arrow_forward_rounded, color: Color(0xFF2563EB), size: 14),
                                 ],
                               ),
                             ),
@@ -1194,6 +2269,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         fontWeight: FontWeight.w900,
                         color: Color(0xFF0F172A),
                         letterSpacing: -0.2,
+                        fontFamily: 'Nunito',
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -1212,7 +2288,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           desc: 'Chat & call dokter anak',
                           bgGradient: const [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
                           accentColor: const Color(0xFF2563EB),
-                          onTap: () => Navigator.pushNamed(context, '/doctor-list'),
+                          onTap: () => Navigator.pushNamed(context, '/consultation'),
                         ),
                         _buildActionHubCard(
                           icon: '📊',
@@ -1248,12 +2324,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            blurRadius: 10,
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 14,
                             offset: const Offset(0, 4),
                           ),
                         ],
@@ -1264,8 +2340,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF0FDFA),
-                              borderRadius: BorderRadius.circular(14),
+                              color: const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: const Text('💡', style: TextStyle(fontSize: 22)),
                           ),
@@ -1282,6 +2358,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         fontSize: 13,
                                         fontWeight: FontWeight.w900,
                                         color: Color(0xFF0F172A),
+                                        fontFamily: 'Nunito',
                                       ),
                                     ),
                                     SizedBox(width: 6),
@@ -1290,7 +2367,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w800,
-                                        color: Color(0xFF0D9488),
+                                        color: Color(0xFF2563EB),
+                                        fontFamily: 'Nunito',
                                       ),
                                     ),
                                   ],
@@ -1303,6 +2381,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                     fontWeight: FontWeight.w500,
                                     color: Color(0xFF475569),
                                     height: 1.4,
+                                    fontFamily: 'Nunito',
                                   ),
                                 ),
                               ],
@@ -1325,6 +2404,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF0F172A),
                             letterSpacing: -0.2,
+                            fontFamily: 'Nunito',
                           ),
                         ),
                         GestureDetector(
@@ -1334,7 +2414,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0D9488),
+                              color: Color(0xFF2563EB),
+                              fontFamily: 'Nunito',
                             ),
                           ),
                         ),
@@ -1388,6 +2469,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF0F172A),
                             letterSpacing: -0.2,
+                            fontFamily: 'Nunito',
                           ),
                         ),
                         GestureDetector(
@@ -1397,7 +2479,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0D9488),
+                              color: Color(0xFF2563EB),
+                              fontFamily: 'Nunito',
                             ),
                           ),
                         ),
@@ -1424,6 +2507,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             fontWeight: FontWeight.w900,
                             color: Color(0xFF0F172A),
                             letterSpacing: -0.2,
+                            fontFamily: 'Nunito',
                           ),
                         ),
                         GestureDetector(
@@ -1433,7 +2517,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF0D9488),
+                              color: Color(0xFF2563EB),
+                              fontFamily: 'Nunito',
                             ),
                           ),
                         ),
@@ -1451,30 +2536,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
       ),
       bottomNavigationBar: const CustomBottomNav(currentIndex: 0),
-    );
-  }
-
-  Widget _buildGrowthMiniStat(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w900,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontWeight: FontWeight.w600,
-            fontSize: 10,
-          ),
-        ),
-      ],
     );
   }
 
@@ -1552,7 +2613,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 200,
+        width: 220,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1586,17 +2647,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     fontSize: 12,
                     fontWeight: FontWeight.w900,
                     color: Color(0xFF0F172A),
+                    fontFamily: 'Nunito',
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
                     color: Color(0xFF64748B),
+                    height: 1.25,
+                    fontFamily: 'Nunito',
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -1828,16 +2892,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             children: [
               const Spacer(),
               Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.2), width: 2),
-                ),
-                child: const Center(
-                  child: Text('🌙', style: TextStyle(fontSize: 64)),
-                ),
+                width: 180,
+                height: 180,
+                alignment: Alignment.center,
+                child: Image.asset('assets/images/stickers/zzz.png', fit: BoxFit.contain),
               ),
               const SizedBox(height: 32),
               const Text(
@@ -1856,7 +2914,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -1875,7 +2933,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         'currentPin': appState.parentalPin,
                       }
                     );
-                    if (result == true || result is String) {
+                    if (result == true || (result is String && result.length == 4)) {
+                      if (result is String && result.length == 4) {
+                        await appState.setParentalPin(result);
+                      }
                       appState.unlockScreenTime();
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -1911,4 +2972,142 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  Widget _buildActivePrescriptionReminder(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('prescriptions')
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final doc = snapshot.data!.docs.first;
+        final data = doc.data() as Map<String, dynamic>;
+        final itemName = data['itemName']?.toString() ?? 'Rekomendasi Terapi';
+        final dosage = data['dosage']?.toString() ?? '-';
+        final type = data['type']?.toString() ?? 'suplemen';
+        final doctorName = data['doctorName']?.toString() ?? 'Dokter Spesialis Anak';
+
+        final isTerapi = type == 'terapi';
+        final isMedis = type == 'medis';
+
+        final typeTitle = isTerapi ? 'PROGRAM TERAPI AKTIF' : isMedis ? 'RESEP OBAT MEDIS' : 'SUPLEMEN TUMBUH KEMBANG';
+        final gradientColors = isTerapi
+            ? [const Color(0xFF7C3AED), const Color(0xFF6D28D9)]
+            : isMedis
+                ? [const Color(0xFFE11D48), const Color(0xFFBE123C)]
+                : [const Color(0xFF0284C7), const Color(0xFF0369A1)];
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: GestureDetector(
+            onTap: () {
+              AudioService().playClick();
+              Navigator.pushNamed(context, '/progress', arguments: {'tab': 'emr'});
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: gradientColors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: gradientColors[0].withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('💊', style: TextStyle(fontSize: 12)),
+                            const SizedBox(width: 6),
+                            Text(
+                              typeTitle,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Buka EMR',
+                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(width: 4),
+                            Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 12),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    itemName,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Dosis: $dosage • $doctorName',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 }
+
+
+

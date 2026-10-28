@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/app_state.dart';
-import '../services/chat_notification_service.dart';
 
 class DoctorDetailScreen extends StatelessWidget {
   const DoctorDetailScreen({super.key});
@@ -17,7 +16,6 @@ class DoctorDetailScreen extends StatelessWidget {
     final hospital = doc['hospital'] ?? '';
     final rating = (doc['rating'] ?? 0).toDouble();
     final reviews = doc['reviews'] ?? 0;
-    final price = doc['price'] ?? 0;
     final image = doc['image'] ?? '👩‍⚕️';
     final experience = doc['experience'] ?? 0;
     final licenseNumber = doc['licenseNumber'] ?? '-';
@@ -40,7 +38,7 @@ class DoctorDetailScreen extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
@@ -68,12 +66,12 @@ class DoctorDetailScreen extends StatelessWidget {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white.withOpacity(0.4), width: 3),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -98,7 +96,7 @@ class DoctorDetailScreen extends StatelessWidget {
                         specialty,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.85),
+                          color: Colors.white.withValues(alpha: 0.85),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -109,7 +107,7 @@ class DoctorDetailScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -128,7 +126,7 @@ class DoctorDetailScreen extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
+                              color: Colors.white.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Row(
@@ -252,7 +250,7 @@ class DoctorDetailScreen extends StatelessWidget {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 16,
               offset: const Offset(0, -4),
             ),
@@ -288,38 +286,16 @@ class DoctorDetailScreen extends StatelessWidget {
                     backgroundColor: available ? const Color(0xFF9333EA) : const Color(0xFFCBD5E1),
                     foregroundColor: Colors.white,
                     elevation: available ? 4 : 0,
-                    shadowColor: const Color(0xFF9333EA).withOpacity(0.4),
+                    shadowColor: const Color(0xFF9333EA).withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: available
-                      ? () async {
-                          final appState = Provider.of<AppState>(context, listen: false);
-                          final userId = appState.uid ?? 'guest';
-                          final chatId = 'chat_${userId}_${doc['id']}';
-
+                      ? () {
                           if (doc['id'] == 'doctor_bot') {
                             Navigator.pushNamed(context, '/chat', arguments: doc);
                             return;
                           }
-
-                          // Auto-create chat session if needed without payment barrier
-                          final docRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
-                          final docSnap = await docRef.get();
-                          if (!docSnap.exists) {
-                            await docRef.set({
-                              'doctorId': doc['id'],
-                              'buyerId': userId,
-                              'doctorName': doc['name'] ?? 'Dokter Zikola',
-                              'doctorImage': doc['image'] ?? '',
-                              'specialty': doc['specialty'] ?? '',
-                              'createdAt': FieldValue.serverTimestamp(),
-                              'expiresAt': Timestamp.fromDate(DateTime.now().add(const Duration(minutes: 30))),
-                              'status': 'active',
-                            }, SetOptions(merge: true));
-                          }
-
-                          if (!context.mounted) return;
-                          Navigator.pushNamed(context, '/chat', arguments: doc);
+                          _showConsultationModal(context, doc);
                         }
                       : null,
                   child: Text(
@@ -335,6 +311,180 @@ class DoctorDetailScreen extends StatelessWidget {
     );
   }
 
+  void _showConsultationModal(BuildContext context, Map<String, dynamic> doc) {
+    final appState = Provider.of<AppState>(context, listen: false);
+    final userId = appState.uid ?? 'guest';
+    final childName = appState.childProfile.name.isNotEmpty ? appState.childProfile.name : 'Anak';
+    final childAge = appState.childProfile.age;
+    final childGender = appState.childProfile.gender;
+    
+    final complaints = [
+      'Tumbuh Kembang Umum',
+      'Keterlambatan Bicara (Speech Delay)',
+      'Motorik Kasar & Halus',
+      'Pola Makan & Gizi',
+      'Konsentrasi & Fokus Belajar',
+      'Emosi & Perilaku (Tantrum)',
+      'Lainnya',
+    ];
+    String selectedComplaint = complaints.first;
+    final notesController = TextEditingController();
+    bool isStarting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return Container(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 18),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const Text(
+                    'Keluhan & Fokus Konsultasi',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Pilih topik konsultasi untuk $childName ($childAge tahun)',
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: complaints.map((complaint) {
+                      final isSelected = selectedComplaint == complaint;
+                      return ChoiceChip(
+                        label: Text(
+                          complaint,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected ? Colors.white : const Color(0xFF334155),
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF9333EA),
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        onSelected: (val) {
+                          if (val) setModalState(() => selectedComplaint = complaint);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Catatan Tambahan (Opsional):',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: notesController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'Misal: sudah 2 minggu sering tantrum...',
+                      hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9333EA),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      onPressed: isStarting
+                          ? null
+                          : () async {
+                              setModalState(() => isStarting = true);
+                              final chatId = 'chat_${userId}_${doc['id']}';
+                              final docRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+                              final docSnap = await docRef.get();
+
+                              await docRef.set({
+                                'doctorId': doc['id'],
+                                'buyerId': userId,
+                                'doctorName': doc['name'] ?? 'Dokter Zikola',
+                                'doctorImage': doc['image'] ?? '',
+                                'specialty': doc['specialty'] ?? '',
+                                'patientName': childName,
+                                'childAge': childAge,
+                                'childGender': childGender,
+                                'complaint': selectedComplaint,
+                                'notes': notesController.text.trim(),
+                                'status': 'active',
+                                'createdAt': FieldValue.serverTimestamp(),
+                                'expiresAt': Timestamp.fromDate(DateTime.now().add(const Duration(minutes: 30))),
+                              }, SetOptions(merge: true));
+
+                              if (!docSnap.exists) {
+                                final extraNotes = notesController.text.trim();
+                                final introText = 'Halo Dokter, saya Ayah/Bunda dari $childName ($childAge tahun, $childGender).\nFokus konsultasi kami hari ini: $selectedComplaint.${extraNotes.isNotEmpty ? '\nCatatan: $extraNotes' : ''}';
+                                await docRef.collection('messages').add({
+                                  'text': introText,
+                                  'senderId': userId,
+                                  'senderType': 'user',
+                                  'timestamp': FieldValue.serverTimestamp(),
+                                  'isRead': false,
+                                });
+                              }
+
+                              if (context.mounted) {
+                                Navigator.pop(modalCtx);
+                                Navigator.pushNamed(context, '/chat', arguments: doc);
+                              }
+                            },
+                      child: isStarting
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text(
+                              'Mulai Sesi Konsultasi Sekarang',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   // ── Helper Widgets ──
 
   Widget _buildStatCard(IconData icon, String value, String label, Color color) {
@@ -346,7 +496,7 @@ class DoctorDetailScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -358,7 +508,7 @@ class DoctorDetailScreen extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -401,7 +551,7 @@ class DoctorDetailScreen extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 18),
@@ -431,7 +581,7 @@ class DoctorDetailScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.04),
+          color: Colors.black.withValues(alpha: 0.04),
           blurRadius: 10,
           offset: const Offset(0, 4),
         ),

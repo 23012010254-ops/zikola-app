@@ -2,7 +2,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'services/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -35,11 +34,13 @@ import 'screens/shape_sorting_game.dart';
 import 'screens/sequence_memory_game.dart';
 import 'screens/number_memory_game.dart';
 import 'screens/motor_tips_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'screens/motor_test_game_screen.dart';
 import 'screens/motor_trace_game_screen.dart';
 import 'screens/progress_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/sticker_collection_screen.dart';
+import 'screens/photo_booth_screen.dart';
 import 'screens/consultation_screen.dart';
 import 'screens/doctor_list_screen.dart';
 import 'screens/doctor_detail_screen.dart';
@@ -57,6 +58,7 @@ import 'screens/bubble_popper_game.dart';
 import 'widgets/sticker_notification.dart';
 import 'services/chat_notification_service.dart';
 import 'screens/notification_screen.dart';
+import 'screens/doctor_web_screen.dart';
 import 'screens/follows_screen.dart';
 import 'screens/public_profile_screen.dart';
 
@@ -96,6 +98,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Local Notifications & Smart Auto Reminders immediately & unconditionally
+  NotificationService().initialize().catchError((e) {
+    debugPrint('NotificationService init error: $e');
+  });
   
   // Initialize environment variables
   await dotenv.load(fileName: ".env");
@@ -114,9 +121,6 @@ void main() async {
     );
     // Bind the background push messaging handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // Initialize Local Notifications & FCM Channels
-    await NotificationService().initialize();
     
     firebaseInitialized = true;
   } catch (e) {
@@ -196,13 +200,15 @@ class ZikolaApp extends StatelessWidget {
         }
         return Stack(
           children: [
-            if (child != null) child,
+            ?child,
             const StickerNotificationWidget(),
           ],
         );
       },
       routes: {
+        '/': (context) => const SplashScreen(),
         '/splash': (context) => const SplashScreen(),
+        '/onboarding': (context) => const OnboardingScreen(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/forgot-password': (context) => const ForgotPasswordScreen(),
@@ -231,6 +237,8 @@ class ZikolaApp extends StatelessWidget {
         '/progress': (context) => const ProgressScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/stickers': (context) => const StickerCollectionScreen(),
+        '/sticker-collection': (context) => const StickerCollectionScreen(),
+        '/photo-booth': (context) => const PhotoBoothScreen(),
         '/consultation': (context) => const ConsultationScreen(),
         '/doctor-list': (context) => const DoctorListScreen(),
         '/doctor-detail': (context) => const DoctorDetailScreen(),
@@ -264,6 +272,7 @@ class ZikolaApp extends StatelessWidget {
         '/parental-pin-setup': (context) => const ParentalPinScreen(isSetup: true),
         '/child-selector': (context) => const ChildSelectorScreen(),
         '/screen-time-settings': (context) => const ScreenTimeSettingsScreen(),
+        '/doctor-portal': (context) => const DoctorWebScreen(),
       },
     );
   }
@@ -282,49 +291,29 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
-  late AnimationController _cloudController;
-  late AnimationController _sunController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _logoSlideAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    // Logo pulse (subtle)
+    // Gentle breathing / pulsing animation
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
 
-    // Cloud drift
-    _cloudController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 20),
-    )..repeat();
-
-    // Sun rotation
-    _sunController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 15),
-    )..repeat();
-
-    // Fade in
+    // Fade in transition
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
-    _logoSlideAnimation = Tween<double>(begin: 30, end: 0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeOutBack),
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOutCubic,
     );
 
-    // Sequence: fade in logo → check session
     _fadeController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkSession());
@@ -333,23 +322,30 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _pulseController.dispose();
-    _cloudController.dispose();
-    _sunController.dispose();
     _fadeController.dispose();
     super.dispose();
   }
 
   Future<void> _checkSession() async {
-    // Let animations play for at least 1.5s
-    await Future.delayed(const Duration(milliseconds: 1500));
+    // Let animation play smoothly for at least 2 seconds so users can enjoy the splash screen
+    await Future.delayed(const Duration(milliseconds: 2000));
     
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
 
       if (currentUser != null) {
-        debugPrint('Splash: Existing session found for uid=${currentUser.uid}');
+        debugPrint('Splash: Existing session found for uid=');
         final appState = Provider.of<AppState>(context, listen: false);
-        await appState.setLoggedIn(true, uid: currentUser.uid);
+        try {
+          await appState.setLoggedIn(true, uid: currentUser.uid).timeout(
+            const Duration(milliseconds: 3500),
+            onTimeout: () {
+              debugPrint('Splash: setLoggedIn timed out, continuing with cached/offline data');
+            },
+          );
+        } catch (err) {
+          debugPrint('Splash: setLoggedIn error caught: $err');
+        }
 
         if (!mounted) return;
 
@@ -377,207 +373,102 @@ class _SplashScreenState extends State<SplashScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF6EB9FD),
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Background - Solid White
-          Positioned.fill(
-            child: Container(
-              color: Colors.white,
-            ),
-          ),
-
-          // Animated drifting clouds at the bottom (Lavender/Purple)
-          AnimatedBuilder(
-            animation: _cloudController,
-            builder: (context, _) {
-              final val = _cloudController.value * (size.width + 120);
-              final lavender = const Color(0xFFDDD6FE).withOpacity(0.95);
-              return Stack(
-                children: [
-                  _buildCloud(size, offsetX: val, offsetY: size.height - 120, scale: 1.4, opacity: 0.85, color: lavender),
-                  _buildCloud(size, offsetX: val + size.width * 0.45, offsetY: size.height - 100, scale: 1.6, opacity: 0.95, color: lavender),
-                  _buildCloud(size, offsetX: val + size.width * 0.8, offsetY: size.height - 130, scale: 1.2, opacity: 0.8, color: lavender),
-                ],
-              );
-            },
-          ),
-
-          // Floating yellow stars at the bottom cloud cluster
-          ...List.generate(3, (index) {
-            final double left = [0.10, 0.60, 0.85][index];
-            final double topFactor = [0.85, 0.88, 0.82][index];
-            final double scaleFactor = [1.2, 0.8, 1.4][index];
-            return AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, _) {
-                final double bobbing = math.sin((_pulseController.value * 2 * math.pi) + index) * 6;
-                return Positioned(
-                  left: size.width * left,
-                  top: size.height * topFactor + bobbing,
-                  child: Transform.scale(
-                    scale: scaleFactor,
-                    child: const Icon(
-                      Icons.star_rounded,
-                      color: Color(0xFFFBBF24), // yellow-400
-                      size: 28,
-                      shadows: [
-                        Shadow(color: Colors.black12, blurRadius: 4, offset: Offset(1, 2)),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-
-          // Floating green puzzle piece at the bottom right cloud
-          AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, _) {
-              final double bobbing = math.cos(_pulseController.value * 2 * math.pi) * 8;
-              return Positioned(
-                right: size.width * 0.15,
-                top: size.height * 0.84 + bobbing,
-                child: Transform.rotate(
-                  angle: _pulseController.value * 2 * math.pi * 0.2, // slow rotation
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    alignment: Alignment.center,
-                    child: const Text(
-                      '🧩',
-                      style: TextStyle(fontSize: 26),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-
-          // White sparkles pulsing on top of clouds
-          ...List.generate(4, (index) {
-            final double left = [0.22, 0.70, 0.40, 0.90][index];
-            final double top = [0.88, 0.90, 0.86, 0.87][index];
-            return AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, _) {
-                final double phase = (_pulseController.value + index * 0.25) % 1.0;
-                final double scale = math.sin(phase * math.pi);
-                return Positioned(
-                  left: size.width * left,
-                  top: size.height * top,
-                  child: Opacity(
-                    opacity: 0.8 * scale,
-                    child: Transform.scale(
-                      scale: 0.6 + 0.6 * scale,
-                      child: const Icon(
-                        Icons.star,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          }),
-
-          // Main Waving Character Logo, Colorful Brand Name & Slogan
-          Center(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Bobbing Character Logo in the center
-                  AnimatedBuilder(
-                    animation: Listenable.merge([_pulseController, _logoSlideAnimation]),
-                    builder: (context, child) {
-                      return Transform.translate(
-                        offset: Offset(0, _logoSlideAnimation.value + (math.sin(_pulseController.value * 2 * math.pi) * 6)),
-                        child: Transform.scale(
-                          scale: _pulseAnimation.value,
-                          child: Container(
-                            width: size.width * 0.68,
-                            height: size.width * 0.68,
-                            child: Image.asset(
-                              'assets/images/zikola_logo_char.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // ZIKOLA Colorful Text Brand
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text("Z", style: TextStyle(fontFamily: 'Heading', fontSize: 44, fontWeight: FontWeight.w900, color: Color(0xFF2563EB), letterSpacing: 2)),
-                      Text("I", style: TextStyle(fontFamily: 'Heading', fontSize: 44, fontWeight: FontWeight.w900, color: Color(0xFF10B981), letterSpacing: 2)),
-                      Text("K", style: TextStyle(fontFamily: 'Heading', fontSize: 44, fontWeight: FontWeight.w900, color: Color(0xFFF59E0B), letterSpacing: 2)),
-                      Text("O", style: TextStyle(fontFamily: 'Heading', fontSize: 44, fontWeight: FontWeight.w900, color: Color(0xFF0D9488), letterSpacing: 2)),
-                      Text("L", style: TextStyle(fontFamily: 'Heading', fontSize: 44, fontWeight: FontWeight.w900, color: Color(0xFF7C3AED), letterSpacing: 2)),
-                      Text("A", style: TextStyle(fontFamily: 'Heading', fontSize: 44, fontWeight: FontWeight.w900, color: Color(0xFFEF4444), letterSpacing: 2)),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Slogan Subtitle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 32),
-                    child: Text(
-                      "Memahami Potensi,\nMembangun Masa Depan Anak.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Heading',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF1E3A8A), // deep dark blue
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
+          // 1. Sky blue gradient background base
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF6EB9FD),
+                  Color(0xFFBCE0FA),
+                  Color(0xFFD6EEFD),
                 ],
               ),
             ),
           ),
 
-          // Loading dots or Error UI positioned above the clouds
+          // 2. Full 3D Master Splash Artwork with gentle breathing animation & fade in
+          FadeTransition(
+            opacity: _fadeAnimation,
+            child: AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, child) {
+                final double bobbing = math.sin(_pulseController.value * 2 * math.pi) * 2;
+                final double scale = 1.0 + (math.sin(_pulseController.value * 2 * math.pi) * 0.008);
+                return Transform.translate(
+                  offset: Offset(0, bobbing),
+                  child: Transform.scale(
+                    scale: scale,
+                    child: child,
+                  ),
+                );
+              },
+              child: Image.asset(
+                'assets/images/zikola_splash_full.png',
+                fit: BoxFit.cover,
+                width: size.width,
+                height: size.height,
+              ),
+            ),
+          ),
+
+          // 3. Magical sparkling stars in the sky
+          _buildSparkles(size),
+
+          // 4. Subtle loading indicator or Error UI at bottom
           Positioned(
-            bottom: size.height * 0.18,
+            bottom: math.max(MediaQuery.of(context).padding.bottom + 16, 28),
             left: 0,
             right: 0,
             child: Center(
               child: Consumer<AppState>(
                 builder: (context, appState, child) {
                   if (appState.initError != null) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.95),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             appState.initError!,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13),
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: () => appState.retryInitialization().then((_) {
                               if (appState.initError == null) {
-                                _checkSession(); // Re-trigger navigation if fixed
+                                _checkSession();
                               }
                             }),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFF97316),
                               foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                             ),
-                            child: const Text("Coba Lagi"),
+                            child: const Text('Coba Lagi', style: TextStyle(fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -596,53 +487,87 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildCloud(Size size, {required double offsetX, required double offsetY, double scale = 1.0, double opacity = 0.5, Color? color}) {
-    return Positioned(
-      left: offsetX % (size.width + 120) - 60,
-      top: offsetY,
-      child: Opacity(
-        opacity: opacity,
-        child: Transform.scale(
-          scale: scale,
-          child: SizedBox(
-            width: 120,
-            height: 50,
-            child: CustomPaint(painter: _CloudPainter(color: color ?? Colors.white.withOpacity(0.9))),
-          ),
-        ),
-      ),
+  Widget _buildSparkles(Size size) {
+    final sparklePoints = [
+      Offset(size.width * 0.12, size.height * 0.08),
+      Offset(size.width * 0.88, size.height * 0.12),
+      Offset(size.width * 0.20, size.height * 0.36),
+      Offset(size.width * 0.84, size.height * 0.40),
+      Offset(size.width * 0.14, size.height * 0.62),
+    ];
+
+    return Stack(
+      children: List.generate(sparklePoints.length, (index) {
+        final pt = sparklePoints[index];
+        return AnimatedBuilder(
+          animation: _pulseController,
+          builder: (context, _) {
+            final phase = (_pulseController.value + index * 0.25) % 1.0;
+            final scale = math.sin(phase * math.pi);
+            final opacity = (0.2 + 0.8 * scale).clamp(0.0, 1.0);
+            return Positioned(
+              left: pt.dx,
+              top: pt.dy,
+              child: Opacity(
+                opacity: opacity,
+                child: Transform.rotate(
+                  angle: _pulseController.value * math.pi * 0.5,
+                  child: Icon(
+                    Icons.star_rounded,
+                    color: index % 2 == 0 ? const Color(0xFFFDE047) : Colors.white,
+                    size: 14 + (8 * scale),
+                    shadows: const [
+                      Shadow(
+                        color: Colors.white70,
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 
   Widget _buildLoadingDots() {
-    return SizedBox(
-      width: 60,
-      height: 20,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(3, (index) {
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.3, end: 1.0),
-            duration: Duration(milliseconds: 600 + index * 200),
-            curve: Curves.easeInOut,
-            builder: (context, value, _) {
-              return AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, _) {
-                  final phase = (_pulseController.value + index * 0.33) % 1.0;
-                  final scale = 0.6 + 0.4 * (phase < 0.5 ? phase * 2 : (1 - phase) * 2);
-                  return Transform.scale(
-                    scale: scale,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8B5CF6).withOpacity(0.4 + 0.6 * scale),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  );
-                },
+          final colors = [
+            const Color(0xFF06B6D4), // Cyan
+            const Color(0xFF8B5CF6), // Purple
+            const Color(0xFFF59E0B), // Amber
+          ];
+          return AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, _) {
+              final phase = (_pulseController.value + index * 0.33) % 1.0;
+              final scale = 0.6 + 0.4 * (phase < 0.5 ? phase * 2 : (1 - phase) * 2);
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: 8 * scale,
+                height: 8 * scale,
+                decoration: BoxDecoration(
+                  color: colors[index % colors.length].withValues(alpha: 0.5 + 0.5 * scale),
+                  shape: BoxShape.circle,
+                ),
               );
             },
           );
@@ -650,29 +575,4 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
-}
-
-/// Custom cloud painter for the splash screen background
-class _CloudPainter extends CustomPainter {
-  final Color color;
-  const _CloudPainter({this.color = const Color(0xE6FFFFFF)});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    // Main body
-    canvas.drawOval(Rect.fromCenter(center: Offset(cx, cy + 5), width: size.width * 0.8, height: size.height * 0.6), paint);
-    canvas.drawCircle(Offset(cx - size.width * 0.2, cy), size.height * 0.35, paint);
-    canvas.drawCircle(Offset(cx + size.width * 0.2, cy), size.height * 0.4, paint);
-    canvas.drawCircle(Offset(cx, cy - size.height * 0.15), size.height * 0.4, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CloudPainter oldDelegate) => oldDelegate.color != color;
 }

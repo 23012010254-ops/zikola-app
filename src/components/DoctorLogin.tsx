@@ -1,18 +1,39 @@
 import React, { useState } from 'react';
-import { db, auth, googleProvider } from '../lib/firebase';
-import { collection, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
-import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../lib/firebase';
+import {
+  signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail,
+  setPersistence, browserLocalPersistence, browserSessionPersistence,
+} from 'firebase/auth';
 import { ShieldCheck, Mail, Lock, Key, Eye, EyeOff, ArrowRight, Users } from 'lucide-react';
 import zikolaLogoFull from '../assets/zikola_logo_full.jpg';
 import zikolaMascot from '../assets/zikola_mascot.png';
 
 interface DoctorLoginProps {
-  onLogin: (doctorId: string) => void;
-  onGoToRegister: (googleData?: { email?: string; name?: string; photoUrl?: string; googleUid?: string }) => void;
+  onGoToRegister: () => void;
 }
 
-export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProps) {
-  const [username, setUsername] = useState('');
+// Sign-in goes through Firebase Auth. App.tsx listens to the auth state and
+// checks doctor_accounts/{uid} to decide between dashboard, pending and register.
+const authErrorMessage = (err: any): string => {
+  switch (err?.code) {
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+    case 'auth/invalid-email':
+      return 'Email atau kata sandi salah.';
+    case 'auth/too-many-requests':
+      return 'Terlalu banyak percobaan. Coba lagi beberapa saat lagi.';
+    case 'auth/popup-closed-by-user':
+      return 'Login Google dibatalkan.';
+    case 'auth/network-request-failed':
+      return 'Gagal terhubung ke server. Coba lagi.';
+    default:
+      return 'Autentikasi gagal. Coba lagi.';
+  }
+};
+
+export default function DoctorLogin({ onGoToRegister }: DoctorLoginProps) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -22,61 +43,23 @@ export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProp
 
   // Forgot Password States
   const [showReset, setShowReset] = useState(false);
-  const [resetUsername, setResetUsername] = useState('');
   const [resetEmail, setResetEmail] = useState('');
-  const [resetPin, setResetPin] = useState('');
-  const [showResetPin, setShowResetPin] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
 
-  // Simple hash (same as register)
-  const hashPassword = async (pwd: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(pwd);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const showError = (message: string) => {
+    setError(true);
+    setErrorMessage(message);
   };
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(false);
     setErrorMessage('');
-
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const emailVal = result.user.email;
-
-      if (!emailVal) {
-        throw new Error('Gagal mendapatkan email dari Google.');
-      }
-
-      // Query by email in doctor_credentials
-      const credQuery = query(
-        collection(db, 'doctor_credentials'),
-        where('email', '==', emailVal.toLowerCase().trim())
-      );
-      const snapshot = await getDocs(credQuery);
-
-      if (!snapshot.empty) {
-        // Account exists -> Direct login
-        const credData = snapshot.docs[0].data();
-        const activeId = credData.doctorId || result.user.uid;
-        localStorage.setItem('zikola_doctor_id', activeId);
-        onLogin(activeId);
-      } else {
-        // Account does not exist -> Direct to Sign Up with Google prefill
-        onGoToRegister({
-          email: emailVal,
-          name: result.user.displayName || '',
-          photoUrl: result.user.photoURL || '',
-          googleUid: result.user.uid
-        });
-      }
+      await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       console.error('Google login error:', err);
-      setError(true);
-      setErrorMessage(err.message || 'Gagal login dengan Google.');
+      showError(authErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -87,35 +70,12 @@ export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProp
     setIsLoading(true);
     setError(false);
     setErrorMessage('');
-
     try {
-      const hashedPwd = await hashPassword(password);
-      const credQuery = query(
-        collection(db, 'doctor_credentials'),
-        where('username', '==', username.toLowerCase().trim()),
-        where('password', '==', hashedPwd)
-      );
-      const snapshot = await getDocs(credQuery);
-
-      if (!snapshot.empty) {
-        const credData = snapshot.docs[0].data();
-        onLogin(credData.doctorId);
-      } else {
-        setError(true);
-        setErrorMessage('Username atau password salah.');
-        setTimeout(() => {
-          setError(false);
-          setErrorMessage('');
-        }, 3000);
-      }
-    } catch (err) {
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError(true);
-      setErrorMessage('Gagal terhubung ke server. Coba lagi.');
-      setTimeout(() => {
-        setError(false);
-        setErrorMessage('');
-      }, 3000);
+      showError(authErrorMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -126,65 +86,19 @@ export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProp
     setIsLoading(true);
     setError(false);
     setErrorMessage('');
-
-    if (newPassword !== confirmNewPassword) {
-      setError(true);
-      setErrorMessage('Konfirmasi sandi tidak cocok.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError(true);
-      setErrorMessage('Sandi baru minimal 6 karakter.');
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const hashedPin = await hashPassword(resetPin);
-      // Find credentials by username, email, and securityPin
-      const credQuery = query(
-        collection(db, 'doctor_credentials'),
-        where('username', '==', resetUsername.toLowerCase().trim()),
-        where('email', '==', resetEmail.toLowerCase().trim()),
-        where('securityPin', '==', hashedPin)
-      );
-      const snapshot = await getDocs(credQuery);
-
-      if (!snapshot.empty) {
-        // Hashing the new password
-        const hashedPwd = await hashPassword(newPassword);
-        const docRef = snapshot.docs[0].ref;
-        
-        // Update credentials doc
-        await setDoc(docRef, { password: hashedPwd }, { merge: true });
-
-        setResetSuccess(true);
-        setError(false);
-        setErrorMessage('');
-        
-        setTimeout(() => {
-          setResetSuccess(false);
-          setShowReset(false);
-          // Clear forms
-          setResetUsername('');
-          setResetEmail('');
-          setResetPin('');
-          setNewPassword('');
-          setConfirmNewPassword('');
-        }, 3500);
-      } else {
-        setError(true);
-        setErrorMessage('Username, Email, atau PIN Keamanan salah/tidak cocok.');
+      await sendPasswordResetEmail(auth, resetEmail.trim());
+    } catch (err: any) {
+      // Don't reveal whether an email is registered; only surface hard failures.
+      if (err?.code === 'auth/invalid-email' || err?.code === 'auth/network-request-failed') {
+        showError(authErrorMessage(err));
+        setIsLoading(false);
+        return;
       }
-    } catch (err) {
       console.error('Reset password error:', err);
-      setError(true);
-      setErrorMessage('Gagal memperbarui sandi. Coba lagi.');
-    } finally {
-      setIsLoading(false);
     }
+    setResetSuccess(true);
+    setIsLoading(false);
   };
 
   const inputClass = (hasError: boolean) =>
@@ -245,59 +159,24 @@ export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProp
               <form onSubmit={handleResetSubmit} className="space-y-4">
                 <div className="mb-4">
                   <h2 className="text-xl font-bold text-slate-800 tracking-tight">Atur Ulang Sandi</h2>
-                  <p className="text-sm text-slate-500 mt-1">Verifikasi identitas untuk mengubah sandi</p>
+                  <p className="text-sm text-slate-500 mt-1">Kami akan mengirim tautan atur ulang sandi ke email Anda</p>
                 </div>
 
                 {resetSuccess && (
                   <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 p-3 rounded-xl text-xs font-semibold flex items-center space-x-2">
                     <span className="text-base">✅</span>
                     <div>
-                      <p className="font-bold">Sandi Berhasil Diperbarui!</p>
-                      <p className="text-emerald-600 font-medium mt-0.5">Mengalihkan ke halaman login...</p>
+                      <p className="font-bold">Cek Email Anda</p>
+                      <p className="text-emerald-600 font-medium mt-0.5">Jika email terdaftar, tautan atur ulang sandi sudah dikirim.</p>
                     </div>
                   </div>
                 )}
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 ml-1">Username</label>
-                  <div className="relative group">
-                    <input type="text" value={resetUsername} onChange={(e) => setResetUsername(e.target.value)} placeholder="Masukkan username Anda" required className={inputClass(error)} />
-                    <div className={iconClass(error)}><Mail size={16} /></div>
-                  </div>
-                </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-600 ml-1">Email Terdaftar</label>
                   <div className="relative group">
                     <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="dokter@rumahsakit.com" required className={inputClass(error)} />
                     <div className={iconClass(error)}><Mail size={16} /></div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 ml-1">PIN Keamanan (6 Digit)</label>
-                  <div className="relative group">
-                    <input type={showResetPin ? 'text' : 'password'} maxLength={6} pattern="\d*" value={resetPin} onChange={(e) => setResetPin(e.target.value.replace(/\D/g, ''))} placeholder="Masukkan 6 digit PIN" required className={inputClassWithRight(error)} />
-                    <div className={iconClass(error)}><Lock size={16} /></div>
-                    <button type="button" onClick={() => setShowResetPin(!showResetPin)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                      {showResetPin ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 ml-1">Sandi Baru</label>
-                  <div className="relative group">
-                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Minimal 6 karakter" required className={inputClass(error)} />
-                    <div className={iconClass(error)}><Lock size={16} /></div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 ml-1">Konfirmasi Sandi Baru</label>
-                  <div className="relative group">
-                    <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Ulangi kata sandi" required className={inputClass(error)} />
-                    <div className={iconClass(error)}><ShieldCheck size={16} /></div>
                   </div>
                   {error && (
                     <div className="flex items-center space-x-2 mt-1.5 ml-1 text-red-500">
@@ -308,17 +187,17 @@ export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProp
                 </div>
 
                 <div className="pt-3 flex flex-col space-y-2">
-                  <button type="submit" disabled={isLoading || !resetUsername || !resetEmail || !resetPin || !newPassword || !confirmNewPassword}
+                  <button type="submit" disabled={isLoading || !resetEmail}
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50">
                     {isLoading ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     ) : (
-                      <><Key size={15} /><span>Perbarui Sandi</span></>
+                      <><Key size={15} /><span>Kirim Tautan Reset</span></>
                     )}
                   </button>
-                  <button type="button" onClick={() => { setShowReset(false); setError(false); setErrorMessage(''); }}
+                  <button type="button" onClick={() => { setShowReset(false); setResetSuccess(false); setError(false); setErrorMessage(''); }}
                     className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-700 py-2 transition-colors">
-                    Batal, Kembali ke Login
+                    Kembali ke Login
                   </button>
                 </div>
               </form>
@@ -331,9 +210,9 @@ export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProp
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-600 ml-1">Email / Username</label>
+                  <label className="text-xs font-semibold text-slate-600 ml-1">Email</label>
                   <div className="relative group">
-                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Masukkan email atau username" required className={inputClass(error)} />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="dokter@rumahsakit.com" required className={inputClass(error)} />
                     <div className={iconClass(error)}><Mail size={16} /></div>
                   </div>
                 </div>
@@ -369,7 +248,7 @@ export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProp
                 </div>
 
                 <div>
-                  <button type="submit" disabled={isLoading || !username || !password}
+                  <button type="submit" disabled={isLoading || !email || !password}
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center space-x-2 shadow-sm transition-all duration-200 active:scale-[0.98] disabled:opacity-50">
                     {isLoading ? (
                       <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -399,7 +278,7 @@ export default function DoctorLogin({ onLogin, onGoToRegister }: DoctorLoginProp
                 <div className="text-center pt-1">
                   <p className="text-sm text-slate-500">
                     Belum punya akun?{' '}
-                    <button type="button" onClick={onGoToRegister} className="font-semibold text-teal-600 hover:text-teal-800 transition-colors">
+                    <button type="button" onClick={() => onGoToRegister()} className="font-semibold text-teal-600 hover:text-teal-800 transition-colors">
                       Daftar sebagai psikolog
                     </button>
                   </p>

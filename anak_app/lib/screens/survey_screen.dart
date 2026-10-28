@@ -21,7 +21,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
   final TextEditingController _nameController = TextEditingController();
   String _childGender = '';
   int _childAge = 0;
-  Map<String, List<String>> _tempAnswers = {};
+  final Map<String, List<String>> _tempAnswers = {};
   
   String? _avatarBase64;
   final ImagePicker _picker = ImagePicker();
@@ -30,7 +30,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
   final List<Map<String, dynamic>> _surveySteps = [
     {
       'id': 'gender-name',
-      'title': 'Apa gender dan siapa nama anak anda?',
+      'title': 'Apa gender dan siapa nama anak Anda?',
       'type': 'gender-name'
     },
     {
@@ -253,7 +253,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         Navigator.pop(context); // Close dialog
-                        Navigator.pushReplacementNamed(context, '/home');
+                        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.orange500,
@@ -366,7 +366,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.red500.withOpacity(0.1),
+                                  color: AppTheme.red500.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(Icons.logout, color: AppTheme.red500, size: 20),
@@ -428,7 +428,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             CustomButton(
-              text: _currentStep == _surveySteps.length - 1 ? 'Selesai' : 'Next',
+              text: _currentStep == _surveySteps.length - 1 ? 'Selesai' : 'Lanjut',
               onPressed: _canProceed() && !_isSaving ? _handleNext : null,
               isLoading: _isSaving,
               icon: _currentStep == _surveySteps.length - 1 ? null : const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
@@ -524,7 +524,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
               width: (MediaQuery.of(context).size.width - 60) / 2,
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.orange50.withOpacity(0.5) : Colors.white,
+                color: isSelected ? AppTheme.orange50.withValues(alpha: 0.5) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected ? AppTheme.orange500 : AppTheme.gray200,
@@ -561,7 +561,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.orange50.withOpacity(0.5) : Colors.white,
+                color: isSelected ? AppTheme.orange50.withValues(alpha: 0.5) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isSelected ? AppTheme.orange500 : AppTheme.gray200,
@@ -570,7 +570,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
                 boxShadow: [
                   if (!isSelected)
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
+                      color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     )
@@ -617,7 +617,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 32),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.orange50.withOpacity(0.5) : Colors.white,
+          color: isSelected ? AppTheme.orange50.withValues(alpha: 0.5) : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected ? AppTheme.orange500 : AppTheme.gray200,
@@ -626,7 +626,7 @@ class _SurveyScreenState extends State<SurveyScreen> {
           boxShadow: [
             if (!isSelected)
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               )

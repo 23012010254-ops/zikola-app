@@ -95,7 +95,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
       _feedback = null;
       _isProcessing = false;
     });
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playPuzzleBGM();
     
     final config = _levelsConfig[level - 1];
     _generateSequence(config.sequenceLength);
@@ -128,7 +128,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
     for (int i = 0; i < seq.length; i++) {
       if (!mounted || _gameState != 'showing') return;
       setState(() => _showingIndex = i);
-      AudioService().playSFX('bubble.mp3');
+      AudioService().playPop();
       await Future.delayed(Duration(milliseconds: config.flashDelayMs));
       
       if (!mounted || _gameState != 'showing') return;
@@ -152,7 +152,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
       _isProcessing = true;
       _userSequence = List.from(_userSequence)..add(buttonId);
     });
-    AudioService().playSFX('flip.mp3');
+    AudioService().playClick();
 
     if (_sequence[_userSequence.length - 1] != buttonId) {
       setState(() => _inputEnabled = false);
@@ -172,7 +172,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
 
   void _handleCorrectAnswer() {
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playSparkle();
 
     int starsCount = 0;
     if (_lives == 3) {
@@ -253,7 +253,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
   }
 
   void _handleWrongAnswer() {
-    AudioService().playSFX('wrong.mp3');
+    AudioService().playWrong();
     setState(() {
       _wrongAnswers++;
       _lives--;
@@ -264,7 +264,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted) {
           AudioService().stopBGM();
-          AudioService().playSFX('completion.mp3');
+          AudioService().playGameOver();
           setState(() {
             _gameState = 'completed'; // failed
           });
@@ -327,7 +327,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
                           onTap: () => Navigator.pop(context),
                           child: Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                             child: const Icon(Icons.arrow_back, color: Colors.white),
                           ),
                         ),
@@ -345,7 +345,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
 
                     Container(
                       padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(24)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(24)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -478,7 +478,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
                                   boxShadow: isUnlocked
                                       ? [
                                           BoxShadow(
-                                            color: const Color(0xFFA855F7).withOpacity(0.3),
+                                            color: const Color(0xFFA855F7).withValues(alpha: 0.3),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           )
@@ -559,7 +559,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
                       },
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ),
@@ -584,14 +584,14 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: const [
                           Icon(Icons.psychology, color: Color(0xFFE9D5FF), size: 20),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Text('Nyawa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                         ],
                       ),
@@ -703,7 +703,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: Colors.purple.withOpacity(0.25),
+                color: Colors.purple.withValues(alpha: 0.25),
                 blurRadius: 30,
                 spreadRadius: 5,
               )
@@ -741,9 +741,9 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [

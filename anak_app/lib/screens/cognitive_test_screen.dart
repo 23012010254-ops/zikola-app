@@ -88,12 +88,12 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                   children: [
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16)),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                             child: const Text('🧠', style: TextStyle(fontSize: 24)),
                           ),
                           const SizedBox(width: 16),
@@ -118,7 +118,7 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Container(
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                 child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
               ),
             ),
@@ -132,7 +132,7 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                   Container(
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
                     child: Row(
                       children: [
                         const Icon(Icons.info_outline, color: Colors.blueAccent),
@@ -154,7 +154,7 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: AppTheme.gray200),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +191,7 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -237,7 +237,7 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                           onTap: () => Navigator.pop(context),
                           child: Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                             child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
                           ),
                         ),
@@ -256,10 +256,10 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(32),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,7 +333,7 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                       onTap: () => setState(() => gameState = 'menu'),
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ),
@@ -388,7 +388,7 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                   subtitle,
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -410,18 +410,18 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
               child: Text(icon, style: const TextStyle(fontSize: 32)),
             ),
             const SizedBox(width: 20),
@@ -431,20 +431,20 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                 children: [
                   Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
                   const SizedBox(height: 4),
-                  Text(desc, style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.8), height: 1.2)),
+                  Text(desc, style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.8), height: 1.2)),
                   const SizedBox(height: 12),
                   Row(
                     children: tags.map((t) => Container(
                       margin: const EdgeInsets.only(right: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
                       child: Text(t, style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
                     )).toList(),
                   )
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.5), size: 28),
+            Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.5), size: 28),
           ],
         ),
       ),
@@ -490,7 +490,7 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                       onTap: () => setState(() => gameState = 'categorySelect'),
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ),
@@ -562,18 +562,18 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(20)),
               child: Text(icon, style: const TextStyle(fontSize: 40)),
             ),
             const SizedBox(width: 20),
@@ -583,11 +583,11 @@ class _CognitiveTestScreenState extends State<CognitiveTestScreen> with TickerPr
                 children: [
                   Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
                   const SizedBox(height: 4),
-                  Text(desc, style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.8))),
+                  Text(desc, style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8))),
                 ],
               ),
             ),
-            Icon(Icons.play_circle_fill_rounded, color: Colors.white.withOpacity(0.8), size: 32),
+            Icon(Icons.play_circle_fill_rounded, color: Colors.white.withValues(alpha: 0.8), size: 32),
           ],
         ),
       ),

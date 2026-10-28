@@ -15,6 +15,7 @@ class StickerInfo {
 
   int get pointCost {
     switch (rarity) {
+      case 'celestial': return 1000;
       case 'mythical': return 300;
       case 'legend':
       case 'legendary': return 40;
@@ -89,6 +90,10 @@ class StickerDatabase {
     'cool-penguin': StickerInfo(id: 'cool-penguin', name: 'Cool Penguin', emoji: '🐧', description: 'Penguin keren', rarity: 'rare'),
     'tiger-champ': StickerInfo(id: 'tiger-champ', name: 'Tiger Champ', emoji: '🐯', description: 'Juara harimau', rarity: 'epic'),
     'happy-frog': StickerInfo(id: 'happy-frog', name: 'Happy Frog', emoji: '🐸', description: 'Katak bahagia', rarity: 'common'),
+    'ninja-fox': StickerInfo(id: 'ninja-fox', name: 'Ninja Fox', emoji: '🦊', description: 'Rubah gesit & cerdik', rarity: 'epic'),
+    'mecha-lion': StickerInfo(id: 'mecha-lion', name: 'Mecha Lion', emoji: '🦁', description: 'Singa pelindung masa depan', rarity: 'legendary'),
+    'cyber-falcon': StickerInfo(id: 'cyber-falcon', name: 'Cyber Falcon', emoji: '🦅', description: 'Mata elang super tajam', rarity: 'epic'),
+    'golden-whale': StickerInfo(id: 'golden-whale', name: 'Golden Whale', emoji: '🐋', description: 'Penyelam samudra emas', rarity: 'legendary'),
 
     // Progress Stickers
     'level-up': StickerInfo(id: 'level-up', name: 'Level Up!', emoji: '🎯', description: 'Naik level!', rarity: 'rare'),
@@ -103,7 +108,18 @@ class StickerDatabase {
     'cosmic-crystal': StickerInfo(id: 'cosmic-crystal', name: 'Cosmic Crystal', emoji: '💎', description: 'Energi dari seluruh galaksi!', rarity: 'mythical'),
     'eternal-crown': StickerInfo(id: 'eternal-crown', name: 'Eternal Crown', emoji: '👑', description: 'Raja dari segala permainan!', rarity: 'mythical'),
     'supernova-star': StickerInfo(id: 'supernova-star', name: 'Supernova Star', emoji: '💥', description: 'Ledakan bintang yang dahsyat!', rarity: 'mythical'),
+
+    // 🌌 CELESTIAL STICKERS (> Mythic - 1000 Pts)
+    'celestial-galaxy-dragon': StickerInfo(id: 'celestial-galaxy-dragon', name: 'Naga Galaksi Abadi', emoji: '🐉', description: 'Penguasa galaksi kosmik yang melintasi ruang dan dimensi!', rarity: 'celestial'),
+    'divine-phoenix-emperor': StickerInfo(id: 'divine-phoenix-emperor', name: 'Kaisar Phoenix Ilahi', emoji: '✨', description: 'Cahaya abadi yang menyinari seluruh semesta raya!', rarity: 'celestial'),
+    'cosmic-astral-unicorn': StickerInfo(id: 'cosmic-astral-unicorn', name: 'Astral Pegasus Unicorn', emoji: '🦄', description: 'Membawa keajaiban bintang paling terang di angkasa!', rarity: 'celestial'),
+    'celestial-titan-golem': StickerInfo(id: 'celestial-titan-golem', name: 'Titan Penjaga Semesta', emoji: '🗿', description: 'Pelindung kokoh dan tangguh dari segala rintangan!', rarity: 'celestial'),
+    'celestial-chrono-clock': StickerInfo(id: 'celestial-chrono-clock', name: 'Pengendali Waktu Astral', emoji: '⏳', description: 'Master fokus, konsentrasi, dan penakluk waktu sejati!', rarity: 'celestial'),
+    'celestial-diamond-shield': StickerInfo(id: 'celestial-diamond-shield', name: 'Aegis Berlian Kosmik', emoji: '🛡️', description: 'Pertahanan berkilau terkuat yang tak terkalahkan!', rarity: 'celestial'),
+    'celestial-omni-crown': StickerInfo(id: 'celestial-omni-crown', name: 'Mahkota Dewa Pengetahuan', emoji: '👑', description: 'Kecerdasan tertinggi dan kebijaksanaan alam semesta!', rarity: 'celestial'),
+    'celestial-shooting-nebula': StickerInfo(id: 'celestial-shooting-nebula', name: 'Nebula Bintang Jatuh', emoji: '🌠', description: 'Harapan dan cita-cita terbesar yang bersinar cemerlang!', rarity: 'celestial'),
   };
 
   static StickerInfo? getSticker(String id) => stickers[id];
+  static List<StickerInfo> get allStickers => stickers.values.toList();
 }

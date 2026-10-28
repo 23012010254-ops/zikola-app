@@ -117,7 +117,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
       _gameStartTime = DateTime.now();
     });
 
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playHomeBGM();
     _startNewWord();
   }
 
@@ -132,6 +132,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
   void _onLetterDrop(int slotIndex, String letter, int letterIndex) {
     if (_slots[slotIndex] != null) return;
 
+    AudioService().playPop();
     setState(() {
       _slots[slotIndex] = letter;
       _shuffledLetters[letterIndex] = ''; // Remove from pool
@@ -146,7 +147,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
       _shuffledLetters = word.split('')..shuffle();
       _slots = List.filled(word.length, null);
     });
-    AudioService().playSFX('flip.mp3');
+    AudioService().playFlip();
   }
 
   void _checkWord() {
@@ -161,7 +162,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
   }
 
   void _onCorrect() {
-    AudioService().playSFX('success.mp3');
+    AudioService().playSparkle();
     setState(() {
       _score += 20;
       _correctAnswers++;
@@ -181,14 +182,14 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
   }
 
   void _onWrong() {
-    AudioService().playSFX('wrong.mp3');
+    AudioService().playWrong();
     setState(() {
       _lives--;
       _errors++;
       if (_lives <= 0) {
         _gameState = 'completed'; // fail
         AudioService().stopBGM();
-        AudioService().playSFX('completion.mp3');
+        AudioService().playGameOver();
       } else {
         _startNewWord(); // Reset current word
       }
@@ -197,7 +198,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
 
   void _completeLevel() {
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playSparkle();
 
     int starsCount = _lives;
     _starRatings[_currentLevel - 1] = max(_starRatings[_currentLevel - 1], starsCount);
@@ -313,7 +314,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
                           onTap: () => Navigator.pop(context),
                           child: Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(12)),
                             child: const Icon(Icons.arrow_back, color: Color(0xFF92400E)),
                           ),
                         ),
@@ -577,14 +578,14 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(_slots.length, (i) {
             return DragTarget<Map<String, dynamic>>(
-              onAccept: (data) => _onLetterDrop(i, data['letter'], data['index']),
+              onAcceptWithDetails: (details) => _onLetterDrop(i, details.data['letter'], details.data['index']),
               builder: (context, candidateData, rejectedData) {
                 return Container(
                   width: 55,
                   height: 65,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(_slots[i] == null ? 0.35 : 1),
+                    color: Colors.white.withValues(alpha: _slots[i] == null ? 0.35 : 1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.white, width: 2),
                   ),
@@ -697,7 +698,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
                   const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(24)),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(24)),
                     child: Column(
                       children: [
                         _buildStatRow('Benar', '$_correctAnswers / 3'),

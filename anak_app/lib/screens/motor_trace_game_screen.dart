@@ -75,7 +75,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
       _driftErrors = 0;
       _resetLevelState();
     });
-    AudioService().playGameBGM();
+    AudioService().playHomeBGM();
   }
 
   void _resetLevelState() {
@@ -118,7 +118,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
         _currentPos = details.localPosition;
         _drawnPath = [_currentPos!];
       });
-      AudioService().playClick();
+      AudioService().playSwish();
     }
   }
 
@@ -170,7 +170,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
   }
 
   void _onLevelComplete() {
-    AudioService().playCorrect();
+    AudioService().playSparkle();
     final elapsed = DateTime.now().difference(_levelStartTime!).inMilliseconds;
     _totalTimeMs += elapsed;
     _levelElapsedTimeMs = elapsed;
@@ -263,7 +263,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.2), blurRadius: 30, spreadRadius: 10)]
+                    boxShadow: [BoxShadow(color: Colors.purple.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 10)]
                   ),
                   child: const Text('✨', style: TextStyle(fontSize: 80)),
                 ),
@@ -303,7 +303,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       elevation: 8,
-                      shadowColor: AppTheme.purple500.withOpacity(0.5),
+                      shadowColor: AppTheme.purple500.withValues(alpha: 0.5),
                     ),
                     child: const Text('Mulai Terbang!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                   ),
@@ -361,9 +361,9 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.pinkAccent.withOpacity(0.4), width: 1.5),
+                      border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.4), width: 1.5),
                     ),
                     child: Text(
                       'Keluar Jalur: $_driftErrors', 
@@ -423,8 +423,8 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
                                   color: Colors.white,
                                   shape: BoxShape.circle,
                                   boxShadow: [
-                                    BoxShadow(color: Colors.cyanAccent.withOpacity(0.8), blurRadius: 15, spreadRadius: 4),
-                                    BoxShadow(color: Colors.white.withOpacity(0.5), blurRadius: 6),
+                                    BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.8), blurRadius: 15, spreadRadius: 4),
+                                    BoxShadow(color: Colors.white.withValues(alpha: 0.5), blurRadius: 6),
                                   ],
                                 ),
                               ),
@@ -446,12 +446,12 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
     final nodeWidget = Container(
       width: 55, height: 55,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         shape: BoxShape.circle,
         border: Border.all(color: color, width: 3),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.4), 
+            color: color.withValues(alpha: 0.4), 
             blurRadius: isPulsing ? 18 : 10,
             spreadRadius: isPulsing ? 2 : 0,
           )
@@ -507,7 +507,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
             border: Border.all(color: Colors.purpleAccent, width: 4),
             boxShadow: [
               BoxShadow(
-                color: Colors.purpleAccent.withOpacity(0.25),
+                color: Colors.purpleAccent.withValues(alpha: 0.25),
                 blurRadius: 30,
                 spreadRadius: 5,
               )
@@ -554,9 +554,9 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.purpleAccent.withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [
@@ -716,7 +716,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
                                   boxShadow: isUnlocked
                                       ? [
                                           BoxShadow(
-                                            color: Colors.purpleAccent.withOpacity(0.3),
+                                            color: Colors.purpleAccent.withValues(alpha: 0.3),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           )
@@ -793,11 +793,11 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
                         child: Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.purpleAccent.withOpacity(0.15),
+                            color: Colors.purpleAccent.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.purpleAccent, width: 4),
                             boxShadow: [
-                              BoxShadow(color: Colors.purpleAccent.withOpacity(0.3), blurRadius: 20),
+                              BoxShadow(color: Colors.purpleAccent.withValues(alpha: 0.3), blurRadius: 20),
                             ],
                           ),
                           child: Text(percentage >= 60 ? '🏆' : '👍', style: const TextStyle(fontSize: 80)),
@@ -820,11 +820,11 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
+                      color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: Colors.purpleAccent.withOpacity(0.4), width: 2),
+                      border: Border.all(color: Colors.purpleAccent.withValues(alpha: 0.4), width: 2),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 15)
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 15)
                       ],
                     ),
                     child: Column(
@@ -867,7 +867,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                         elevation: 5,
-                        shadowColor: Colors.purpleAccent.withOpacity(0.4),
+                        shadowColor: Colors.purpleAccent.withValues(alpha: 0.4),
                       ),
                       child: const Text('Kembali ke Peta Petualangan 🗺️', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     ),
@@ -891,7 +891,7 @@ class _TrackPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     // Background Stars (Static layout via stable seeded Random)
-    final starPaint = Paint()..color = Colors.white.withOpacity(0.25);
+    final starPaint = Paint()..color = Colors.white.withValues(alpha: 0.25);
     final random = Random(42);
     for (int i = 0; i < 40; i++) {
       final x = random.nextDouble() * size.width;
@@ -904,14 +904,14 @@ class _TrackPainter extends CustomPainter {
 
     // 1. Extra thick background glow
     final glowPaint1 = Paint()
-      ..color = Colors.purple.withOpacity(0.06)
+      ..color = Colors.purple.withValues(alpha: 0.06)
       ..strokeWidth = 55
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..style = PaintingStyle.stroke;
 
     final glowPaint2 = Paint()
-      ..color = Colors.cyan.withOpacity(0.1)
+      ..color = Colors.cyan.withValues(alpha: 0.1)
       ..strokeWidth = 40
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
@@ -919,7 +919,7 @@ class _TrackPainter extends CustomPainter {
 
     // 2. Blueprint track channel
     final trackPaint = Paint()
-      ..color = Colors.white.withOpacity(0.08)
+      ..color = Colors.white.withValues(alpha: 0.08)
       ..strokeWidth = 26
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
@@ -927,7 +927,7 @@ class _TrackPainter extends CustomPainter {
 
     // 3. Dashed line guide
     final dashPaint = Paint()
-      ..color = Colors.white.withOpacity(0.35)
+      ..color = Colors.white.withValues(alpha: 0.35)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
@@ -945,7 +945,7 @@ class _TrackPainter extends CustomPainter {
     // 4. Player's neon cyan glow trail
     if (drawnPath.length > 1) {
       final playerGlowPaint = Paint()
-        ..color = Colors.cyanAccent.withOpacity(0.3)
+        ..color = Colors.cyanAccent.withValues(alpha: 0.3)
         ..strokeWidth = 14
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round

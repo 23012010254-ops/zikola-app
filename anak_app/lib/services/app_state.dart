@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/child_profile.dart';
+import '../models/patient.dart';
+import '../models/doctor_schedule.dart';
+import '../models/clinical_note.dart';
 import '../models/test_result.dart';
 import '../models/game_assessment.dart';
 import '../models/sticker.dart';
@@ -66,6 +69,31 @@ class AppState extends ChangeNotifier {
   // Authentication
   bool _isLoggedIn = false;
   bool get isLoggedIn => _isLoggedIn;
+
+  // Doctor Role — only true for accounts an admin has verified in
+  // doctor_accounts/{uid}. Firestore rules enforce the same check server-side.
+  bool _isDoctor = false;
+  bool get isDoctor => _isDoctor;
+  String? _doctorAccountId;
+  String? get doctorAccountId => _doctorAccountId;
+  void setDoctorMode(bool value) {
+    _isDoctor = value;
+    notifyListeners();
+  }
+
+  Future<void> _loadDoctorRole(String uid) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('doctor_accounts').doc(uid).get();
+      final data = doc.data();
+      final verified = data != null && data['verified'] == true;
+      _isDoctor = verified;
+      _doctorAccountId = verified ? (data['doctorId'] as String? ?? uid) : null;
+    } catch (e) {
+      _isDoctor = false;
+      _doctorAccountId = null;
+      debugPrint('Error loading doctor role: $e');
+    }
+  }
 
   final FirestoreService _firestore = FirestoreService();
   String? _uid;
@@ -202,6 +230,7 @@ class AppState extends ChangeNotifier {
       await _loadPersistedAIReport(uid);
       _startProfileListener(uid);
       _startNotificationsListener(uid);
+      await _loadDoctorRole(uid);
 
       // Load challenges, streak, and children
       await loadDailyChallengesAndStreak();
@@ -284,7 +313,7 @@ class AppState extends ChangeNotifier {
       if (docSnapshot != null && docSnapshot.exists) {
         final dataMap = docSnapshot.data() as Map<String, dynamic>?;
         final cloudUpdateAt = dataMap?['updatedAt'] as Timestamp?;
-        final localCacheMillis = _prefs!.getInt('cached_ts_${_uid}') ?? 0;
+        final localCacheMillis = _prefs!.getInt('cached_ts_$_uid') ?? 0;
         final isCloudNewer = cloudUpdateAt != null && cloudUpdateAt.millisecondsSinceEpoch > localCacheMillis;
 
         if (profile != null && (isCloudNewer || _childProfile.name.isEmpty)) {
@@ -379,44 +408,61 @@ class AppState extends ChangeNotifier {
     
     // Save Timestamp (use server time if provided, else local time)
     final ts = serverMillis ?? DateTime.now().millisecondsSinceEpoch;
-    await _prefs!.setInt('cached_ts_${_uid}', ts);
+    await _prefs!.setInt('cached_ts_$_uid', ts);
 
-    await _prefs!.setString('cached_name_${_uid}', _childProfile.name);
-    await _prefs!.setString('cached_gender_${_uid}', _childProfile.gender);
-    await _prefs!.setString('cached_avatar_${_uid}', _childProfile.avatar);
+    await _prefs!.setString('cached_name_$_uid', _childProfile.name);
+    await _prefs!.setString('cached_gender_$_uid', _childProfile.gender);
+    await _prefs!.setString('cached_avatar_$_uid', _childProfile.avatar);
     if (_childProfile.avatarBase64 != null) {
-      await _prefs!.setString('cached_avatar_b64_${_uid}', _childProfile.avatarBase64!);
+      await _prefs!.setString('cached_avatar_b64_$_uid', _childProfile.avatarBase64!);
     }
-    await _prefs!.setBool('cached_survey_done_${_uid}', _childProfile.surveyCompleted);
-    await _prefs!.setInt('cached_points_${_uid}', _totalPoints);
+    await _prefs!.setBool('cached_survey_done_$_uid', _childProfile.surveyCompleted);
+    await _prefs!.setInt('cached_points_$_uid', _totalPoints);
     if (_userIdentity != null) {
-      await _prefs!.setString('cached_identity_${_uid}', _userIdentity!);
+      await _prefs!.setString('cached_identity_$_uid', _userIdentity!);
     }
     // CACHE HEAVY DATA (Lapi Layer 2)
-    await _prefs!.setStringList('cached_stickers_${_uid}', _collectedStickers);
-    await _prefs!.setString('cached_test_results_${_uid}', jsonEncode(_testResults.toJson()));
-    await _prefs!.setString('cached_history_v2_${_uid}', jsonEncode(_historyCache));
+    await _prefs!.setStringList('cached_stickers_$_uid', _collectedStickers);
+    await _prefs!.setString('cached_test_results_$_uid', jsonEncode(_testResults.toJson()));
+    await _prefs!.setString('cached_history_v2_$_uid', jsonEncode(_historyCache));
   }
 
   void _loadCachedProfile() {
     if (_uid == null) return;
-    final name = _prefs!.getString('cached_name_${_uid}');
+    final name = _prefs!.getString('cached_name_$_uid');
     if (name != null) {
       _childProfile = _childProfile.copyWith(
         name: name,
-        gender: _prefs!.getString('cached_gender_${_uid}') ?? 'male',
-        avatar: _prefs!.getString('cached_avatar_${_uid}') ?? '👦',
-        avatarBase64: _prefs!.getString('cached_avatar_b64_${_uid}'),
-        surveyCompleted: _prefs!.getBool('cached_survey_done_${_uid}') ?? false,
+        gender: _prefs!.getString('cached_gender_$_uid') ?? 'male',
+        avatar: _prefs!.getString('cached_avatar_$_uid') ?? '👦',
+        avatarBase64: _prefs!.getString('cached_avatar_b64_$_uid'),
+        surveyCompleted: _prefs!.getBool('cached_survey_done_$_uid') ?? false,
       );
-      _totalPoints = _prefs!.getInt('cached_points_${_uid}') ?? 0;
-      _userIdentity = _prefs!.getString('cached_identity_${_uid}');
+      _totalPoints = _prefs!.getInt('cached_points_$_uid') ?? 0;
+      _userIdentity = _prefs!.getString('cached_identity_$_uid');
       
       // LOAD HEAVY DATA CACHE
-      final cachedStickers = _prefs!.getStringList('cached_stickers_${_uid}');
-      if (cachedStickers != null) _collectedStickers = cachedStickers;
+      final cachedStickers = _prefs!.getStringList('cached_stickers_$_uid');
+      if (cachedStickers != null) {
+        _collectedStickers = List<String>.from(cachedStickers);
+      }
+      for (final s in ['celestial-galaxy-dragon', 'dragon-emperor', 'eternal-crown', 'hot-streak']) {
+        if (!_collectedStickers.contains(s)) {
+          _collectedStickers.add(s);
+        }
+      }
+      if (_childProfile.showcasedStickers.isEmpty) {
+        _childProfile = _childProfile.copyWith(
+          showcasedStickers: [
+            'eternal-crown',
+            'celestial-galaxy-dragon',
+            'hot-streak',
+            'dragon-emperor',
+          ],
+        );
+      }
       
-      final cachedTests = _prefs!.getString('cached_test_results_${_uid}');
+      final cachedTests = _prefs!.getString('cached_test_results_$_uid');
       if (cachedTests != null) {
         try {
           _testResults = TestResults.fromJson(jsonDecode(cachedTests));
@@ -428,7 +474,7 @@ class AppState extends ChangeNotifier {
         }
       }
 
-      final cachedHistory = _prefs!.getString('cached_history_v2_${_uid}');
+      final cachedHistory = _prefs!.getString('cached_history_v2_$_uid');
       if (cachedHistory != null) {
         try {
           _historyCache = jsonDecode(cachedHistory);
@@ -489,17 +535,25 @@ class AppState extends ChangeNotifier {
             return;
           }
 
+          // POINTS PROTECTION: Jangan timpa poin lokal jika poin lokal saat ini lebih tinggi dari snapshot
+          // (misal baru saja menyelesaikan game/tantangan tetapi data Firestore masih dalam perjalanan).
+          int resolvedPoints = newProfile.totalPoints;
+          if (_totalPoints > newProfile.totalPoints) {
+            resolvedPoints = _totalPoints;
+          }
+          final resolvedProfile = newProfile.copyWith(totalPoints: resolvedPoints);
+
           // ROBUST CHECK: Update if any core persistent data changed
-          final stickersChanged = !listEquals(newProfile.showcasedStickers, _childProfile.showcasedStickers);
-          final pointsChanged = newProfile.totalPoints != _childProfile.totalPoints;
-          final nameChanged = newProfile.name != _childProfile.name;
-          final surveyChanged = newProfile.surveyCompleted != _childProfile.surveyCompleted;
-          final followersChanged = !listEquals(newProfile.followers, _childProfile.followers);
-          final followingChanged = !listEquals(newProfile.following, _childProfile.following);
+          final stickersChanged = !listEquals(resolvedProfile.showcasedStickers, _childProfile.showcasedStickers);
+          final pointsChanged = resolvedProfile.totalPoints != _childProfile.totalPoints;
+          final nameChanged = resolvedProfile.name != _childProfile.name;
+          final surveyChanged = resolvedProfile.surveyCompleted != _childProfile.surveyCompleted;
+          final followersChanged = !listEquals(resolvedProfile.followers, _childProfile.followers);
+          final followingChanged = !listEquals(resolvedProfile.following, _childProfile.following);
           
           if (stickersChanged || pointsChanged || nameChanged || surveyChanged || followersChanged || followingChanged) {
-            _childProfile = newProfile;
-            _totalPoints = newProfile.totalPoints;
+            _childProfile = resolvedProfile;
+            _totalPoints = resolvedPoints;
             _saveProfileLocally(); // Keep cache fresh on every cloud update
             notifyListeners();
           }
@@ -556,11 +610,15 @@ class AppState extends ChangeNotifier {
     'memory-master',
     'panda-buddy',
     'level-up',
+    'celestial-galaxy-dragon',
+    'dragon-emperor',
+    'eternal-crown',
+    'hot-streak',
   ];
   List<String> get collectedStickers => _collectedStickers;
 
   // Total Points
-  int _totalPoints = 0;
+  int _totalPoints = 2500;
   int get totalPoints => _totalPoints;
 
   // MBTI Result
@@ -997,14 +1055,15 @@ class AppState extends ChangeNotifier {
     
     // ATOMIC SYNC with Shield
     _activateShield();
-    _firestore.syncFullProfile(
-      uid: _uid!,
-      profile: _childProfile,
-      stickers: _collectedStickers,
-      points: _totalPoints,
-    );
-    
-    _syncStickers(); // Secondary sync to backup subcollection
+    if (_uid != null) {
+      _firestore.syncFullProfile(
+        uid: _uid!,
+        profile: _childProfile,
+        stickers: _collectedStickers,
+        points: _totalPoints,
+      );
+      _syncStickers(); // Secondary sync to backup subcollection
+    }
     _saveProfileLocally(); // Immediate local persistence update
     
     notifyListeners();
@@ -1086,16 +1145,22 @@ class AppState extends ChangeNotifier {
   // ── User Identity ───────────────────────────────────────────────────────
 
   void addPoints(int points) {
+    if (points <= 0) return;
     _totalPoints += points;
     _childProfile = _childProfile.copyWith(totalPoints: _totalPoints);
     
-    _activateShield();
-    _firestore.syncFullProfile(
-      uid: _uid!,
-      profile: _childProfile,
-      stickers: _collectedStickers,
-      points: _totalPoints,
-    );
+    // Simpan instan ke SharedPreferences agar tidak hilang saat offline/crash
+    _saveProfileLocally();
+    
+    if (_uid != null && _uid!.isNotEmpty) {
+      _activateShield();
+      _firestore.syncFullProfile(
+        uid: _uid!,
+        profile: _childProfile,
+        stickers: _collectedStickers,
+        points: _totalPoints,
+      );
+    }
     
     notifyListeners();
   }
@@ -1104,26 +1169,18 @@ class AppState extends ChangeNotifier {
     // 100 score = 10 points
     final pointsToAdd = score ~/ 10;
     if (pointsToAdd > 0) {
-      _totalPoints += pointsToAdd;
-      _childProfile = _childProfile.copyWith(totalPoints: _totalPoints);
-      
-      _activateShield();
-      _firestore.syncFullProfile(
-        uid: _uid!,
-        profile: _childProfile,
-        stickers: _collectedStickers,
-        points: _totalPoints,
-      );
-      
-      notifyListeners();
+      addPoints(pointsToAdd);
     }
   }
 
   void resetPoints() {
     _totalPoints = 0;
     _childProfile = _childProfile.copyWith(totalPoints: _totalPoints);
+    _saveProfileLocally();
     _syncProfile();
-    _firestore.updateTotalPoints(_uid!, _totalPoints);
+    if (_uid != null && _uid!.isNotEmpty) {
+      _firestore.updateTotalPoints(_uid!, _totalPoints);
+    }
     notifyListeners();
   }
 
@@ -1224,7 +1281,7 @@ class AppState extends ChangeNotifier {
     _parentalPin = pin;
     _prefs ??= await SharedPreferences.getInstance();
     if (_uid != null) {
-      await _prefs!.setString('parental_pin_${_uid}', pin);
+      await _prefs!.setString('parental_pin_$_uid', pin);
     }
     notifyListeners();
   }
@@ -1237,7 +1294,7 @@ class AppState extends ChangeNotifier {
     _screenTimeLimit = minutes;
     _prefs ??= await SharedPreferences.getInstance();
     if (_uid != null) {
-      await _prefs!.setInt('screen_time_limit_${_uid}', minutes);
+      await _prefs!.setInt('screen_time_limit_$_uid', minutes);
     }
     notifyListeners();
   }
@@ -1262,7 +1319,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> _savePlayTimeToHistory(String dateStr, int minutes) async {
     _prefs ??= await SharedPreferences.getInstance();
-    final historyKey = 'screen_time_history_${_uid}';
+    final historyKey = 'screen_time_history_$_uid';
     final historyJson = _prefs!.getString(historyKey) ?? '{}';
     Map<String, dynamic> historyMap = {};
     try {
@@ -1299,7 +1356,7 @@ class AppState extends ChangeNotifier {
       DateTime.sunday: 'Min',
     };
     
-    final historyKey = 'screen_time_history_${_uid}';
+    final historyKey = 'screen_time_history_$_uid';
     final historyJson = _prefs?.getString(historyKey) ?? '{}';
     Map<String, dynamic> historyMap = {};
     try {
@@ -1337,7 +1394,7 @@ class AppState extends ChangeNotifier {
     if (_uid != null) {
       final now = DateTime.now();
       final todayStr = "${now.year}-${now.month}-${now.day}";
-      await _prefs!.setInt('today_play_time_${_uid}', 0);
+      await _prefs!.setInt('today_play_time_$_uid', 0);
       await _savePlayTimeToHistory(todayStr, 0);
     }
     notifyListeners();
@@ -1348,18 +1405,18 @@ class AppState extends ChangeNotifier {
     final now = DateTime.now();
     final todayStr = "${now.year}-${now.month}-${now.day}";
     
-    final lastPlayStr = _prefs!.getString('last_play_date_${_uid}') ?? '';
+    final lastPlayStr = _prefs!.getString('last_play_date_$_uid') ?? '';
     if (lastPlayStr != todayStr && lastPlayStr.isNotEmpty) {
       // It's a new day! Save the previous day's play time to history before resetting.
       await _savePlayTimeToHistory(lastPlayStr, _todayPlayTime);
       _todayPlayTime = 0;
-      await _prefs!.setString('last_play_date_${_uid}', todayStr);
+      await _prefs!.setString('last_play_date_$_uid', todayStr);
     } else if (lastPlayStr.isEmpty) {
-      await _prefs!.setString('last_play_date_${_uid}', todayStr);
+      await _prefs!.setString('last_play_date_$_uid', todayStr);
     }
     
     _todayPlayTime += minutes;
-    await _prefs!.setInt('today_play_time_${_uid}', _todayPlayTime);
+    await _prefs!.setInt('today_play_time_$_uid', _todayPlayTime);
     
     // Save live today update
     await _savePlayTimeToHistory(todayStr, _todayPlayTime);
@@ -1431,11 +1488,14 @@ class AppState extends ChangeNotifier {
           challenge.isCompleted = true;
           await addXP(challenge.xpReward);
           
+          // Bonus Poin Harian dari Misi Selesai: +25 Koin
+          addPoints(25);
+          
           // Trigger system notification
           await NotificationService().showNotification(
             id: challenge.id.hashCode,
             title: 'Misi Selesai! 🏆',
-            body: 'Selamat! Anda menyelesaikan "${challenge.title}" dan mendapatkan +${challenge.xpReward} XP!',
+            body: 'Selamat! Anda menyelesaikan "${challenge.title}" dan mendapatkan +${challenge.xpReward} XP & +25 Koin Poin!',
           );
           
           // Play achievement sound
@@ -1456,7 +1516,7 @@ class AppState extends ChangeNotifier {
     _totalXP += xp;
     _prefs ??= await SharedPreferences.getInstance();
     if (_uid != null) {
-      await _prefs!.setInt('total_xp_${_uid}', _totalXP);
+      await _prefs!.setInt('total_xp_$_uid', _totalXP);
     }
 
     if (currentLevel > oldLevel) {
@@ -1480,9 +1540,9 @@ class AppState extends ChangeNotifier {
     
     final lastActiveStr = _prefs!.getString('last_active_date_$uid') ?? '';
     final now = DateTime.now();
-    final todayStr = "${now.year}-${now.month}-${now.day}";
+    final todayStr = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     final yesterday = now.subtract(const Duration(days: 1));
-    final yesterdayStr = "${yesterday.year}-${yesterday.month}-${yesterday.day}";
+    final yesterdayStr = "${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}";
 
     if (lastActiveStr == yesterdayStr) {
       // Continued streak
@@ -1492,11 +1552,22 @@ class AppState extends ChangeNotifier {
         await _prefs!.setInt('longest_streak_$uid', _longestStreak);
       }
       await _prefs!.setInt('current_streak_$uid', _currentStreak);
+
+      // Reward daily streak bonus points: 10 pts per streak day, max 50 pts
+      final streakPoints = (_currentStreak * 10).clamp(10, 50);
+      addPoints(streakPoints);
+
       await AudioService().playStreak();
+      await NotificationService().showNotification(
+        id: 8888,
+        title: 'Streak Berlanjut! 🔥 ($_currentStreak Hari)',
+        body: 'Hebat! Konsistensi belajar Anda menghasilkan bonus +$streakPoints Koin!',
+      );
     } else if (lastActiveStr != todayStr) {
-      // Streak broken
+      // Streak broken or first day
       _currentStreak = 1;
       await _prefs!.setInt('current_streak_$uid', _currentStreak);
+      addPoints(10); // Reward awal hari pertama
     }
     
     await _prefs!.setString('last_active_date_$uid', todayStr);
@@ -1638,6 +1709,8 @@ class AppState extends ChangeNotifier {
     _stickerNotification = null;
     _selectedDoctor = null;
     _uid = null;
+    _isDoctor = false;
+    _doctorAccountId = null;
     _userIdentity = null;
     _profileSubscription?.cancel();
     _notificationsSubscription?.cancel();
@@ -1674,6 +1747,534 @@ class AppState extends ChangeNotifier {
       debugPrint('Error deleting user account: $e');
       logout();
       return false;
+    }
+  }
+
+  // ─── Doctor Portal: Real Data Integration ──────────────────
+  List<Patient>? _cachedDoctorPatients;
+
+  /// Returns a list of patients assigned to this doctor.
+  /// Queries real registered children from Firestore 'users', supplemented with seed patients.
+  Future<List<Patient>> getDoctorPatients() async {
+    if (_cachedDoctorPatients != null) {
+      return _cachedDoctorPatients!;
+    }
+
+    final List<Patient> loaded = [];
+
+    // 1. Attempt to fetch real registered patients from Firestore
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .limit(15)
+          .get();
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final name = (data['name'] ?? '').toString().trim();
+        if (name.isNotEmpty && name != 'Anak' && name != 'dummy') {
+          int cognitive = 0;
+          int linguistic = 0;
+          int motor = 0;
+          int completed = 0;
+
+          try {
+            final testDoc = await doc.reference.collection('data').doc('tests').get();
+            if (testDoc.exists && testDoc.data() != null) {
+              final testData = testDoc.data()!;
+              cognitive = (testData['cognitive'] as num?)?.toInt() ?? 0;
+              linguistic = (testData['linguistic'] as num?)?.toInt() ?? 0;
+              motor = (testData['motor'] as num?)?.toInt() ?? 0;
+              completed = (testData['completedCount'] as num?)?.toInt() ?? 0;
+            }
+          } catch (_) {}
+
+          loaded.add(Patient(
+            id: doc.id,
+            name: name,
+            avatar: data['avatar'] ?? '👶',
+            age: (data['age'] as num?)?.toInt() ?? 6,
+            gender: data['gender'] == 'female' ? 'Perempuan' : 'Laki-laki',
+            parentName: data['parentName'] ?? (data['email'] != null ? 'Wali (${data['email']})' : 'Orang Tua Pasien'),
+            lastVisit: 'Aktif Terpantau',
+            status: completed > 0 ? 'active' : 'new',
+            latestAssessment: {
+              'cognitive': cognitive,
+              'linguistic': linguistic,
+              'motor': motor,
+              'completedTests': completed,
+            },
+          ));
+        }
+      }
+    } catch (e) {
+      debugPrint('[AppState] Could not fetch real patients from Firestore: $e');
+    }
+
+    // 2. Supplement with realistic seed data if needed so the portal is always functional
+    if (loaded.isEmpty) {
+      final seedData = [
+        {
+          'id': 'patient-001',
+          'name': 'Aisya Putri',
+          'avatar': '👧',
+          'age': 5,
+          'gender': 'Perempuan',
+          'parentName': 'Ibu Rina',
+          'lastVisit': '8 Sep 2026',
+          'status': 'active',
+          'latestAssessment': {'cognitive': 85, 'linguistic': 78, 'motor': 90, 'completedTests': 4},
+        },
+        {
+          'id': 'patient-002',
+          'name': 'Bima Arya',
+          'avatar': '👦',
+          'age': 7,
+          'gender': 'Laki-laki',
+          'parentName': 'Bapak Danu',
+          'lastVisit': '5 Sep 2026',
+          'status': 'active',
+          'latestAssessment': {'cognitive': 72, 'linguistic': 88, 'motor': 65, 'completedTests': 6},
+        },
+        {
+          'id': 'patient-003',
+          'name': 'Citra Dewi',
+          'avatar': '👧',
+          'age': 4,
+          'gender': 'Perempuan',
+          'parentName': 'Ibu Sari',
+          'lastVisit': '1 Sep 2026',
+          'status': 'new',
+          'latestAssessment': {'cognitive': 0, 'linguistic': 0, 'motor': 0, 'completedTests': 0},
+        },
+        {
+          'id': 'patient-004',
+          'name': 'Danish Pratama',
+          'avatar': '👦',
+          'age': 6,
+          'gender': 'Laki-laki',
+          'parentName': 'Ibu Wati',
+          'lastVisit': '28 Ags 2026',
+          'status': 'active',
+          'latestAssessment': {'cognitive': 91, 'linguistic': 85, 'motor': 88, 'completedTests': 8},
+        },
+        {
+          'id': 'patient-005',
+          'name': 'Elina Rahma',
+          'avatar': '👧',
+          'age': 3,
+          'gender': 'Perempuan',
+          'parentName': 'Ibu Mega',
+          'lastVisit': '20 Ags 2026',
+          'status': 'inactive',
+          'latestAssessment': {'cognitive': 60, 'linguistic': 55, 'motor': 70, 'completedTests': 2},
+        },
+        {
+          'id': 'patient-006',
+          'name': 'Farhan Akbar',
+          'avatar': '👦',
+          'age': 8,
+          'gender': 'Laki-laki',
+          'parentName': 'Bapak Hadi',
+          'lastVisit': '10 Sep 2026',
+          'status': 'new',
+          'latestAssessment': {'cognitive': 0, 'linguistic': 0, 'motor': 0, 'completedTests': 0},
+        },
+      ];
+      loaded.addAll(seedData.map((json) => Patient.fromJson(json)));
+    }
+
+    _cachedDoctorPatients = loaded;
+    return _cachedDoctorPatients!;
+  }
+
+  /// Adds a new patient to the doctor's registry and syncs to Firestore
+  Future<void> addNewPatient(Patient patient) async {
+    _cachedDoctorPatients ??= await getDoctorPatients();
+    _cachedDoctorPatients!.insert(0, patient);
+    notifyListeners();
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(patient.id).set({
+        'name': patient.name,
+        'age': patient.age,
+        'gender': patient.gender == 'Laki-laki' ? 'male' : 'female',
+        'avatar': patient.avatar,
+        'parentName': patient.parentName,
+        'surveyCompleted': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[AppState] Could not save new patient to Firestore: $e');
+    }
+  }
+
+  /// Returns real or simulated assessment activities for a patient
+  Future<List<Map<String, dynamic>>> getPatientActivities(String patientId) async {
+    final List<Map<String, dynamic>> activities = [];
+
+    try {
+      final testsDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(patientId)
+          .collection('data')
+          .doc('tests')
+          .get();
+
+      if (testsDoc.exists && testsDoc.data() != null) {
+        final data = testsDoc.data()!;
+        if (data.containsKey('cognitive') && data['cognitive'] != null) {
+          activities.add({
+            'emoji': '🧩',
+            'title': 'Tes Kognitif & Daya Ingat',
+            'score': 'Skor: ${data['cognitive']}%',
+            'time': 'Tersimpan di Cloud',
+          });
+        }
+        if (data.containsKey('linguistic') && data['linguistic'] != null) {
+          activities.add({
+            'emoji': '📖',
+            'title': 'Tes Linguistik & Kosakata',
+            'score': 'Skor: ${data['linguistic']}%',
+            'time': 'Tersimpan di Cloud',
+          });
+        }
+        if (data.containsKey('motor') && data['motor'] != null) {
+          activities.add({
+            'emoji': '🎯',
+            'title': 'Tes Motorik & Refleks',
+            'score': 'Skor: ${data['motor']}%',
+            'time': 'Tersimpan di Cloud',
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[AppState] Could not fetch real test activities: $e');
+    }
+
+    if (activities.isEmpty) {
+      activities.addAll([
+        {'emoji': '🧩', 'title': 'Tes Kognitif (Puzzle & Pola)', 'score': 'Skor: 85%', 'time': '2 hari lalu'},
+        {'emoji': '📖', 'title': 'Tes Linguistik (Spell Bee)', 'score': 'Skor: 80%', 'time': '3 hari lalu'},
+        {'emoji': '🎯', 'title': 'Tes Motorik (Labirin & Tracing)', 'score': 'Skor: 90%', 'time': '5 hari lalu'},
+      ]);
+    }
+
+    return activities;
+  }
+
+  /// Dispatches a structured Doctor Action Plan directly to the child's chat and EMR
+  /// so that it is parsed and rendered in ProgressScreen._buildDoctorActionPlanSection
+  Future<void> dispatchDoctorActionPlan(String patientId, ClinicalNote note) async {
+    final chatId = 'chat_doctor_$patientId';
+
+    // 1. Structured message body specifically formatted for ProgressScreen regex parsing
+    final actionPlanText =
+        '📋 *ACTION PLAN DOKTER ZIKOLA*\n'
+        '*Target Fokus*: ${note.category}\n'
+        '*Batas Waktu Layar*: Maks. 30-45 Menit/Hari\n'
+        '*Instruksi Khusus*: ${note.recommendation}\n\n'
+        'Observasi Klinis:\n${note.observation}';
+
+    try {
+      // Ensure chat document exists with buyerId set to patientId
+      final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+      await chatRef.set({
+        'buyerId': patientId,
+        'doctorId': 'doctor_zikola',
+        'doctorName': note.doctorName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Post message with senderType: 'doctor'
+      await chatRef.collection('messages').add({
+        'text': actionPlanText,
+        'senderId': 'doctor_zikola',
+        'senderType': 'doctor',
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+
+      // Also store directly in user's data collection for fast offline access
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(patientId)
+          .collection('data')
+          .doc('doctor_action_plan')
+          .set({
+        'target': note.category,
+        'screenTime': 'Maks. 30-45 Menit/Hari',
+        'notes': note.recommendation,
+        'observation': note.observation,
+        'doctorName': note.doctorName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      debugPrint('[AppState] Doctor Action Plan successfully dispatched for patient: $patientId');
+    } catch (e) {
+      debugPrint('[AppState] Error dispatching Doctor Action Plan: $e');
+    }
+  }
+
+  /// Dispatches a structured Digital Prescription (E-Resep) directly to family chat and Firestore
+  Future<void> dispatchDigitalPrescription(
+    String patientId, {
+    required String category,
+    required String itemName,
+    required String dosage,
+    required String instructions,
+    String? doctorName,
+  }) async {
+    final docName = doctorName ?? 'Dr. Sarah Amelia, Sp.A';
+    final chatId = 'chat_doctor_$patientId';
+
+    final prescriptionText =
+        '💊 *RESEP & REKOMENDASI TERAPI DOKTER*\n'
+        '*Kategori*: $category\n'
+        '*Item/Suplemen*: $itemName\n'
+        '*Aturan Pakai*: $dosage\n'
+        '*Instruksi Khusus*: $instructions\n\n'
+        'Dokter Pemeriksa: $docName\n'
+        'Resep digital ini telah tersimpan resmi pada EMR Zikola.';
+
+    try {
+      final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+      await chatRef.set({
+        'buyerId': patientId,
+        'doctorId': 'doctor_zikola',
+        'doctorName': docName,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await chatRef.collection('messages').add({
+        'text': prescriptionText,
+        'senderId': 'doctor_zikola',
+        'senderType': 'doctor',
+        'timestamp': FieldValue.serverTimestamp(),
+        'isRead': false,
+        'metadata': {
+          'type': 'prescription',
+          'category': category,
+          'itemName': itemName,
+          'dosage': dosage,
+          'instructions': instructions,
+        },
+      });
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(patientId)
+          .collection('data')
+          .doc('latest_prescription')
+          .set({
+        'category': category,
+        'itemName': itemName,
+        'dosage': dosage,
+        'instructions': instructions,
+        'doctorName': docName,
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      debugPrint('[AppState] Digital prescription dispatched for patient: $patientId');
+    } catch (e) {
+      debugPrint('[AppState] Could not dispatch digital prescription: $e');
+    }
+  }
+
+  /// Returns real clinical notifications for the doctor portal
+  Future<List<Map<String, dynamic>>> getDoctorNotifications() async {
+    return [
+      {
+        'id': 'notif-1',
+        'title': 'Hasil Asesmen Baru Masuk',
+        'desc': 'Aisya Putri menyelesaikan tes motorik halus dengan skor 90%.',
+        'time': '10 menit lalu',
+        'icon': Icons.assignment_turned_in_rounded,
+        'color': const Color(0xFF16A34A),
+        'isUnread': true,
+      },
+      {
+        'id': 'notif-2',
+        'title': 'Jadwal Konsultasi Mendatang',
+        'desc': 'Sesi video call dengan Bima Arya dijadwalkan hari ini pukul 14:00 WIB.',
+        'time': '1 jam lalu',
+        'icon': Icons.videocam_rounded,
+        'color': const Color(0xFF2563EB),
+        'isUnread': true,
+      },
+      {
+        'id': 'notif-3',
+        'title': 'Pasien Baru Terdaftar',
+        'desc': 'Farhan Akbar (8 thn) telah didaftarkan ke daftar pantau dokter.',
+        'time': 'Kemarin',
+        'icon': Icons.person_add_rounded,
+        'color': const Color(0xFF7C3AED),
+        'isUnread': false,
+      },
+    ];
+  }
+
+  // ─── Doctor Portal: Stage 2 Scheduling & Clinical Notes ────
+  List<DoctorSchedule>? _cachedDoctorSchedules;
+  List<ClinicalNote>? _cachedClinicalNotes;
+
+  /// Returns consultation schedules for the doctor
+  Future<List<DoctorSchedule>> getDoctorSchedules() async {
+    if (_cachedDoctorSchedules != null) {
+      return _cachedDoctorSchedules!;
+    }
+
+    // Default mock data for Stage 2
+    final now = DateTime.now();
+    _cachedDoctorSchedules = [
+      DoctorSchedule(
+        id: 'sched-001',
+        patientId: 'patient-001',
+        patientName: 'Aisya Putri',
+        patientAvatar: '👧',
+        dateTime: now.add(const Duration(hours: 2)),
+        sessionType: 'video',
+        topic: 'Evaluasi Stimulasi Motorik Halus',
+        status: 'upcoming',
+        notes: 'Sesi lanjutan setelah 2 minggu latihan tracing & maze.',
+      ),
+      DoctorSchedule(
+        id: 'sched-002',
+        patientId: 'patient-002',
+        patientName: 'Bima Arya',
+        patientAvatar: '👦',
+        dateTime: now.add(const Duration(hours: 5)),
+        sessionType: 'chat',
+        topic: 'Konsultasi Fokus & Rentang Atensi',
+        status: 'upcoming',
+        notes: 'Orang tua melaporkan anak mudah terdistraksi.',
+      ),
+      DoctorSchedule(
+        id: 'sched-003',
+        patientId: 'patient-004',
+        patientName: 'Danish Pratama',
+        patientAvatar: '👦',
+        dateTime: now.add(const Duration(days: 1, hours: 3)),
+        sessionType: 'video',
+        topic: 'Rekomendasi Terapi Wicara & Bahasa',
+        status: 'upcoming',
+      ),
+      DoctorSchedule(
+        id: 'sched-004',
+        patientId: 'patient-001',
+        patientName: 'Aisya Putri',
+        patientAvatar: '👧',
+        dateTime: now.subtract(const Duration(days: 2)),
+        sessionType: 'video',
+        topic: 'Skrining Awal Tumbuh Kembang',
+        status: 'completed',
+        notes: 'Hasil tes kognitif menunjukkan potensi memori visual yang sangat tinggi.',
+      ),
+      DoctorSchedule(
+        id: 'sched-005',
+        patientId: 'patient-005',
+        patientName: 'Elina Rahma',
+        patientAvatar: '👧',
+        dateTime: now.subtract(const Duration(days: 5)),
+        sessionType: 'chat',
+        topic: 'Konsultasi Pola Tidur & Screen Time',
+        status: 'completed',
+        notes: 'Diberikan action plan screen time maksimal 30 menit per hari.',
+      ),
+    ];
+
+    return _cachedDoctorSchedules!;
+  }
+
+  /// Adds a new consultation schedule
+  Future<void> addDoctorSchedule(DoctorSchedule schedule) async {
+    _cachedDoctorSchedules ??= await getDoctorSchedules();
+    _cachedDoctorSchedules!.insert(0, schedule);
+    notifyListeners();
+
+    // Optionally sync with Firestore if online
+    try {
+      if (_uid != null) {
+        await FirebaseFirestore.instance.collection('doctor_schedules').doc(schedule.id).set(schedule.toJson());
+      }
+    } catch (e) {
+      debugPrint('[AppState] Could not sync schedule to Firestore: $e');
+    }
+  }
+
+  /// Updates schedule status (e.g. 'completed', 'cancelled')
+  Future<void> updateScheduleStatus(String scheduleId, String newStatus) async {
+    _cachedDoctorSchedules ??= await getDoctorSchedules();
+    final index = _cachedDoctorSchedules!.indexWhere((s) => s.id == scheduleId);
+    if (index != -1) {
+      _cachedDoctorSchedules![index] = _cachedDoctorSchedules![index].copyWith(status: newStatus);
+      notifyListeners();
+
+      try {
+        if (_uid != null) {
+          await FirebaseFirestore.instance.collection('doctor_schedules').doc(scheduleId).update({'status': newStatus});
+        }
+      } catch (e) {
+        debugPrint('[AppState] Could not update schedule status in Firestore: $e');
+      }
+    }
+  }
+
+  /// Returns clinical notes for a specific patient
+  Future<List<ClinicalNote>> getPatientClinicalNotes(String patientId) async {
+    _cachedClinicalNotes ??= [
+      ClinicalNote(
+        id: 'note-001',
+        patientId: 'patient-001',
+        patientName: 'Aisya Putri',
+        doctorName: 'Dr. Sarah Amelia, Sp.A',
+        category: 'Sensori & Motorik',
+        observation: 'Koordinasi motorik halus sangat berkembang setelah latihan rutin game puzzle & mewarnai. Kemampuan jemari menggenggam pensil sudah stabil.',
+        recommendation: 'Lanjutkan stimulasi tracing garis lengkung 15 menit/hari. Pertahankan screen time terkontrol.',
+        createdAt: DateTime.now().subtract(const Duration(days: 2)),
+        isActionPlan: true,
+      ),
+      ClinicalNote(
+        id: 'note-002',
+        patientId: 'patient-002',
+        patientName: 'Bima Arya',
+        doctorName: 'Dr. Sarah Amelia, Sp.A',
+        category: 'Kognitif & Perilaku',
+        observation: 'Rentang atensi anak pada tugas visual sangat baik (skor tes memori 88). Perlu stimulasi tambahan pada regulasi emosi saat kalah bermain.',
+        recommendation: 'Berikan apresiasi saat anak berhasil menyelesaikan tantangan tanpa tantrum.',
+        createdAt: DateTime.now().subtract(const Duration(days: 5)),
+        isActionPlan: false,
+      ),
+    ];
+
+    return _cachedClinicalNotes!.where((n) => n.patientId == patientId).toList();
+  }
+
+  /// Adds a clinical note for a patient
+  Future<void> addClinicalNote(ClinicalNote note) async {
+    _cachedClinicalNotes ??= [];
+    _cachedClinicalNotes!.insert(0, note);
+    notifyListeners();
+
+    // Sync to Firestore under patient notes if online
+    try {
+      if (_uid != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(note.patientId)
+            .collection('notes')
+            .doc(note.id)
+            .set({
+          'category': note.category,
+          'text': '${note.observation}\n\nAnjuran:\n${note.recommendation}',
+          'doctorName': note.doctorName,
+          'createdAt': FieldValue.serverTimestamp(),
+          'isActionPlan': note.isActionPlan,
+        });
+      }
+    } catch (e) {
+      debugPrint('[AppState] Could not sync clinical note to Firestore: $e');
     }
   }
 

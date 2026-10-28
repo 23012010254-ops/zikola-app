@@ -18,19 +18,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   static const List<_OnboardingSlide> _slides = [
     _OnboardingSlide(
-      emoji: '🎮',
+      imageAsset: 'assets/images/stickers/hehe.png',
       title: 'Game Edukatif',
       description:
           '16+ game seru untuk melatih kognitif, linguistik, dan motorik anak',
     ),
     _OnboardingSlide(
-      emoji: '📊',
+      imageAsset: 'assets/images/stickers/hebat.png',
       title: 'Tes Perkembangan',
       description:
           'Asesmen berbasis riset psikologi untuk memahami kekuatan anak',
     ),
     _OnboardingSlide(
-      emoji: '👨‍⚕️',
+      imageAsset: 'assets/images/stickers/hai.png',
       title: 'Konsultasi Dokter',
       description:
           'Konsultasi langsung dengan dokter anak dan psikolog berpengalaman',
@@ -87,108 +87,119 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF3B82F6), // blue-500
-              Color(0xFF2563EB), // blue-600
-              Color(0xFF1D4ED8), // blue-700
-            ],
+          image: DecorationImage(
+            image: AssetImage('assets/images/background.png'),
+            fit: BoxFit.cover,
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Top bar with Skip button
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (!isLastPage)
-                      TextButton(
-                        onPressed: _complete,
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                        ),
-                        child: const Text(
-                          'Lewati',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontFamily: 'Nunito',
-                            fontWeight: FontWeight.w600,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.3),
+                Colors.black.withValues(alpha: 0.6),
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Top bar with Skip button
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (!isLastPage)
+                        TextButton(
+                          onPressed: _complete,
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.black.withValues(alpha: 0.2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
                           ),
+                          child: const Text(
+                            'Lewati',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox(height: 48),
+                    ],
+                  ),
+                ),
+
+                // PageView slides
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: _onPageChanged,
+                    itemCount: _slides.length,
+                    itemBuilder: (context, index) {
+                      return FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: _buildSlide(_slides[index]),
+                      );
+                    },
+                  ),
+                ),
+
+                // Dot indicators
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      _slides.length,
+                      (index) => _buildDot(index),
+                    ),
+                  ),
+                ),
+
+                // Bottom button
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: isLastPage ? _complete : _nextPage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
+                        elevation: 4,
+                        shadowColor: Colors.black26,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                      )
-                    else
-                      const SizedBox(height: 48),
-                  ],
-                ),
-              ),
-
-              // PageView slides
-              Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  onPageChanged: _onPageChanged,
-                  itemCount: _slides.length,
-                  itemBuilder: (context, index) {
-                    return FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: _buildSlide(_slides[index]),
-                    );
-                  },
-                ),
-              ),
-
-              // Dot indicators
-              Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _slides.length,
-                    (index) => _buildDot(index),
-                  ),
-                ),
-              ),
-
-              // Bottom button
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: isLastPage ? _complete : _nextPage,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: const Color(0xFF2563EB),
-                      elevation: 4,
-                      shadowColor: Colors.black26,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ),
-                    child: Text(
-                      isLastPage ? 'Mulai Sekarang' : 'Lanjut',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        fontFamily: 'Nunito',
-                        letterSpacing: 0.5,
+                      child: Text(
+                        isLastPage ? 'Mulai Sekarang' : 'Lanjut',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'Nunito',
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
@@ -203,18 +214,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Large emoji icon
+            // Image sticker
             Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
+              height: 220,
               alignment: Alignment.center,
-              child: Text(
-                slide.emoji,
-                style: const TextStyle(fontSize: 80),
+              child: Image.asset(
+                slide.imageAsset,
+                fit: BoxFit.contain,
               ),
             ),
             const SizedBox(height: 48),
@@ -229,6 +235,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 fontFamily: 'Nunito',
                 color: Colors.white,
                 height: 1.3,
+                shadows: [
+                  Shadow(
+                    offset: Offset(0, 2),
+                    blurRadius: 4,
+                    color: Colors.black45,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -237,11 +250,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             Text(
               slide.description,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontFamily: 'Nunito',
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
                 height: 1.5,
+                shadows: [
+                  Shadow(
+                    offset: Offset(0, 1),
+                    blurRadius: 3,
+                    color: Colors.black87,
+                  ),
+                ],
               ),
             ),
           ],
@@ -251,28 +272,26 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget _buildDot(int index) {
-    final bool isActive = _currentPage == index;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
       margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: isActive ? 28 : 10,
-      height: 10,
+      height: 8,
+      width: _currentPage == index ? 24 : 8,
       decoration: BoxDecoration(
-        color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(5),
+        color: _currentPage == index ? Colors.white : Colors.white54,
+        borderRadius: BorderRadius.circular(4),
       ),
     );
   }
 }
 
 class _OnboardingSlide {
-  final String emoji;
+  final String imageAsset;
   final String title;
   final String description;
 
   const _OnboardingSlide({
-    required this.emoji,
+    required this.imageAsset,
     required this.title,
     required this.description,
   });

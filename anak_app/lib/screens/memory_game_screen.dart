@@ -176,7 +176,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
           if (_streak >= 2) {
             HapticFeedback.heavyImpact();
           }
-          AudioService().playSFX('match_success.mp3');
+          AudioService().playSparkle();
           _checkCompletion();
         });
       } else {
@@ -186,7 +186,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
           _streak = 0;
           _errors++;
         });
-        AudioService().playSFX('match_fail.mp3');
+        AudioService().playWrong();
         Future.delayed(const Duration(milliseconds: 1200), () {
           if (!mounted) return;
           setState(() {
@@ -298,7 +298,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 4))],
                           ),
                           child: const Icon(Icons.arrow_back, color: Color(0xFF0369A1)),
                         ),
@@ -320,7 +320,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(32),
-                      boxShadow: [BoxShadow(color: const Color(0xFF0369A1).withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+                      boxShadow: [BoxShadow(color: const Color(0xFF0369A1).withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,7 +447,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                                  boxShadow: isUnlocked
                                      ? [
                                          BoxShadow(
-                                           color: const Color(0xFF0284C7).withOpacity(0.3),
+                                           color: const Color(0xFF0284C7).withValues(alpha: 0.3),
                                            blurRadius: 8,
                                            offset: const Offset(2, 4),
                                          )
@@ -465,7 +465,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                                        child: Icon(
                                          Icons.help_outline_rounded,
                                          size: 16,
-                                         color: Colors.white.withOpacity(0.3),
+                                         color: Colors.white.withValues(alpha: 0.3),
                                        ),
                                      ),
                                    Center(
@@ -559,7 +559,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                       Column(
                         children: [
                           const Text('Kartu Memori', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-                          Text('Level $_currentLevel', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.w700)),
+                          Text('Level $_currentLevel', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.w700)),
                         ],
                       ),
                       GestureDetector(
@@ -575,7 +575,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
@@ -624,7 +624,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                             color: containerColor,
                             border: border,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: card.isFlipped && !card.isMatched ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)] : [],
+                            boxShadow: card.isFlipped && !card.isMatched ? [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)] : [],
                           ),
                           child: Center(
                             child: AnimatedSwitcher(
@@ -703,7 +703,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withOpacity(0.25),
+                color: Colors.blue.withValues(alpha: 0.25),
                 blurRadius: 30,
                 spreadRadius: 5,
               )
@@ -741,9 +741,9 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [

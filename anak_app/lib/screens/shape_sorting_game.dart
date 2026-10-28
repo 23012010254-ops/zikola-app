@@ -224,7 +224,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
       _feedback = null;
       _streak = 0;
     });
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playHomeBGM();
     _generateNewProblem();
 
     _timer?.cancel();
@@ -235,6 +235,8 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
           setState(() => _timeLeft--);
         } else {
           _timer?.cancel();
+          AudioService().stopBGM();
+          AudioService().playGameOver();
           setState(() {
             _gameState = 'game_over';
           });
@@ -253,7 +255,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
 
   void _handleBucketClick(String bucketName) {
     if (_currentShape == null || _feedback != null) return;
-    AudioService().playSFX('flip.mp3');
+    AudioService().playPop();
 
     bool isCorrect = bucketName == _currentShape!.correctBucket;
 
@@ -288,8 +290,9 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
     if (isCorrect && _levelCorrectAnswers >= 5) {
       _timer?.cancel();
       int stars = 1;
-      if (_timeLeft >= 22) stars = 3;
-      else if (_timeLeft >= 9) stars = 2;
+      if (_timeLeft >= 22) {
+        stars = 3;
+      } else if (_timeLeft >= 9) stars = 2;
 
       _starRatings[_currentLevel - 1] = max(_starRatings[_currentLevel - 1], stars);
 
@@ -299,6 +302,8 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
 
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (!mounted) return;
+        AudioService().stopBGM();
+        AudioService().playSparkle();
         setState(() {
           _gameState = 'level_complete';
         });
@@ -443,9 +448,9 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
                     Container(
                       padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.white.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(40),
-                        border: Border.all(color: Colors.white.withOpacity(0.6)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
                       ),
                       child: Column(
                         children: [
@@ -488,10 +493,10 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.3),
+          color: Colors.white.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.4)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+          border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
         ),
         child: Icon(icon, color: Colors.purple.shade900),
       ),
@@ -511,7 +516,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFC084FC).withOpacity(0.4),
+            color: const Color(0xFFC084FC).withValues(alpha: 0.4),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -644,13 +649,13 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
           color: isUnlocked ? const Color(0xFFFFFDF9) : const Color(0xFFF1F5F9), // Cozy cream vs slate grey
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isUnlocked ? const Color(0xFFD97706).withOpacity(0.6) : const Color(0xFFCBD5E1), // Wood trim border
+            color: isUnlocked ? const Color(0xFFD97706).withValues(alpha: 0.6) : const Color(0xFFCBD5E1), // Wood trim border
             width: 3.5,
           ),
           boxShadow: isUnlocked
               ? [
                   BoxShadow(
-                    color: const Color(0xFF78350F).withOpacity(0.12),
+                    color: const Color(0xFF78350F).withValues(alpha: 0.12),
                     blurRadius: 8,
                     offset: const Offset(2, 4),
                   ),
@@ -670,7 +675,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
                       child: CustomPaint(
                         painter: _ShapeOutlinePainter(
                           levelNum,
-                          shapeGradients[index][0].withOpacity(0.4),
+                          shapeGradients[index][0].withValues(alpha: 0.4),
                           isGlow: true,
                         ),
                       ),
@@ -725,7 +730,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: const Color(0xFF701A75).withOpacity(0.1),
+                color: const Color(0xFF701A75).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
@@ -768,7 +773,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
                       onTap: () => setState(() => _gameState = 'level_select'),
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ),
@@ -793,7 +798,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1094,7 +1099,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Colors.white, width: 2)),
@@ -1114,7 +1119,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
   Widget _buildResultStatRow(String label, String value) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

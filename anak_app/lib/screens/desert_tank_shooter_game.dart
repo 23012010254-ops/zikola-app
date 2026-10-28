@@ -44,7 +44,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
   final List<int> _responseTimesMs = [];
   DateTime? _startTime;
   
-  List<PatternTank> _tanks = [];
+  final List<PatternTank> _tanks = [];
   final Random _random = Random();
   double _screenHeight = 0;
   
@@ -210,7 +210,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
       _startTime = DateTime.now();
     });
     
-    AudioService().playBGM('adventure_music.mp3');
+    AudioService().playAdventureBGM();
     _spawnTank(); // Spawn first
     _startGameLoop();
   }
@@ -255,6 +255,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
   void _fireAmmo(String tappedAmmo) {
     if (_tanks.isEmpty || _gameState != 'playing') return;
 
+    AudioService().playLaser();
     final target = _tanks.first;
     bool isCorrect = target.correctAnswer == tappedAmmo;
     
@@ -262,7 +263,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
 
     setState(() {
       if (isCorrect) {
-        AudioService().playSFX('correct.mp3');
+        AudioService().playCorrect();
         _score += (10 * _currentLevel);
         _correctAnswers++;
         _responseTimesMs.add(responseTime);
@@ -274,7 +275,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
           _spawnTank(); // Spawn next immediately
         }
       } else {
-        AudioService().playSFX('wrong.mp3');
+        AudioService().playWrong();
         _errors++;
         _score = max(0, _score - 5);
       }
@@ -284,7 +285,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
   void _completeLevel() {
     _moveTimer?.cancel();
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playSparkle();
     
     int starsCount = 0;
     if (_lives == 3) {
@@ -326,6 +327,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
       'total': totalPushed,
       'percentage': accuracy,
       'timeSpent': totalTimeSecs,
+      'itemsPerMinute': itemsPerMin,
       'gameMode': 'Oasis Pattern Defender',
     });
 
@@ -339,10 +341,10 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
       fastestResponseTimeMs: fastestMs,
       slowestResponseTimeMs: slowestMs,
       medianResponseTimeMs: medianMs,
-      itemsPerMinute: itemsPerMin,
       maxLevelReached: _currentLevel,
     ));
-    appState.addPointsFromScore(_score);
+    // Poin penyelesaian level
+    appState.addPoints(15);
 
     setState(() {
       _tanks.clear();
@@ -354,7 +356,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
     _moveTimer?.cancel();
     setState(() => _gameState = 'completed');
     AudioService().stopBGM();
-    AudioService().playSFX('wrong.mp3');
+    AudioService().playGameOver();
 
     int totalTimeSecs = DateTime.now().difference(_startTime!).inSeconds;
     int totalPushed = _correctAnswers + _errors;
@@ -394,7 +396,8 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
       maxLevelReached: _currentLevel,
     ));
     
-    context.read<AppState>().addPointsFromScore(_score);
+    // Bonus tamat permainan
+    context.read<AppState>().addPoints(15);
   }
 
   // ---------------------------------------------------------------------------
@@ -412,132 +415,314 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
   }
 
   Widget _buildLevelSelect() {
+    final int totalStarsEarned = _starRatings.fold(0, (a, b) => a + b);
+    
+    // Coordinates/offsets for the winding trail (sinusoidal path)
+    final List<double> xOffsets = [-50.0, 0.0, 55.0, 25.0, -40.0, -60.0, 20.0, 0.0];
+    final List<Map<String, String>> scenery = [
+      {'emoji': '⛺', 'label': 'Kemah Dasar', 'side': 'right'},
+      {'emoji': '', 'label': '', 'side': 'none'},
+      {'emoji': '🌴', 'label': 'Oasis Kurma', 'side': 'left'},
+      {'emoji': '', 'label': '', 'side': 'none'},
+      {'emoji': '🐪', 'label': 'Kafilah Gurun', 'side': 'right'},
+      {'emoji': '', 'label': '', 'side': 'none'},
+      {'emoji': '🌵', 'label': 'Lembah Kaktus', 'side': 'left'},
+      {'emoji': '🏰', 'label': 'Piramida Emas', 'side': 'top'},
+    ];
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF3C7),
+      backgroundColor: const Color(0xFFFFFBEB), // Soft warm desert sand
       body: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            // Header Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF78350F)),
+                    icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF78350F), size: 28),
                     onPressed: () {
                       setState(() {
                         _gameState = 'menu';
                       });
                     },
                   ),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'Pilih Wilayah Oasis 🏜️',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF78350F),
-                          fontFamily: 'Nunito',
-                          shadows: [
-                            Shadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-                          ],
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Petualangan Oasis 🏜️',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF78350F),
+                            fontFamily: 'Fredoka',
+                          ),
                         ),
-                      ),
+                        Text(
+                          'Buka semua wilayah untuk temukan harta!',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.amber.shade900.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star_rounded, color: Color(0xFFF59E0B), size: 18),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$totalStarsEarned/24',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF78350F),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+
+            // Scrollable Winding Trail
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 20,
-                    mainAxisSpacing: 24,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemCount: 8,
-                  itemBuilder: (context, index) {
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Column(
+                  children: List.generate(8, (index) {
                     final int levelNum = index + 1;
                     final bool isUnlocked = levelNum <= _highestUnlocked;
+                    final bool isCurrent = levelNum == _highestUnlocked;
                     final int rating = _starRatings[index];
-                    
-                    return GestureDetector(
-                      onTap: isUnlocked ? () => _startLevel(levelNum) : null,
-                      child: Column(
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 1,
-                            child: ClipPath(
-                              clipper: HexagonClipper(),
-                              child: Container(
-                                color: isUnlocked ? const Color(0xFFFBBF24) : const Color(0xFF64748B), // Outer border color
-                                child: Padding(
-                                  padding: const EdgeInsets.all(3.0), // Outer border width
-                                  child: ClipPath(
-                                    clipper: HexagonClipper(),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: isUnlocked
-                                            ? const LinearGradient(
-                                                colors: [Color(0xFFB45309), Color(0xFF78350F)], // Deep Military Gold/Amber
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                              )
-                                            : const LinearGradient(
-                                                colors: [Color(0xFF334155), Color(0xFF1E293B)], // Dark Iron
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                              ),
-                                      ),
-                                      child: Center(
-                                        child: isUnlocked
-                                            ? Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  const Icon(Icons.shield_outlined, color: Colors.white24, size: 20),
-                                                  const SizedBox(height: 1),
-                                                  Text(
-                                                    '$levelNum',
-                                                    style: const TextStyle(
-                                                      fontSize: 22,
-                                                      fontWeight: FontWeight.w900,
-                                                      color: Colors.white,
-                                                      shadows: [
-                                                        Shadow(color: Colors.black45, blurRadius: 4, offset: Offset(1, 1))
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              )
-                                            : const Icon(Icons.lock_rounded, color: Colors.white38, size: 22),
-                                      ),
+                    final double offsetX = xOffsets[index];
+                    final scene = scenery[index];
+
+                    return Column(
+                      children: [
+                        // Node row with horizontal sinusoidal offset
+                        Transform.translate(
+                          offset: Offset(offsetX, 0),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            alignment: Alignment.center,
+                            children: [
+                              // Decorative Scenery Item
+                              if (scene['label']!.isNotEmpty && scene['side'] != 'none')
+                                Positioned(
+                                  left: scene['side'] == 'left' ? -95 : null,
+                                  right: scene['side'] == 'right' ? -95 : null,
+                                  top: scene['side'] == 'top' ? -38 : 10,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: const Color(0xFFFDE68A)),
+                                      boxShadow: [
+                                        BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(scene['emoji']!, style: const TextStyle(fontSize: 14)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          scene['label']!,
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF92400E),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
+
+                              // 3D Circular Stepping Stone (Duolingo Style)
+                              GestureDetector(
+                                onTap: isUnlocked ? () => _startLevel(levelNum) : null,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Current Active Level Callout
+                                    if (isCurrent)
+                                      Container(
+                                        margin: const EdgeInsets.only(bottom: 6),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFEF4444),
+                                          borderRadius: BorderRadius.circular(12),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                                              blurRadius: 6,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Text(
+                                          'Ayo Main! 🚩',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ),
+
+                                    // Stepping Stone Disk
+                                    Container(
+                                      width: 74,
+                                      height: 74,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isUnlocked
+                                            ? const Color(0xFFB45309) // 3D bevel base
+                                            : const Color(0xFF94A3B8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: (isUnlocked ? const Color(0xFFF59E0B) : Colors.black).withValues(alpha: 0.25),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 5),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Stack(
+                                        children: [
+                                          Positioned(
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 6, // 3D elevation
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                gradient: isUnlocked
+                                                    ? const LinearGradient(
+                                                        colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+                                                        begin: Alignment.topLeft,
+                                                        end: Alignment.bottomRight,
+                                                      )
+                                                    : const LinearGradient(
+                                                        colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
+                                                        begin: Alignment.topLeft,
+                                                        end: Alignment.bottomRight,
+                                                      ),
+                                                border: Border.all(
+                                                  color: Colors.white.withValues(alpha: 0.6),
+                                                  width: 2.5,
+                                                ),
+                                              ),
+                                              child: Center(
+                                                child: isUnlocked
+                                                    ? (levelNum == 8
+                                                        ? const Text('👑', style: TextStyle(fontSize: 26))
+                                                        : Text(
+                                                            '$levelNum',
+                                                            style: const TextStyle(
+                                                              fontSize: 28,
+                                                              fontWeight: FontWeight.w900,
+                                                              color: Colors.white,
+                                                              shadows: [
+                                                                Shadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                                                              ],
+                                                            ),
+                                                          ))
+                                                    : const Icon(Icons.lock_rounded, color: Color(0xFF64748B), size: 26),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    // Star Rating
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: List.generate(3, (starIdx) {
+                                        final isStarred = starIdx < rating;
+                                        return Icon(
+                                          Icons.star_rounded,
+                                          color: isStarred ? const Color(0xFFF59E0B) : const Color(0xFFCBD5E1),
+                                          size: 16,
+                                        );
+                                      }),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            ],
+                          ),
+                        ),
+
+                        // Connector Trail to next level
+                        if (index < 7)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(3, (starIdx) {
-                              final isStarred = starIdx < rating;
-                              return Icon(
-                                Icons.star_rounded,
-                                color: isStarred ? Colors.amber : Colors.black12,
-                                size: 14,
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
+                      ],
                     );
-                  },
+                  }),
                 ),
               ),
             ),
@@ -577,7 +762,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: Colors.amber.withOpacity(0.35),
+                color: Colors.amber.withValues(alpha: 0.35),
                 blurRadius: 30,
                 spreadRadius: 5,
               )
@@ -603,11 +788,12 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(3, (index) {
                   final active = index < starsCount;
-                  return Icon(
-                    Icons.star_rounded,
-                    color: active ? Colors.yellowAccent : Colors.white24,
-                    size: 55,
-                    shadows: active ? [const Shadow(color: Colors.orange, blurRadius: 15)] : null,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Opacity(
+                      opacity: active ? 1.0 : 0.3,
+                      child: Image.asset('assets/images/emoji/rewards/star.png', width: 55, height: 55),
+                    ),
                   );
                 }),
               ),
@@ -615,9 +801,9 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [
@@ -684,6 +870,15 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
       body: SafeArea(
         child: Stack(
           children: [
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.25,
+                child: Image.asset(
+                  'assets/images/backgrounds/desert_ground.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
             const Positioned(bottom: 200, left: 40, child: Text('🌵', style: TextStyle(fontSize: 80))),
             const Positioned(bottom: 120, right: 30, child: Text('🏜️', style: TextStyle(fontSize: 100))),
             Center(
@@ -700,7 +895,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
                     const SizedBox(height: 48),
                     Container(
                       padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -753,8 +948,29 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
         child: Stack(
           children: [
             // BG Scenery
-            const Positioned(bottom: 120, right: 30, child: Text('🌵', style: TextStyle(fontSize: 60, color: Colors.green))),
-            const Positioned(bottom: 150, left: 20, child: Text('🏜️', style: TextStyle(fontSize: 80))),
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.25,
+                child: Image.asset(
+                  'assets/images/backgrounds/desert_ground.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 180, right: 16,
+              child: Opacity(
+                opacity: 0.8,
+                child: Image.asset('assets/images/items/cactus.png', width: 70, height: 70),
+              ),
+            ),
+            Positioned(
+              bottom: 180, left: 16,
+              child: Opacity(
+                opacity: 0.8,
+                child: Image.asset('assets/images/items/cactus.png', width: 55, height: 55),
+              ),
+            ),
             
             // Stats Header
             Positioned(
@@ -783,7 +999,16 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
                     ],
                   ),
                   Row(
-                    children: List.generate(3, (index) => Icon(Icons.favorite, color: index < _lives ? Colors.red : Colors.grey.shade300, size: 28)),
+                    children: List.generate(3, (index) {
+                      final hasHeart = index < _lives;
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 4),
+                        child: Opacity(
+                          opacity: hasHeart ? 1.0 : 0.25,
+                          child: Image.asset('assets/images/emoji/feedback/heart.png', width: 26, height: 26),
+                        ),
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -843,7 +1068,14 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
                 ),
                 child: Column(
                   children: [
-                    const Text('🟢 MERIAM OASIS 🟢', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/images/items/cannon_large.png', width: 32, height: 32),
+                        const SizedBox(width: 8),
+                        const Text('MERIAM OASIS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
+                      ],
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,

@@ -85,7 +85,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
       _responseTimesMs.clear();
       _gameStartTime = DateTime.now();
     });
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playPuzzleBGM();
     _startNextLevel();
   }
 
@@ -100,7 +100,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
   void _onRightTileTap(int r, int c) {
     if (_gameState != 'playing' || _isChecking) return;
 
-    AudioService().playSFX('flip.mp3');
+    AudioService().playFlip();
 
     setState(() {
       Color? current = _rightGridUser[r][c];
@@ -138,7 +138,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
       int responseTimeMs = DateTime.now().millisecondsSinceEpoch - _spawnTimeMs;
 
       if (isCorrect) {
-        AudioService().playSFX('success.mp3');
+        AudioService().playCorrect();
         _score += 30 * _currentLevel;
         _correctAnswers++;
         _responseTimesMs.add(responseTimeMs);
@@ -153,7 +153,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
           }
         });
       } else {
-        AudioService().playSFX('wrong.mp3');
+        AudioService().playWrong();
         _errors++;
         // Shake screen or show error briefly, then allow trying again
         Future.delayed(const Duration(milliseconds: 1000), () {
@@ -167,7 +167,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
   void _endGame() {
     setState(() => _gameState = 'completed');
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playSparkle();
 
     int totalTimeSecs = DateTime.now().difference(_gameStartTime!).inSeconds;
     int totalAttempts = _correctAnswers + _errors;
@@ -238,7 +238,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
                 const SizedBox(height: 48),
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.pinkAccent.withOpacity(0.5))),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.pinkAccent.withValues(alpha: 0.5))),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -294,12 +294,12 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(color: Colors.pinkAccent.withOpacity(0.1), border: Border.all(color: Colors.pinkAccent), borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: Colors.pinkAccent.withValues(alpha: 0.1), border: Border.all(color: Colors.pinkAccent), borderRadius: BorderRadius.circular(20)),
                     child: Text('Art Level $_currentLevel', style: AppTheme.heading3.copyWith(color: Colors.pinkAccent)),
                   ),
                   Container(
                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                     decoration: BoxDecoration(color: Colors.greenAccent.withOpacity(0.1), border: Border.all(color: Colors.greenAccent), borderRadius: BorderRadius.circular(20)),
+                     decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.1), border: Border.all(color: Colors.greenAccent), borderRadius: BorderRadius.circular(20)),
                      child: Text('Tantangan: ${_correctAnswers.toString().padLeft(2, '0')}/05', style: AppTheme.heading3.copyWith(color: Colors.greenAccent)),
                   ),
                 ],
@@ -340,7 +340,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
                                 return Container(
                                   margin: const EdgeInsets.all(2),
                                   decoration: BoxDecoration(
-                                    color: color ?? Colors.white.withOpacity(0.05),
+                                    color: color ?? Colors.white.withValues(alpha: 0.05),
                                     borderRadius: BorderRadius.circular(4),
                                     boxShadow: color != null ? [BoxShadow(color: color, blurRadius: 10)] : null
                                   ),
@@ -381,7 +381,7 @@ class _PrismPainterGameState extends State<PrismPainterGame> {
                                     duration: const Duration(milliseconds: 200),
                                     margin: const EdgeInsets.all(2),
                                     decoration: BoxDecoration(
-                                      color: color ?? Colors.white.withOpacity(0.05),
+                                      color: color ?? Colors.white.withValues(alpha: 0.05),
                                       borderRadius: BorderRadius.circular(4),
                                       border: Border.all(color: Colors.white12),
                                       boxShadow: color != null ? [BoxShadow(color: color, blurRadius: 10)] : null

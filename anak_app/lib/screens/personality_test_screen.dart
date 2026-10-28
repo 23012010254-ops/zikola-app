@@ -608,7 +608,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                   const SizedBox(height: 8),
                   Text(
                     animalResult!['traits'],
-                    style: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.9)),
+                    style: TextStyle(fontSize: 16, color: Colors.white.withValues(alpha: 0.9)),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
@@ -618,9 +618,9 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     child: Column(
                       children: [
@@ -644,9 +644,9 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     child: Column(
                       children: [
@@ -671,7 +671,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(colors: [animalResult!['colorStart'], animalResult!['colorEnd']]),
                                 borderRadius: BorderRadius.circular(16),
-                                boxShadow: [BoxShadow(color: animalResult!['colorStart'].withOpacity(0.5), blurRadius: 8, offset: const Offset(0, 4))],
+                                boxShadow: [BoxShadow(color: animalResult!['colorStart'].withValues(alpha: 0.5), blurRadius: 8, offset: const Offset(0, 4))],
                               ),
                               padding: const EdgeInsets.all(12),
                               alignment: Alignment.center,
@@ -705,7 +705,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                       gradient: const LinearGradient(colors: [Color(0xFFFFF7ED), Color(0xFFFEFCE8)]), // orange-50 to yellow-50
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: const Color(0xFFFED7AA), width: 2), // orange-200
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20)],
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20)],
                     ),
                     child: Column(
                       children: [
@@ -786,7 +786,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                         decoration: BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20)],
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20)],
                         ),
                         child: const Text('✨', style: TextStyle(fontSize: 64)),
                       ),
@@ -809,7 +809,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                     'Jawab pertanyaan seru ini untuk mengetahui apakah kamu pemberani seperti Singa atau cerdas seperti Serigala!',
                     style: TextStyle(
                       fontSize: 18,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
@@ -818,9 +818,9 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                     ),
                     child: Column(
                       children: [
@@ -838,7 +838,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                         const SizedBox(height: 6),
                         Text(
                           'Tes ini didesain untuk bersenang-senang dan memberikan gambaran kasar karakter anak. Bukan untuk diagnosis psikologis yang serius.',
-                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -868,7 +868,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                     onPressed: () => Navigator.pop(context),
                     child: Text(
                       'Mungkin Nanti',
-                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 16),
                     ),
                   ),
                 ],
@@ -951,7 +951,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                               onTap: () => Navigator.pop(context),
                               child: Container(
                                 padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)]),
+                                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)]),
                                 child: const Icon(Icons.arrow_back, color: AppTheme.gray700, size: 20),
                               ),
                             ),
@@ -961,13 +961,13 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                         Container(
                           height: 16,
                           width: double.infinity,
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)]),
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)]),
                           child: Stack(
                             children: [
                               AnimatedContainer(
                                 duration: const Duration(milliseconds: 500),
                                 width: (MediaQuery.of(context).size.width - 48) * progress, // dynamic width
-                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)]),
+                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)]),
                                 alignment: Alignment.centerRight,
                               ),
                             ],
@@ -1016,10 +1016,10 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.95),
+                                color: Colors.white.withValues(alpha: 0.95),
                                 borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20)],
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20)],
                               ),
                               child: Text(
                                 question['situation'],
@@ -1044,15 +1044,15 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                                     width: double.infinity,
                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: isSelected ? const Color(0xFFF0FDF4) : Colors.white.withOpacity(0.95), // green-50 if selected
+                                      color: isSelected ? const Color(0xFFF0FDF4) : Colors.white.withValues(alpha: 0.95), // green-50 if selected
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                        color: isSelected ? const Color(0xFF4ADE80) : Colors.white.withOpacity(0.5),
+                                        color: isSelected ? const Color(0xFF4ADE80) : Colors.white.withValues(alpha: 0.5),
                                         width: isSelected ? 3 : 2,
                                       ),
-                                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
+                                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
                                     ),
-                                    transform: isSelected ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
+                                    transform: isSelected ? (Matrix4.identity()..scaleByDouble(1.02, 1.02, 1.02, 1.0)) : Matrix4.identity(),
                                     child: Row(
                                       children: [
                                         TweenAnimationBuilder<double>(
@@ -1125,12 +1125,12 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                   children: [
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(16)),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                             child: const Text('💖', style: TextStyle(fontSize: 24)),
                           ),
                           const SizedBox(width: 16),
@@ -1155,7 +1155,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Container(
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                 child: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
               ),
             ),
@@ -1169,7 +1169,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                   Container(
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(color: Colors.pinkAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: Colors.pinkAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
                     child: Row(
                       children: [
                         const Icon(Icons.info_outline, color: Colors.purple),
@@ -1191,7 +1191,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: AppTheme.gray200),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1228,7 +1228,7 @@ class _PersonalityTestScreenState extends State<PersonalityTestScreen> with Tick
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
                   const SizedBox(height: 40),
                 ],
               ),

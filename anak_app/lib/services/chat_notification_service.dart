@@ -205,6 +205,12 @@ class ChatNotificationService {
     }
   }
 
+  /// Clear currently tracked active chat info
+  void clearActiveChat() {
+    activeChatInfo.value = null;
+    currentViewedChatId = null;
+  }
+
   void _showGlobalNotification({required String doctorName, String? doctorImage, required String message}) {
     final messenger = scaffoldMessengerKey.currentState;
     if (messenger == null) return;
@@ -218,7 +224,7 @@ class ChatNotificationService {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(10),
                 image: (doctorImage != null && doctorImage.startsWith('base64:')) 
                     ? DecorationImage(

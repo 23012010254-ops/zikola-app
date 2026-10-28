@@ -125,7 +125,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
       _activeHoleIndex = -1;
       _whackedHoleIndex = -1;
     });
-    AudioService().playGameBGM();
+    AudioService().playArcadeBGM();
     _spawnMole();
   }
 
@@ -156,7 +156,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
       _moleAppearTime = DateTime.now();
     });
 
-    AudioService().playClick(); 
+    AudioService().playPop(); 
 
     _moleTimer = Timer(Duration(milliseconds: displayDurationMs), () {
       if (_gamePhase == 'playing' && _activeHoleIndex != -1) {
@@ -211,6 +211,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
   void _completeLevel() {
     _moleTimer?.cancel();
     AudioService().stopBGM();
+    AudioService().playSparkle();
     AudioService().playAchievement();
 
     final int levelTargets = _getLevelTotalTargets(_currentLevel);
@@ -317,7 +318,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                           color: Colors.white,
                           shape: BoxShape.circle,
                           boxShadow: [
-                            BoxShadow(color: Colors.green.withOpacity(0.2), blurRadius: 30, spreadRadius: 10)
+                            BoxShadow(color: Colors.green.withValues(alpha: 0.2), blurRadius: 30, spreadRadius: 10)
                           ]
                         ),
                         child: const Text('🐰', style: TextStyle(fontSize: 80)),
@@ -361,7 +362,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       elevation: 8,
-                      shadowColor: AppTheme.green500.withOpacity(0.5),
+                      shadowColor: AppTheme.green500.withValues(alpha: 0.5),
                     ),
                     child: const Text('Mulai Bermain!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                   ),
@@ -404,9 +405,9 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.amber.withOpacity(0.5), width: 3),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.5), width: 3),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 10, offset: const Offset(0, 4))
                   ],
                 ),
                 child: Row(
@@ -440,7 +441,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
                           child: const Text('🐰', style: TextStyle(fontSize: 18)),
                         ),
                         const SizedBox(width: 10),
@@ -456,7 +457,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                     // Misses stats
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+                      decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -508,13 +509,13 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                                   border: Border.all(
                                     color: isActive 
                                         ? Colors.amberAccent 
-                                        : const Color(0xFF15803D).withOpacity(0.8),
+                                        : const Color(0xFF15803D).withValues(alpha: 0.8),
                                     width: isActive ? 6 : 4,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: isActive 
-                                          ? Colors.amberAccent.withOpacity(0.6) 
+                                          ? Colors.amberAccent.withValues(alpha: 0.6) 
                                           : Colors.black45,
                                       blurRadius: isActive ? 24 : 10,
                                       spreadRadius: isActive ? 4 : 1,
@@ -575,7 +576,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                     LinearProgressIndicator(
                       value: levelTargets == 0 ? 0 : (_levelTargetsAppeared / levelTargets),
                       minHeight: 14,
-                      backgroundColor: Colors.white.withOpacity(0.1),
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
                       valueColor: const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -608,7 +609,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A).withOpacity(0.9), // dark overlay
+      backgroundColor: const Color(0xFF0F172A).withValues(alpha: 0.9), // dark overlay
       body: Center(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 24),
@@ -623,7 +624,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
             border: Border.all(color: const Color(0xFFF59E0B), width: 6), // golden border
             boxShadow: [
               BoxShadow(
-                color: Colors.amber.withOpacity(0.35),
+                color: Colors.amber.withValues(alpha: 0.35),
                 blurRadius: 30,
                 spreadRadius: 5,
               )
@@ -663,9 +664,9 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.amber.withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: Colors.amber.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [
@@ -768,11 +769,11 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                         child: Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: msg['color'].withOpacity(0.2),
+                            color: msg['color'].withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                             border: Border.all(color: msg['color'], width: 4),
                             boxShadow: [
-                              BoxShadow(color: msg['color'].withOpacity(0.3), blurRadius: 20, spreadRadius: 4),
+                              BoxShadow(color: msg['color'].withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 4),
                             ],
                           ),
                           child: Text(
@@ -800,9 +801,9 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: Colors.amber.withOpacity(0.5), width: 3),
+                      border: Border.all(color: Colors.amber.withValues(alpha: 0.5), width: 3),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 12, offset: const Offset(0, 5))
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 5))
                       ],
                     ),
                     child: Column(
@@ -952,7 +953,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
                                   boxShadow: isUnlocked
                                       ? [
                                           BoxShadow(
-                                            color: Colors.amber.withOpacity(0.3),
+                                            color: Colors.amber.withValues(alpha: 0.3),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           )

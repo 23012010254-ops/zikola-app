@@ -266,11 +266,29 @@ export default function StickerCollectionScreen({ navigateTo, collectedStickers 
           earned: collectedStickers.includes('all-tests-done') 
         }
       ]
+    },
+    {
+      id: 'celestial',
+      title: '🌌 Celestial Stickers (1000 Pts)',
+      description: 'Kasta kosmik tertinggi berkilau di atas Mythic',
+      color: 'bg-purple-100',
+      borderColor: 'border-purple-400',
+      stickers: [
+        { id: 'celestial-galaxy-dragon', name: 'Naga Galaksi Abadi', emoji: '🌌', description: 'Penguasa galaksi kosmik yang melintasi ruang dan dimensi!', rarity: 'celestial', earned: collectedStickers.includes('celestial-galaxy-dragon') },
+        { id: 'divine-phoenix-emperor', name: 'Kaisar Phoenix Ilahi', emoji: '✨', description: 'Cahaya abadi yang menyinari seluruh semesta raya!', rarity: 'celestial', earned: collectedStickers.includes('divine-phoenix-emperor') },
+        { id: 'cosmic-astral-unicorn', name: 'Astral Pegasus Unicorn', emoji: '🦄', description: 'Membawa keajaiban bintang paling terang di angkasa!', rarity: 'celestial', earned: collectedStickers.includes('cosmic-astral-unicorn') },
+        { id: 'celestial-titan-golem', name: 'Titan Penjaga Semesta', emoji: '🗿', description: 'Pelindung kokoh dan tangguh dari segala rintangan!', rarity: 'celestial', earned: collectedStickers.includes('celestial-titan-golem') },
+        { id: 'celestial-chrono-clock', name: 'Pengendali Waktu Astral', emoji: '⏳', description: 'Master fokus, konsentrasi, dan penakluk waktu sejati!', rarity: 'celestial', earned: collectedStickers.includes('celestial-chrono-clock') },
+        { id: 'celestial-diamond-shield', name: 'Aegis Berlian Kosmik', emoji: '🛡️', description: 'Pertahanan berkilau terkuat yang tak terkalahkan!', rarity: 'celestial', earned: collectedStickers.includes('celestial-diamond-shield') },
+        { id: 'celestial-omni-crown', name: 'Mahkota Dewa Pengetahuan', emoji: '👑', description: 'Kecerdasan tertinggi dan kebijaksanaan alam semesta!', rarity: 'celestial', earned: collectedStickers.includes('celestial-omni-crown') },
+        { id: 'celestial-shooting-nebula', name: 'Nebula Bintang Jatuh', emoji: '🌠', description: 'Harapan dan cita-cita terbesar yang bersinar cemerlang!', rarity: 'celestial', earned: collectedStickers.includes('celestial-shooting-nebula') },
+      ]
     }
   ];
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
+      case 'celestial': return 'border-purple-500 bg-gradient-to-br from-slate-900 via-purple-950 to-indigo-950 text-white shadow-lg shadow-purple-500/20';
       case 'common': return 'border-gray-300 bg-gray-50';
       case 'rare': return 'border-blue-400 bg-blue-50';
       case 'epic': return 'border-purple-400 bg-purple-50';
@@ -281,6 +299,7 @@ export default function StickerCollectionScreen({ navigateTo, collectedStickers 
 
   const getRarityBadgeColor = (rarity: string) => {
     switch (rarity) {
+      case 'celestial': return 'bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black shadow-sm';
       case 'common': return 'bg-gray-500 text-white';
       case 'rare': return 'bg-blue-500 text-white';
       case 'epic': return 'bg-purple-500 text-white';

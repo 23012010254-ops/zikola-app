@@ -1,3 +1,4 @@
+import '../widgets/space_background.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -192,7 +193,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
         int b = _random.nextInt(15) + 5;
         int c = _random.nextInt(5) + 2;
         int ans = (a - b).abs() * c;
-        return MathProblem(problem: '|${a} - ${b}| × $c', answer: ans, options: _generateOptions(ans, 4));
+        return MathProblem(problem: '|$a - $b| × $c', answer: ans, options: _generateOptions(ans, 4));
       }
     }
   }
@@ -663,7 +664,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                                           height: 22,
                                           decoration: BoxDecoration(
                                             border: Border.all(
-                                              color: ringColor.withOpacity(0.4),
+                                              color: ringColor.withValues(alpha: 0.4),
                                               width: 3.5,
                                             ),
                                             borderRadius: const BorderRadius.all(Radius.elliptical(74, 22)),
@@ -681,7 +682,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                                           boxShadow: isUnlocked
                                               ? [
                                                   BoxShadow(
-                                                    color: ringColor.withOpacity(0.4),
+                                                    color: ringColor.withValues(alpha: 0.4),
                                                     blurRadius: 10,
                                                     spreadRadius: 1,
                                                   )
@@ -749,7 +750,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
     int totalTime = _startTime != null ? DateTime.now().difference(_startTime!).inSeconds : 0;
 
     return Scaffold(
-      backgroundColor: Colors.black.withOpacity(0.85),
+      backgroundColor: Colors.black.withValues(alpha: 0.85),
       body: Stack(
         children: [
           Positioned.fill(child: _buildStarsBackground()),
@@ -767,7 +768,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                 border: Border.all(color: Colors.cyanAccent, width: 4),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.cyanAccent.withOpacity(0.25),
+                    color: Colors.cyanAccent.withValues(alpha: 0.25),
                     blurRadius: 30,
                     spreadRadius: 5,
                   )
@@ -805,9 +806,9 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.cyanAccent.withOpacity(0.3), width: 1.5),
+                      border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.3), width: 1.5),
                     ),
                     child: Column(
                       children: [
@@ -908,7 +909,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                           onTap: () => Navigator.pop(context),
                           child: Container(
                             padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                             child: const Icon(Icons.arrow_back, color: Colors.white),
                           ),
                         ),
@@ -929,7 +930,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                         child: Column(
                           children: [
                             const SizedBox(height: 48),
-                            const Text('🛸', style: TextStyle(fontSize: 80)),
+                            Image.asset('assets/images/emoji/objects/ufo.png', width: 100, height: 100),
                             const SizedBox(height: 24),
                             const Text('Pertahanan Bumi dari Alien Matematika!', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                             const SizedBox(height: 16),
@@ -939,7 +940,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                             Container(
                               padding: const EdgeInsets.all(28),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(32),
                                 border: Border.all(color: Colors.white24),
                               ),
@@ -1019,7 +1020,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
               if (_showHurtFlash)
                 Positioned.fill(
                   child: Container(
-                    color: Colors.red.withOpacity(0.3),
+                    color: Colors.red.withValues(alpha: 0.3),
                   ),
                 ),
               // HUD
@@ -1044,7 +1045,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                             },
                             child: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                               child: const Icon(Icons.arrow_back, color: Colors.white),
                             ),
                           ),
@@ -1054,7 +1055,14 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                               const SizedBox(width: 12),
                               Text('MISS: $_misses', style: const TextStyle(color: Color(0xFFE9D5FF), fontWeight: FontWeight.bold, fontSize: 12)),
                               const SizedBox(width: 12),
-                              Text('❤️ $_lives', style: const TextStyle(color: Color(0xFFBFDBFE), fontWeight: FontWeight.bold, fontSize: 12)),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Image.asset('assets/images/emoji/feedback/heart.png', width: 16, height: 16),
+                                  const SizedBox(width: 4),
+                                  Text('$_lives', style: const TextStyle(color: Color(0xFFBFDBFE), fontWeight: FontWeight.bold, fontSize: 13)),
+                                ],
+                              ),
                             ],
                           ),
                           Row(
@@ -1074,15 +1082,17 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
               ),
 
               // Earth defender cannon
-              const Positioned(
-                bottom: 32,
+              Positioned(
+                bottom: 24,
                 left: 0, right: 0,
-                child: Center(child: Text('🚀', style: TextStyle(fontSize: 60))),
+                child: Center(
+                  child: Image.asset('assets/images/emoji/objects/rocket.png', width: 72, height: 72),
+                ),
               ),
               
               // Instruction
               Positioned(
-                bottom: 100,
+                bottom: 106,
                 left: 0, right: 0,
                 child: Center(
                   child: Container(
@@ -1117,7 +1127,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                           decoration: BoxDecoration(
                             color: const Color(0xFF1E293B),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.cyanAccent.withOpacity(0.5), width: 2),
+                            border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.5), width: 2),
                           ),
                           child: Text(
                             alien.problem,
@@ -1129,7 +1139,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text('🛸', style: TextStyle(fontSize: 60)),
+                        Image.asset('assets/images/emoji/objects/ufo.png', width: 64, height: 64),
                       ],
                     ),
                   ),
@@ -1148,7 +1158,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(32),
-                          boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.3), blurRadius: 30)],
+                          boxShadow: [BoxShadow(color: Colors.cyanAccent.withValues(alpha: 0.3), blurRadius: 30)],
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -1176,7 +1186,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                     elevation: 6,
-                                    shadowColor: const Color(0xFF38BDF8).withOpacity(0.4),
+                                    shadowColor: const Color(0xFF38BDF8).withValues(alpha: 0.4),
                                   ),
                                   child: Text('$opt', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
                                 );
@@ -1225,14 +1235,18 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                   child: Column(
                     children: [
-                      Text(_lives > 0 ? '🏆' : '💫', style: const TextStyle(fontSize: 80)),
-                  const SizedBox(height: 24),
+                      Image.asset(
+                        _lives > 0 ? 'assets/images/emoji/rewards/trophy.png' : 'assets/images/emoji/objects/ufo.png',
+                        width: 90,
+                        height: 90,
+                      ),
+                      const SizedBox(height: 24),
                   Text(_lives > 0 ? 'Bumi Selamat, $childName!' : 'Pertahanan Berakhir, $childName!', style: AppTheme.heading2.copyWith(color: Colors.white), textAlign: TextAlign.center),
                   const SizedBox(height: 32),
 
                   Container(
                     padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
                     child: Column(
                       children: [
                         Row(
@@ -1270,7 +1284,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                           Container(
                             padding: const EdgeInsets.all(16),
                             width: double.infinity,
-                            decoration: BoxDecoration(color: Colors.green.withOpacity(0.2), border: Border.all(color: Colors.green.withOpacity(0.3)), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.2), border: Border.all(color: Colors.green.withValues(alpha: 0.3)), borderRadius: BorderRadius.circular(12)),
                             child: const Text('🌟 Excellent! Kamu pahlawan matematika sejati!', style: TextStyle(color: Color(0xFFDCFCE7), fontWeight: FontWeight.bold)),
                           ),
                         ] else if (accuracy >= 70) ...[
@@ -1278,7 +1292,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                           Container(
                             padding: const EdgeInsets.all(16),
                             width: double.infinity,
-                            decoration: BoxDecoration(color: Colors.blue.withOpacity(0.2), border: Border.all(color: Colors.blue.withOpacity(0.3)), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.2), border: Border.all(color: Colors.blue.withValues(alpha: 0.3)), borderRadius: BorderRadius.circular(12)),
                             child: const Text('👍 Good! Terus latih kemampuan matematikamu!', style: TextStyle(color: Color(0xFFDBEAFE), fontWeight: FontWeight.bold)),
                           ),
                         ] else ...[
@@ -1286,7 +1300,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                           Container(
                             padding: const EdgeInsets.all(16),
                             width: double.infinity,
-                            decoration: BoxDecoration(color: Colors.purple.withOpacity(0.2), border: Border.all(color: Colors.purple.withOpacity(0.3)), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.2), border: Border.all(color: Colors.purple.withValues(alpha: 0.3)), borderRadius: BorderRadius.circular(12)),
                             child: const Text('💪 Keep practicing! Matematika akan semakin mudah!', style: TextStyle(color: Color(0xFFF3E8FF), fontWeight: FontWeight.bold)),
                           ),
                         ]
@@ -1328,7 +1342,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
                       },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: Colors.white.withOpacity(0.1),
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: const Text('Kembali ke Peta Misi 🗺️', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
@@ -1363,14 +1377,15 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
 
   Widget _buildStarsBackground() {
     return Stack(
-      children: const [
-        Positioned(top: 80, left: 40, child: TwinklingStar(text: '⭐', size: 14, color: Colors.yellowAccent)),
-        Positioned(top: 120, right: 30, child: TwinklingStar(text: '✨', size: 12, color: Colors.yellowAccent, delay: 500)),
-        Positioned(top: 200, left: 24, child: TwinklingStar(text: '⭐', size: 12, color: Colors.white, delay: 1000)),
-        Positioned(top: 160, right: 80, child: TwinklingStar(text: '✨', size: 14, color: Colors.yellow, delay: 200)),
-        Positioned(bottom: 160, left: 48, child: TwinklingStar(text: '⭐', size: 12, color: Colors.yellowAccent, delay: 800)),
-        Positioned(bottom: 240, right: 24, child: TwinklingStar(text: '✨', size: 14, color: Colors.white, delay: 1200)),
-        Positioned(top: 240, left: 120, child: TwinklingStar(text: '⭐', size: 12, color: Colors.yellow, delay: 400)),
+      children: [
+        const Positioned.fill(child: SpaceBackground()),
+        const Positioned(top: 80, left: 40, child: TwinklingStar(text: '⭐', size: 14, color: Colors.yellowAccent)),
+        const Positioned(top: 120, right: 30, child: TwinklingStar(text: '✨', size: 12, color: Colors.yellowAccent, delay: 500)),
+        const Positioned(top: 200, left: 24, child: TwinklingStar(text: '⭐', size: 12, color: Colors.white, delay: 1000)),
+        const Positioned(top: 160, right: 80, child: TwinklingStar(text: '✨', size: 14, color: Colors.yellow, delay: 200)),
+        const Positioned(bottom: 160, left: 48, child: TwinklingStar(text: '⭐', size: 12, color: Colors.yellowAccent, delay: 800)),
+        const Positioned(bottom: 240, right: 24, child: TwinklingStar(text: '✨', size: 14, color: Colors.white, delay: 1200)),
+        const Positioned(top: 240, left: 120, child: TwinklingStar(text: '⭐', size: 12, color: Colors.yellow, delay: 400)),
       ],
     );
   }

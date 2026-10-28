@@ -44,6 +44,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Timer? _timer;
   int _lastWarnedMinute = 99; // Track which warning was last shown
   int _lastMessageCount = 0; // Track message count for doctor message notifications
+  bool _isDoctorView = false;
 
   DateTime? _parseDateTime(dynamic val) {
     if (val == null) return null;
@@ -67,6 +68,8 @@ class _ChatScreenState extends State<ChatScreen> {
       final rawArgs = ModalRoute.of(context)?.settings.arguments;
 
       if (rawArgs is Map<String, dynamic>) {
+        // Doctor view only for verified doctors; route args alone cannot grant it.
+        _isDoctorView = appState.isDoctor && rawArgs['isDoctorView'] == true;
         if (rawArgs.containsKey('chatId') && rawArgs['chatId'] != null) {
           _chatId = rawArgs['chatId'].toString();
           _doctor = {
@@ -397,12 +400,17 @@ class _ChatScreenState extends State<ChatScreen> {
 
     _messageController.clear();
     
-    // Write User Message to DB
-    await _firestoreService.sendMessage(_chatId, userId, msgText, 'user', doctorId: _doctor['id']);
+    final senderType = _isDoctorView ? 'doctor' : 'user';
+    final senderId = _isDoctorView
+        ? (appState.doctorAccountId ?? userId)
+        : userId;
+
+    // Write Message to DB
+    await _firestoreService.sendMessage(_chatId, senderId, msgText, senderType, doctorId: _doctor['id']);
     
     Future.delayed(const Duration(milliseconds: 500), _scrollToBottom);
 
-    if (_doctor['id'] == 'doctor_bot') {
+    if (!_isDoctorView && _doctor['id'] == 'doctor_bot') {
       _triggerBotReply(msgText);
     }
   }
@@ -453,7 +461,7 @@ class _ChatScreenState extends State<ChatScreen> {
       'attachmentUrl': url,
       'attachmentType': type,
       'attachmentName': fileName,
-      if (fileSize != null) 'attachmentSize': fileSize,
+      'attachmentSize': ?fileSize,
     });
 
     Future.delayed(const Duration(milliseconds: 500), _scrollToBottom);
@@ -711,12 +719,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   const SizedBox(height: 6),
                   SizedBox(
                     width: double.infinity,
-                    height: 38,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8B5CF6),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        minimumSize: const Size.fromHeight(44),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       onPressed: () {
                         setState(() => _hasSubmittedReview = true);
@@ -727,7 +736,14 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                         );
                       },
-                      child: const Text('Kirim Penilaian Dokter', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        'Kirim Penilaian Dokter',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -928,6 +944,235 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Widget _buildPrescriptionMessageCard(Map<String, dynamic> msgMap, String formattedTime) {
+    final rawText = msgMap['text']?.toString() ?? '';
+    final metadata = msgMap['metadata'] is Map ? Map<String, dynamic>.from(msgMap['metadata']) : null;
+    
+    String itemName = metadata?['itemName']?.toString() ?? '';
+    String prescType = metadata?['prescType']?.toString() ?? 'suplemen';
+    String dosage = metadata?['dosage']?.toString() ?? '';
+    String duration = metadata?['duration']?.toString() ?? '';
+    String notes = metadata?['notes']?.toString() ?? '';
+    String doctorName = metadata?['doctorName']?.toString() ?? 'Dokter Zikola';
+
+    if (itemName.isEmpty) {
+      final itemMatch = RegExp(r'• Item\*?:\s*([^\n]+)').firstMatch(rawText);
+      if (itemMatch != null) itemName = itemMatch.group(1)?.trim() ?? '';
+      
+      final doseMatch = RegExp(r'• Dosis/Frekuensi\*?:\s*([^\n]+)').firstMatch(rawText);
+      if (doseMatch != null) dosage = doseMatch.group(1)?.trim() ?? '';
+
+      final durMatch = RegExp(r'• Durasi\*?:\s*([^\n]+)').firstMatch(rawText);
+      if (durMatch != null) duration = durMatch.group(1)?.trim() ?? '';
+
+      final notesMatch = RegExp(r'• Catatan(?: Khusus)?\*?:\s*([\s\S]+?)(?=\n\n|\*Diresepkan|$)').firstMatch(rawText);
+      if (notesMatch != null) notes = notesMatch.group(1)?.trim() ?? '';
+    }
+
+    if (itemName.isEmpty) itemName = 'Rekomendasi Terapi & Suplemen';
+
+    final isTerapi = prescType == 'terapi' || rawText.toLowerCase().contains('terapi');
+    final isMedis = prescType == 'medis' || rawText.toLowerCase().contains('medis');
+
+    final titleHeader = isTerapi ? 'PAKET TERAPI KLINIS' : isMedis ? 'RESEP OBAT MEDIS' : 'RESEP SUPLEMEN & VITAMIN';
+    final badgeColor = isTerapi ? const Color(0xFF8B5CF6) : isMedis ? const Color(0xFFEF4444) : const Color(0xFF10B981);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Container(
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.88),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0284C7).withValues(alpha: 0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Card Header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('💊', style: TextStyle(fontSize: 16)),
+                          const SizedBox(width: 8),
+                          Text(
+                            titleHeader,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        formattedTime,
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Card Body
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
+                        ),
+                        child: Text(
+                          isTerapi ? 'PROGRAM TERAPI' : isMedis ? 'OBAT RESEP' : 'SUPLEMEN TUMBUH KEMBANG',
+                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        itemName,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
+                      ),
+                      const SizedBox(height: 12),
+
+                      if (dosage.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            children: [
+                              const Text('⏱️', style: TextStyle(fontSize: 14)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    children: [
+                                      const TextSpan(text: 'Dosis/Frekuensi: ', style: TextStyle(color: Colors.white70)),
+                                      TextSpan(text: dosage, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.amberAccent)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      if (duration.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Row(
+                            children: [
+                              const Text('📅', style: TextStyle(fontSize: 14)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    children: [
+                                      const TextSpan(text: 'Durasi: ', style: TextStyle(color: Colors.white70)),
+                                      TextSpan(text: duration, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      if (notes.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('📝', style: TextStyle(fontSize: 14)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  notes,
+                                  style: const TextStyle(color: Colors.white, fontSize: 11, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 34,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF0369A1),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                          ),
+                          onPressed: () => Navigator.pushNamed(context, '/progress', arguments: {'tab': 'emr'}),
+                          icon: const Icon(Icons.medical_services_outlined, size: 14),
+                          label: const Text('Buka Rekam Medis (EMR)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Diresepkan oleh $doctorName',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 9, fontStyle: FontStyle.italic),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.check_circle, size: 12, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text('EMR Sah', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOfficialReportMessageCard(Map<String, dynamic> msgMap, String formattedTime) {
     final rawText = msgMap['text']?.toString() ?? '';
     return Padding(
@@ -966,10 +1211,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     children: [
                       const Row(
                         children: [
-                          Text('📄', style: TextStyle(fontSize: 16)),
+                          Text('🩺', style: TextStyle(fontSize: 16)),
                           SizedBox(width: 8),
                           Text(
-                            'LAPORAN ASESMEN RESMI DOKTER',
+                            'LAPORAN ASESMEN RESMI',
                             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5),
                           ),
                         ],
@@ -987,10 +1232,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        rawText.replaceAll('📄 **LAPORAN ASESMEN RESMI**', '').trim(),
-                        style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.45),
+                        rawText,
+                        style: const TextStyle(color: Colors.white, fontSize: 11, height: 1.5),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         height: 38,
@@ -1003,7 +1248,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           onPressed: () => Navigator.pushNamed(context, '/progress'),
                           icon: const Icon(Icons.description, size: 16),
-                          label: const Text('Buka Rekam Medis Pasien', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                          label: const Text('Buka Hasil Laporan Lengkap', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ],
@@ -1020,10 +1265,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildSessionEndedMessageCard(Map<String, dynamic> msgMap, String formattedTime) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
@@ -1039,20 +1284,85 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           const Text(
-            'Catatan hasil konsultasi & resep stimulasi telah tersimpan secara aman.',
+            'Catatan hasil konsultasi & resep stimulasi telah tersimpan secara aman di Rekam Medis.',
             style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(formattedTime, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF475569),
+                  side: const BorderSide(color: Color(0xFFCBD5E1)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onPressed: () => Navigator.pushNamed(context, '/progress', arguments: {'tab': 'emr'}),
+                icon: const Icon(Icons.medical_services_outlined, size: 14),
+                label: const Text('Lembar EMR', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFEE2E2),
+                  foregroundColor: const Color(0xFFDC2626),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onPressed: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Hapus Riwayat Chat?'),
+                      content: const Text('Obrolan ini telah selesai. Apakah Anda yakin ingin menghapus riwayat sesi ini dari server?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Batal'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Hapus', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true && mounted) {
+                    try {
+                      await _firestoreService.deleteChatSession(_chatId);
+                      ChatNotificationService().clearActiveChat();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Riwayat konsultasi berhasil dihapus.')),
+                        );
+                        Navigator.of(context).pop();
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gagal menghapus riwayat: $e')),
+                        );
+                      }
+                    }
+                  }
+                },
+                icon: const Icon(Icons.delete_outline_rounded, size: 14),
+                label: const Text('Hapus Riwayat Chat', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
-
-
 
   final PatientWebRTCService _webrtcService = PatientWebRTCService();
   bool _isCallModalOpen = false;
@@ -1276,59 +1586,63 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                Column(
                   children: [
-                    // Mute Button
-                    IconButton(
-                      iconSize: 48,
-                      onPressed: () {
-                        _webrtcService.toggleMute();
-                        setModalState(() {});
-                      },
-                      icon: CircleAvatar(
-                        radius: 28,
-                        backgroundColor: _webrtcService.isMuted ? Colors.red.shade600 : const Color(0xFF334155),
-                        child: Icon(
-                          _webrtcService.isMuted ? Icons.mic_off : Icons.mic,
-                          color: Colors.white,
-                          size: 24,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // Mute Button
+                        IconButton(
+                          iconSize: 48,
+                          onPressed: () {
+                            _webrtcService.toggleMute();
+                            setModalState(() {});
+                          },
+                          icon: CircleAvatar(
+                            radius: 28,
+                            backgroundColor: _webrtcService.isMuted ? Colors.red.shade600 : const Color(0xFF334155),
+                            child: Icon(
+                              _webrtcService.isMuted ? Icons.mic_off : Icons.mic,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
 
-                    // End Call Button
-                    IconButton(
-                      iconSize: 56,
-                      onPressed: () async {
-                        _callDurationTimer?.cancel();
-                        _isCallModalOpen = false;
-                        Navigator.pop(ctx);
-                        await _webrtcService.endCall(_chatId);
-                      },
-                      icon: CircleAvatar(
-                        radius: 32,
-                        backgroundColor: Colors.red.shade600,
-                        child: const Icon(Icons.call_end, color: Colors.white, size: 28),
-                      ),
-                    ),
-
-                    // Speaker Button
-                    IconButton(
-                      iconSize: 48,
-                      onPressed: () {
-                        _webrtcService.toggleSpeaker();
-                        setModalState(() {});
-                      },
-                      icon: CircleAvatar(
-                        radius: 28,
-                        backgroundColor: _webrtcService.isSpeakerOn ? const Color(0xFF6366F1) : const Color(0xFF334155),
-                        child: Icon(
-                          _webrtcService.isSpeakerOn ? Icons.volume_up : Icons.volume_down,
-                          color: Colors.white,
-                          size: 24,
+                        // End Call Button
+                        IconButton(
+                          iconSize: 56,
+                          onPressed: () async {
+                            _callDurationTimer?.cancel();
+                            _isCallModalOpen = false;
+                            Navigator.pop(ctx);
+                            await _webrtcService.endCall(_chatId);
+                          },
+                          icon: CircleAvatar(
+                            radius: 32,
+                            backgroundColor: Colors.red.shade600,
+                            child: const Icon(Icons.call_end, color: Colors.white, size: 28),
+                          ),
                         ),
-                      ),
+
+                        // Speaker Button
+                        IconButton(
+                          iconSize: 48,
+                          onPressed: () {
+                            _webrtcService.toggleSpeaker();
+                            setModalState(() {});
+                          },
+                          icon: CircleAvatar(
+                            radius: 28,
+                            backgroundColor: _webrtcService.isSpeakerOn ? const Color(0xFF6366F1) : const Color(0xFF334155),
+                            child: Icon(
+                              _webrtcService.isSpeakerOn ? Icons.volume_up : Icons.volume_down,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -1341,38 +1655,49 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildAvatar(String imageStr, {double size = 40}) {
-    if (imageStr.startsWith('base64:')) {
+    if (imageStr.startsWith('http://') || imageStr.startsWith('https://')) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(size),
+        child: Image.network(
+          imageStr,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Text('👨‍⚕️', style: TextStyle(fontSize: size * 0.7)),
+        ),
+      );
+    } else if (imageStr.startsWith('base64:')) {
       if (_doctorAvatarImage != null) {
         return ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(size),
           child: Image(
             image: _doctorAvatarImage!,
-            width: 40,
-            height: 40,
+            width: size,
+            height: size,
             fit: BoxFit.cover,
             gaplessPlayback: true,
-            errorBuilder: (context, error, stackTrace) => Text('👨‍⚕️', style: TextStyle(fontSize: size)),
+            errorBuilder: (context, error, stackTrace) => Text('👨‍⚕️', style: TextStyle(fontSize: size * 0.7)),
           ),
         );
       }
       try {
         final bytes = base64Decode(imageStr.substring(7));
         return ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(size),
           child: Image.memory(
             bytes,
-            width: 40,
-            height: 40,
+            width: size,
+            height: size,
             fit: BoxFit.cover,
             gaplessPlayback: true,
-            errorBuilder: (context, error, stackTrace) => Text('👨‍⚕️', style: TextStyle(fontSize: size)),
+            errorBuilder: (context, error, stackTrace) => Text('👨‍⚕️', style: TextStyle(fontSize: size * 0.7)),
           ),
         );
       } catch (e) {
-        return Text('👨‍⚕️', style: TextStyle(fontSize: size));
+        return Text('👨‍⚕️', style: TextStyle(fontSize: size * 0.7));
       }
     }
-    return Text(imageStr, style: TextStyle(fontSize: size));
+    return Text(imageStr, style: TextStyle(fontSize: size * 0.7));
   }
 
   @override
@@ -1398,7 +1723,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Container(
                 width: 44, height: 44,
                 decoration: BoxDecoration(color: AppTheme.blue100, shape: BoxShape.circle),
-                child: Center(child: _buildAvatar(_doctor['image'] ?? '👨‍⚕️', size: 24)),
+                child: Center(child: _buildAvatar(_doctor['image'] ?? '👨‍⚕️', size: 44)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1459,7 +1784,7 @@ class _ChatScreenState extends State<ChatScreen> {
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: AppTheme.gray600),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                onSelected: (value) {
+                onSelected: (value) async {
                   if (value == 'profile') {
                     Navigator.pushNamed(context, '/doctor-detail', arguments: _doctor);
                   }
@@ -1570,7 +1895,17 @@ class _ChatScreenState extends State<ChatScreen> {
                     }
                     
                     final msgMap = messages[index];
-                    final isUser = msgMap['senderType'] == 'user';
+                    final textContent = msgMap['text']?.toString() ?? '';
+                    final senderType = (msgMap['senderType'] ?? '').toString().toLowerCase();
+                    final senderId = (msgMap['senderId'] ?? '').toString();
+                    final myUid = Provider.of<AppState>(context, listen: false).uid ?? '';
+
+                    final isPatientSender = senderType == 'user' ||
+                        senderType == 'patient' ||
+                        (myUid.isNotEmpty && senderId == myUid) ||
+                        textContent.toLowerCase().startsWith('halo dokter, saya ayah/bunda dari');
+
+                    final isUser = _isDoctorView ? (senderType == 'doctor') : isPatientSender;
                     
                     String formattedTime = '';
                     final parsedDate = _parseDateTime(msgMap['timestamp']);
@@ -1578,7 +1913,9 @@ class _ChatScreenState extends State<ChatScreen> {
                       formattedTime = DateFormat('HH:mm').format(parsedDate);
                     }
 
-                    final textContent = msgMap['text']?.toString() ?? '';
+                    if (textContent.contains('RESEP & REKOMENDASI TERAPI') || (msgMap['metadata'] is Map && msgMap['metadata']['type'] == 'prescription')) {
+                      return _buildPrescriptionMessageCard(msgMap, formattedTime);
+                    }
                     if (textContent.contains('ACTION PLAN') || textContent.contains('Target Fokus')) {
                       return _buildActionPlanMessageCard(msgMap, formattedTime);
                     }
@@ -1810,7 +2147,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           controller: _messageController,
                           enabled: !_isExpired && !_isGracePeriod,
                           decoration: InputDecoration(
-                            hintText: _isGracePeriod ? 'Sesi berakhir...' : 'Tulis pesan...',
+                            hintText: _isGracePeriod
+                                ? 'Sesi berakhir...'
+                                : (_isDoctorView ? 'Tulis anjuran medis atau pesan...' : 'Tulis pesan...'),
                             hintStyle: AppTheme.bodyText.copyWith(color: AppTheme.gray500, fontSize: 14),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -2037,7 +2376,8 @@ class _ChatScreenState extends State<ChatScreen> {
       for (var doc in msgsSnap.docs.reversed) {
         final data = doc.data();
         final text = data['text'] as String? ?? '';
-        final isUser = data['senderType'] == 'user';
+        final sType = (data['senderType'] ?? '').toString().toLowerCase();
+        final isUser = sType == 'user' || sType == 'patient' || text.toLowerCase().startsWith('halo dokter, saya ayah/bunda dari');
         contents.add({
           'role': isUser ? 'user' : 'model',
           'parts': [{'text': text}],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:provider/provider.dart';
+import '../services/app_state.dart';
 import '../theme/app_theme.dart';
 
 class ParentalPinScreen extends StatefulWidget {
@@ -22,6 +24,8 @@ class _ParentalPinScreenState extends State<ParentalPinScreen>
   String _firstPin = ''; // Used in setup mode for confirmation step
   bool _isConfirmStep = false;
   String? _errorMessage;
+  late bool _isSetupMode;
+  bool _isResetMode = false;
 
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
@@ -29,6 +33,8 @@ class _ParentalPinScreenState extends State<ParentalPinScreen>
   @override
   void initState() {
     super.initState();
+    _isSetupMode = widget.isSetup;
+    _isResetMode = false;
     _shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -76,14 +82,14 @@ class _ParentalPinScreenState extends State<ParentalPinScreen>
   }
 
   void _handlePinComplete() {
-    if (widget.isSetup) {
+    if (_isSetupMode) {
       _handleSetupMode();
     } else {
       _handleVerifyMode();
     }
   }
 
-  void _handleSetupMode() {
+  void _handleSetupMode() async {
     if (!_isConfirmStep) {
       // First entry — save and ask to confirm
       setState(() {
@@ -94,7 +100,23 @@ class _ParentalPinScreenState extends State<ParentalPinScreen>
     } else {
       // Confirm entry
       if (_enteredPin == _firstPin) {
-        Navigator.pop(context, _enteredPin);
+        try {
+          final appState = Provider.of<AppState>(context, listen: false);
+          await appState.setParentalPin(_enteredPin);
+        } catch (e) {
+          debugPrint('Error setting parental pin: $e');
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_isResetMode ? 'PIN Berhasil Direset & Diperbarui! 🔐' : 'PIN Berhasil Dibuat! 🔐'),
+              backgroundColor: const Color(0xFF10B981),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          Navigator.pop(context, _enteredPin);
+        }
       } else {
         _triggerError('PIN tidak cocok, ulangi dari awal');
         setState(() {
@@ -123,21 +145,28 @@ class _ParentalPinScreenState extends State<ParentalPinScreen>
   }
 
   String get _title {
-    if (widget.isSetup) {
+    if (_isSetupMode) {
+      if (_isResetMode) {
+        return _isConfirmStep ? 'Konfirmasi PIN Baru' : 'Reset & Buat PIN Baru';
+      }
       return _isConfirmStep ? 'Konfirmasi PIN' : 'Buat PIN Baru';
     }
     return 'Mode Orang Tua';
   }
 
   String get _subtitle {
-    if (widget.isSetup) {
+    if (_isSetupMode) {
+      if (_isResetMode) {
+        return _isConfirmStep
+            ? 'Masukkan 4 digit PIN baru sekali lagi untuk konfirmasi'
+            : 'Verifikasi berhasil! Silakan masukkan 4 digit PIN baru Anda';
+      }
       return _isConfirmStep
           ? 'Masukkan PIN sekali lagi untuk konfirmasi'
           : 'Buat PIN 4 digit untuk keamanan';
     }
     return 'Masukkan PIN 4 digit untuk mengakses';
   }
-
 
   void _showForgotPinDialog() {
     // Generate random adult math question
@@ -207,21 +236,28 @@ class _ParentalPinScreenState extends State<ParentalPinScreen>
             onPressed: () {
               if (int.tryParse(answerController.text.trim()) == correctAnswer) {
                 Navigator.pop(ctx);
+                setState(() {
+                  _isSetupMode = true;
+                  _isResetMode = true;
+                  _isConfirmStep = false;
+                  _firstPin = '';
+                  _enteredPin = '';
+                  _errorMessage = null;
+                });
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Verifikasi orang tua berhasil! PIN telah direset. Silakan buat PIN baru. ✅'),
+                    content: Text('Verifikasi orang tua berhasil! Silakan masukkan 4 digit PIN baru Anda. 🔐'),
                     backgroundColor: Color(0xFF10B981),
+                    duration: Duration(seconds: 3),
                   ),
                 );
-                // Return 'RESET' token to clear PIN in AppState
-                Navigator.pop(context, 'RESET');
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Jawaban salah. Akses ditolak.'), backgroundColor: Colors.red),
                 );
               }
             },
-            child: const Text('Verifikasi & Reset', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('Verifikasi & Reset PIN', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -340,8 +376,8 @@ class _ParentalPinScreenState extends State<ParentalPinScreen>
 
                       const SizedBox(height: 16),
 
-                      // Forgot PIN link
-                      if (!widget.isSetup)
+                      // Forgot PIN link or cancel reset link
+                      if (!_isSetupMode)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 24),
                           child: TextButton(
@@ -353,6 +389,31 @@ class _ParentalPinScreenState extends State<ParentalPinScreen>
                                 fontFamily: 'Nunito',
                                 fontWeight: FontWeight.w600,
                                 color: AppTheme.primaryBlue,
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (_isResetMode)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _isSetupMode = widget.isSetup;
+                                _isResetMode = false;
+                                _isConfirmStep = false;
+                                _firstPin = '';
+                                _enteredPin = '';
+                                _errorMessage = null;
+                              });
+                            },
+                            child: const Text(
+                              'Batal Reset PIN',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.gray500,
                               ),
                             ),
                           ),

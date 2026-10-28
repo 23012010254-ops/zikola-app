@@ -1,63 +1,217 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
-    function isAuthenticated() {
+
+    // ─── Helpers ───────────────────────────────────────────────
+    function signedIn() {
       return request.auth != null;
     }
 
-    // Users collection and all nested subcollections (data, notifications, children, notes, reports, emr, assessments, tests)
-    match /users/{userId} {
-      allow read, write: if true;
-      
-      match /{allChildren=**} {
-        allow read, write: if true;
-      }
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
     }
 
-    // Doctors collection
-    match /doctors/{doctorId} {
-      allow read, write: if true;
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
     }
 
-    // Doctor Credentials collection (for web portal login/register)
+    function doctorAccountPath() {
+      return /databases/$(database)/documents/doctor_accounts/$(request.auth.uid);
+    }
+
+    // A doctor is verified only when an admin set verified == true on
+    // doctor_accounts/{uid} (Firebase Console / Admin SDK). Clients can't.
+    function isVerifiedDoctor() {
+      return signedIn()
+        && exists(doctorAccountPath())
+        && get(doctorAccountPath()).data.verified == true;
+    }
+
+    // The verified doctor whose public profile id (doctors/{doctorId}) matches.
+    function isDoctorFor(doctorId) {
+      return isVerifiedDoctor() && get(doctorAccountPath()).data.doctorId == doctorId;
+    }
+
+    // ─── Doctor role records ───────────────────────────────────
+    match /doctor_accounts/{uid} {
+      allow get: if isSelf(uid);
+      allow create: if isSelf(uid)
+        && request.resource.data.verified == false
+        && request.resource.data.doctorId == uid;
+      allow update: if isSelf(uid) && !changedKeys().hasAny(['verified', 'doctorId']);
+      allow list, delete: if false;
+    }
+
+    // Legacy username/password-hash store. Replaced by Firebase Auth; closed.
     match /doctor_credentials/{credId} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
 
-    // Chats collection and all subcollections (messages, webrtc, doctor_candidates, patient_candidates)
-    match /chats/{chatId} {
-      allow read, write: if true;
-      
-      match /{allChatSubcollections=**} {
-        allow read, write: if true;
-      }
-    }
-
-    // Appointments collection (for scheduled consultation sessions)
-    match /appointments/{appointmentId} {
-      allow read, write: if true;
-    }
-
-    // Community posts
-    match /community_posts/{postId} {
+    // ─── Doctor public profiles ────────────────────────────────
+    match /doctors/{doctorId} {
       allow read: if true;
-      allow create, update, delete: if true;
-      
-      match /comments/{commentId} {
-        allow read: if true;
-        allow create, update, delete: if true;
+      allow create: if isSelf(doctorId) && request.resource.data.verified == false;
+      allow update: if (isSelf(doctorId) || isDoctorFor(doctorId))
+        && !changedKeys().hasAny(['verified']);
+      allow delete: if false;
+    }
+
+    match /doctor_schedules/{scheduleId} {
+      allow read: if signedIn();
+      allow write: if isVerifiedDoctor();
+    }
+
+    // ─── Parent accounts ───────────────────────────────────────
+    function followersOf(data) {
+      return data.get('profile', {}).get('followers', []).toSet();
+    }
+
+    // Lets another signed-in user add/remove only their own uid in
+    // profile.followers (follow / unfollow).
+    function isFollowToggle() {
+      let before = followersOf(resource.data);
+      let after = followersOf(request.resource.data);
+      return signedIn()
+        && changedKeys().hasOnly(['profile'])
+        && request.resource.data.profile.diff(resource.data.get('profile', {})).affectedKeys().hasOnly(['followers'])
+        && after.difference(before).union(before.difference(after)).hasOnly([request.auth.uid]);
+    }
+
+    // Patients a doctor registers manually from the portal.
+    function isDoctorCreatedPatient(uid) {
+      return isVerifiedDoctor() && uid.matches('patient_.*');
+    }
+
+    match /users/{uid} {
+      // Single profile reads are needed for community profiles.
+      allow get: if signedIn();
+      // Bulk listing only for verified doctors; others get tiny lookups
+      // (duplicate-identity check uses limit(2)).
+      allow list: if isVerifiedDoctor() || (signedIn() && request.query.limit <= 2);
+      allow create: if isSelf(uid) || isDoctorCreatedPatient(uid);
+      allow update: if isSelf(uid) || isDoctorCreatedPatient(uid) || isFollowToggle();
+      allow delete: if isSelf(uid);
+
+      // Child data, test results, notes, EMR, prescriptions, reports, etc.
+      match /{subcollection}/{docId=**} {
+        allow read, write: if isSelf(uid) || isVerifiedDoctor();
+      }
+
+      // Other users may drop a notification (likes, comments, follows)
+      // as long as they sign it with their own uid.
+      match /notifications/{notificationId} {
+        allow create: if signedIn() && request.resource.data.sourceId == request.auth.uid;
       }
     }
 
-    // Payments collection
-    match /payments/{paymentId} {
-      allow read, write: if true;
+    // ─── Consultation chats ────────────────────────────────────
+    function isChatParticipant(chat) {
+      return signedIn()
+        && (chat.buyerId == request.auth.uid || isDoctorFor(chat.doctorId));
     }
 
-    // Speed Draw Rooms collection
+    function chatData(chatId) {
+      return get(/databases/$(database)/documents/chats/$(chatId)).data;
+    }
+
+    // Parents post as themselves; doctors only in their own chats; the AI
+    // assistant ('doctor_bot') replies are written by the parent's client.
+    function isValidSender(chat) {
+      let m = request.resource.data;
+      return (m.senderType in ['user', 'patient']
+              && chat.buyerId == request.auth.uid
+              && m.senderId == request.auth.uid)
+        || (m.senderType == 'doctor' && isDoctorFor(chat.doctorId))
+        || (m.senderType == 'doctor'
+              && chat.doctorId == 'doctor_bot'
+              && chat.buyerId == request.auth.uid
+              && m.senderId == 'doctor_bot');
+    }
+
+    match /chats/{chatId} {
+      // resource == null: the app checks whether a chat exists before creating it.
+      allow get: if signedIn() && (resource == null || isChatParticipant(resource.data));
+      allow list: if isChatParticipant(resource.data);
+      allow create: if signedIn() && request.resource.data.buyerId == request.auth.uid;
+      allow update: if isChatParticipant(resource.data)
+        && !changedKeys().hasAny(['buyerId', 'doctorId']);
+      allow delete: if isChatParticipant(resource.data);
+
+      match /messages/{messageId} {
+        allow read: if isChatParticipant(chatData(chatId));
+        allow create: if isChatParticipant(chatData(chatId)) && isValidSender(chatData(chatId));
+        allow update: if isChatParticipant(chatData(chatId))
+          && !changedKeys().hasAny(['senderId', 'senderType']);
+        allow delete: if isChatParticipant(chatData(chatId));
+      }
+
+      // WebRTC signalling for video calls.
+      match /webrtc/{docId} {
+        allow read, write: if isChatParticipant(chatData(chatId));
+      }
+      match /doctor_candidates/{docId} {
+        allow read, write: if isChatParticipant(chatData(chatId));
+      }
+      match /patient_candidates/{docId} {
+        allow read, write: if isChatParticipant(chatData(chatId));
+      }
+    }
+
+    // ─── Appointments ──────────────────────────────────────────
+    match /appointments/{appointmentId} {
+      allow read: if signedIn()
+        && (resource.data.patientId == request.auth.uid || isDoctorFor(resource.data.doctorId));
+      allow create: if isDoctorFor(request.resource.data.doctorId);
+      allow update: if isDoctorFor(resource.data.doctorId)
+        && request.resource.data.doctorId == resource.data.doctorId;
+      allow delete: if isDoctorFor(resource.data.doctorId);
+    }
+
+    // ─── Payments ──────────────────────────────────────────────
+    // NOTE: the owner can still change status from the client (sandbox flow).
+    // Real settlement must move to the Midtrans webhook in functions/.
+    match /payments/{paymentId} {
+      allow get: if signedIn()
+        && (resource == null
+            || resource.data.userId == request.auth.uid
+            || isDoctorFor(resource.data.doctorId));
+      allow list: if signedIn()
+        && (resource.data.userId == request.auth.uid || isDoctorFor(resource.data.doctorId));
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && !changedKeys().hasAny(['userId', 'doctorId', 'amount']);
+      allow delete: if false;
+    }
+
+    // ─── Community ─────────────────────────────────────────────
+    match /community_posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      // Non-authors may only like/unlike and bump the comment counter.
+      allow update: if signedIn()
+        && (resource.data.authorId == request.auth.uid
+            || changedKeys().hasOnly(['likedBy', 'likesCount', 'commentsCount']));
+      allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+
+      match /comments/{commentId} {
+        allow read: if signedIn();
+        allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+        allow update: if signedIn() && resource.data.authorId == request.auth.uid;
+        // Comment author, or the post author (deleting the whole post).
+        allow delete: if signedIn()
+          && (resource.data.authorId == request.auth.uid
+              || get(/databases/$(database)/documents/community_posts/$(postId)).data.authorId == request.auth.uid);
+      }
+    }
+
+    // ─── Multiplayer drawing rooms ─────────────────────────────
     match /speed_draw_rooms/{roomId} {
-      allow read, write: if true;
+      allow read, write: if signedIn();
+
+      match /{document=**} {
+        allow read, write: if signedIn();
+      }
     }
   }
 }

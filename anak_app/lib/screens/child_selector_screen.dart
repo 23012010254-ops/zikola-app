@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
@@ -247,13 +248,13 @@ class _ChildSelectorScreenState extends State<ChildSelectorScreen> {
           boxShadow: [
             if (isActive)
               BoxShadow(
-                color: AppTheme.primaryBlue.withOpacity(0.15),
+                color: AppTheme.primaryBlue.withValues(alpha: 0.15),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               )
             else
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),
@@ -298,10 +299,28 @@ class _ChildSelectorScreenState extends State<ChildSelectorScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Center(
-                        child: Text(
-                          child.avatar,
-                          style: const TextStyle(fontSize: 32),
-                        ),
+                        child: (child.avatarBase64 != null && child.avatarBase64!.isNotEmpty)
+                            ? ClipOval(
+                                child: Image.memory(
+                                  base64Decode(child.avatarBase64!),
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : child.avatar.startsWith('assets/')
+                                ? ClipOval(
+                                    child: Image.asset(
+                                      child.avatar,
+                                      width: 44,
+                                      height: 44,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : Text(
+                                    child.avatar,
+                                    style: const TextStyle(fontSize: 32),
+                                  ),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -754,7 +773,7 @@ class _AddChildBottomSheetState extends State<_AddChildBottomSheet> {
                     backgroundColor: AppTheme.primaryBlue,
                     foregroundColor: Colors.white,
                     elevation: 4,
-                    shadowColor: AppTheme.primaryBlue.withOpacity(0.4),
+                    shadowColor: AppTheme.primaryBlue.withValues(alpha: 0.4),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -801,7 +820,7 @@ class _GenderOption extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : AppTheme.gray50,
+          color: isSelected ? color.withValues(alpha: 0.1) : AppTheme.gray50,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? color : AppTheme.gray200,

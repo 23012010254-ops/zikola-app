@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -173,7 +172,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
       _hintsUsed = 0;
       _gameStartTime = DateTime.now();
     });
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playArcadeBGM();
     _initLevel();
   }
 
@@ -204,7 +203,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
       _selectedAnswer = answer;
       _isTimerRunning = false;
     });
-    AudioService().playSFX('flip.mp3');
+    AudioService().playPop();
 
     if (answer == _challenge!.missing) {
       setState(() {
@@ -213,13 +212,14 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
         _correctAnswers++;
         _levelCorrectAnswers++;
       });
-      AudioService().playSFX('correct.mp3');
+      AudioService().playCorrect();
 
       if (_levelCorrectAnswers >= 3) {
         _timer?.cancel();
         int stars = 1;
-        if (_lives == 3) stars = 3;
-        else if (_lives == 2) stars = 2;
+        if (_lives == 3) {
+          stars = 3;
+        } else if (_lives == 2) stars = 2;
 
         _starRatings[_currentLevel - 1] = max(_starRatings[_currentLevel - 1], stars);
 
@@ -229,6 +229,8 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
 
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (!mounted) return;
+          AudioService().stopBGM();
+          AudioService().playSparkle();
           setState(() {
             _gameState = 'level_complete';
           });
@@ -252,12 +254,14 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
       _isTimerRunning = false;
       _timeLeft = 30;
     });
-    AudioService().playSFX('wrong.mp3');
+    AudioService().playWrong();
 
     if (_lives <= 0) {
       _timer?.cancel();
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (!mounted) return;
+        AudioService().stopBGM();
+        AudioService().playGameOver();
         setState(() {
           _gameState = 'game_over';
         });
@@ -401,9 +405,9 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                     padding: const EdgeInsets.all(32),
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(40),
-                      border: Border.all(color: Colors.white.withOpacity(0.2)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                     ),
                     child: Column(
                       children: [
@@ -444,10 +448,10 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
         ),
         child: Icon(icon, color: Colors.white),
       ),
@@ -467,7 +471,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8B5CF6).withOpacity(0.4),
+            color: const Color(0xFF8B5CF6).withValues(alpha: 0.4),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -631,7 +635,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                     boxShadow: isUnlocked
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFA78BFA).withOpacity(0.3 + pulse * 0.3),
+                              color: const Color(0xFFA78BFA).withValues(alpha: 0.3 + pulse * 0.3),
                               blurRadius: 10 + pulse * 6,
                               spreadRadius: pulse * 1.5,
                             ),
@@ -709,7 +713,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(32),
                     bottomRight: Radius.circular(32),
@@ -725,7 +729,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(Icons.arrow_back, color: Colors.white),
@@ -744,7 +748,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(Icons.refresh, color: Colors.white),
@@ -758,7 +762,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                       children: [
                         _buildStatBadge('Skor', '$_score', Colors.amber),
                         _buildStatBadge('Nyawa', '❤️ $_lives', Colors.redAccent),
-                        _buildStatBadge('Waktu', '⏱️ $_timeLeft', Colors.white.withOpacity(0.2), isMain: false),
+                        _buildStatBadge('Waktu', '⏱️ $_timeLeft', Colors.white.withValues(alpha: 0.2), isMain: false),
                       ],
                     ),
                   ],
@@ -773,9 +777,9 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                       Container(
                         padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(32),
-                          border: Border.all(color: Colors.white.withOpacity(0.2)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                         ),
                         child: Column(
                           children: [
@@ -814,7 +818,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                                         ),
                                         boxShadow: isMissing ? [] : [
                                           BoxShadow(
-                                            color: const Color(0xFF6D28D9).withOpacity(0.5),
+                                            color: const Color(0xFF6D28D9).withValues(alpha: 0.5),
                                             offset: const Offset(0, 4),
                                             blurRadius: 4,
                                           ),
@@ -868,7 +872,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: btnColor.withOpacity(0.4),
+                                    color: btnColor.withValues(alpha: 0.4),
                                     offset: const Offset(0, 6),
                                     blurRadius: 6,
                                   ),
@@ -909,7 +913,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                           child: Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEF08A).withOpacity(0.9),
+                              color: const Color(0xFFFEF08A).withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(24),
                             ),
                             child: Row(
@@ -963,7 +967,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: isMain ? color : Colors.white.withOpacity(0.1),
+        color: isMain ? color : Colors.white.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -1165,7 +1169,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
 
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: const Color(0xFFFEFCE8).withOpacity(0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.amber.withOpacity(0.3))),
+                    decoration: BoxDecoration(color: const Color(0xFFFEFCE8).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.amber.withValues(alpha: 0.3))),
                     child: Row(
                       children: [
                         const Icon(Icons.workspace_premium, color: Colors.amber, size: 24),
@@ -1203,7 +1207,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.1),
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1224,7 +1228,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
   Widget _buildResultStatRow(String label, String value) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1245,12 +1249,12 @@ class _ConstellationPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final linePaint = Paint()
-      ..color = Colors.white.withOpacity(0.15)
+      ..color = Colors.white.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
     final glowPaint = Paint()
-      ..color = const Color(0xFFA78BFA).withOpacity(0.4)
+      ..color = const Color(0xFFA78BFA).withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0;
 

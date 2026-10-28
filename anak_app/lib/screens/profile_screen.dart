@@ -1,6 +1,8 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
@@ -23,7 +25,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _nameController;
   final ImagePicker _picker = ImagePicker();
 
-  final List<String> _avatarOptions = ['👦', '👧', '🧒', '👶', '🐱', '🐶', '🦊', '🐼', '🐸', '🦄'];
+  final List<String> _avatarOptions = [
+    'assets/images/stickers/hai.png',
+    'assets/images/stickers/keren.png',
+    'assets/images/stickers/hebat.png',
+    'assets/images/stickers/love_it.png',
+    '👦', '👧', '🐱', '🐼', '🦄'
+  ];
 
   final List<Map<String, dynamic>> _colorOptions = [
     {'name': 'blue', 'color': const Color(0xFF3B82F6), 'label': 'Biru'},
@@ -101,7 +109,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildCustomizationView(BuildContext context) {
-    final profile = context.watch<AppState>().childProfile;
+    final appState = context.watch<AppState>();
+    final profile = appState.childProfile;
     final bgColor = _parseColor(profile.backgroundColor);
     final favColorLabel = _colorOptions.firstWhere((c) => c['name'] == profile.favoriteColor, orElse: () => _colorOptions[0])['label'];
 
@@ -119,7 +128,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           onPressed: () => setState(() => _showCustomization = false),
         ),
-        title: Text('Kustomisasi Profile', style: AppTheme.heading2.copyWith(color: const Color(0xFF1E293B), fontSize: 18)),
+        title: Text('Kustomisasi Profil', style: AppTheme.heading2.copyWith(color: const Color(0xFF1E293B), fontSize: 18)),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -130,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(40), bottomRight: Radius.circular(40)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 10))],
               ),
               child: Column(
                 children: [
@@ -140,13 +149,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: bgColor,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [BoxShadow(color: bgColor.withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 8))],
+                      boxShadow: [BoxShadow(color: bgColor.withValues(alpha: 0.4), blurRadius: 15, offset: const Offset(0, 8))],
                       image: profile.avatarBase64 != null 
                         ? DecorationImage(image: MemoryImage(base64Decode(profile.avatarBase64!)), fit: BoxFit.cover) 
                         : null,
                     ),
                     child: profile.avatarBase64 == null 
-                      ? Center(child: Text(profile.avatar, style: const TextStyle(fontSize: 56)))
+                      ? Center(
+                          child: profile.avatar.startsWith('assets/')
+                            ? Image.asset(profile.avatar, width: 80, height: 80)
+                            : Text(profile.avatar, style: const TextStyle(fontSize: 56))
+                        )
                       : null,
                   ),
                   const SizedBox(height: 20),
@@ -155,7 +168,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: bgColor.withOpacity(0.1),
+                      color: bgColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -165,28 +178,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Follow Stats
+                  // Gamified Kid Stats
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/follows-screen', arguments: {
-                            'title': 'Pengikut',
-                            'uids': profile.followers,
-                          });
-                        },
-                        child: _buildStatColumn('Pengikut', profile.followers.length.toString()),
+                      _buildStatPill(
+                        label: 'XP Belajar',
+                        value: '${appState.totalXP}',
+                        icon: '⭐',
+                        bgColor: const Color(0xFFEFF6FF),
+                        borderColor: const Color(0xFFBFDBFE),
+                        textColor: const Color(0xFF1D4ED8),
                       ),
-                      Container(height: 24, width: 1, color: Colors.grey.shade300, margin: const EdgeInsets.symmetric(horizontal: 24)),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, '/follows-screen', arguments: {
-                            'title': 'Mengikuti',
-                            'uids': profile.following,
-                          });
-                        },
-                        child: _buildStatColumn('Mengikuti', profile.following.length.toString()),
+                      _buildStatPill(
+                        label: 'Hari Seri',
+                        value: '${appState.currentStreak}',
+                        icon: '🔥',
+                        bgColor: const Color(0xFFFFFBEB),
+                        borderColor: const Color(0xFFFDE68A),
+                        textColor: const Color(0xFFB45309),
+                      ),
+                      _buildStatPill(
+                        label: 'Level Anak',
+                        value: 'Lvl ${appState.currentLevel}',
+                        icon: '🌟',
+                        bgColor: const Color(0xFFFAF5FF),
+                        borderColor: const Color(0xFFE9D5FF),
+                        textColor: const Color(0xFF7E22CE),
                       ),
                     ],
                   ),
@@ -236,15 +254,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             margin: const EdgeInsets.only(right: 12),
                             width: 64,
                             decoration: BoxDecoration(
-                              color: isSelected ? bgColor.withOpacity(0.1) : Colors.white,
+                              color: isSelected ? bgColor.withValues(alpha: 0.1) : Colors.white,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isSelected ? bgColor : const Color(0xFFF1F5F9),
                                 width: isSelected ? 2 : 1.5,
                               ),
-                              boxShadow: isSelected ? [BoxShadow(color: bgColor.withOpacity(0.2), blurRadius: 8)] : [],
+                              boxShadow: isSelected ? [BoxShadow(color: bgColor.withValues(alpha: 0.2), blurRadius: 8)] : [],
                             ),
-                            child: Center(child: Text(avatar, style: const TextStyle(fontSize: 32))),
+                            child: Center(
+                              child: avatar.startsWith('assets/') 
+                                  ? Image.asset(avatar, width: 40, height: 40)
+                                  : Text(avatar, style: const TextStyle(fontSize: 32)),
+                            ),
                           ),
                         );
                       },
@@ -283,7 +305,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: isSelected ? color.withOpacity(0.2) : Colors.black.withOpacity(0.02),
+                                color: isSelected ? color.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.02),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               )
@@ -322,7 +344,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => setState(() => _showCustomization = false),
+                      onPressed: () {
+                        setState(() => _showCustomization = false);
+                        ScaffoldMessenger.of(context).clearSnackBars();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Image.asset('assets/images/stickers/terimakasih.png', width: 40, height: 40),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text('Profil berhasil diperbarui!', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: AppTheme.primaryGreen,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1E293B),
                         foregroundColor: Colors.white,
@@ -346,7 +388,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMainProfileView(BuildContext context) {
     final appState = context.watch<AppState>();
     final profile = appState.childProfile;
-    final bgColor = _parseColor(profile.backgroundColor);
     final mbti = appState.mbtiResult;
 
     if (_isEditing && _nameController.text != profile.name) {
@@ -366,14 +407,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   // Header Gradient Backing
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 64),
-                    decoration: BoxDecoration(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 72),
+                    decoration: const BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.topLeft, end: Alignment.bottomRight,
-                        colors: [bgColor, bgColor.withOpacity(0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF1E40AF), Color(0xFF2563EB), Color(0xFF3B82F6)],
+                      ),
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: Radius.circular(36),
+                        bottomRight: Radius.circular(36),
                       ),
                     ),
-                    child: Center(child: Text('Profile', style: AppTheme.heading2.copyWith(color: Colors.white, fontSize: 18))),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Profil Anak 🧒',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _showCustomization = true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.22),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.palette_rounded, color: Colors.white, size: 14),
+                                SizedBox(width: 5),
+                                Text(
+                                  'Ubah Tema',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    fontFamily: 'Nunito',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
 
                   // Profile Card
@@ -387,8 +473,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             padding: const EdgeInsets.all(24),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: Offset(0, 8))],
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(color: const Color(0xFFF1F5F9), width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.05),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
                             ),
                             child: Column(
                               children: [
@@ -398,32 +491,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   alignment: Alignment.center,
                                   children: [
                                     Container(
-                                      width: 80, height: 80,
+                                      width: 88,
+                                      height: 88,
                                       decoration: BoxDecoration(
-                                        color: bgColor, shape: BoxShape.circle, 
-                                        boxShadow: [BoxShadow(color: bgColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
-                                        image: profile.avatarBase64 != null 
-                                          ? DecorationImage(image: MemoryImage(base64Decode(profile.avatarBase64!)), fit: BoxFit.cover) 
-                                          : null,
+                                        color: const Color(0xFFEFF6FF),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: const Color(0xFFBFDBFE), width: 3),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFF2563EB).withValues(alpha: 0.2),
+                                            blurRadius: 14,
+                                            offset: const Offset(0, 6),
+                                          ),
+                                        ],
+                                        image: profile.avatarBase64 != null
+                                            ? DecorationImage(
+                                                image: MemoryImage(base64Decode(profile.avatarBase64!)),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : null,
                                       ),
-                                      child: profile.avatarBase64 == null 
-                                        ? Center(child: Text(profile.avatar, style: const TextStyle(fontSize: 32))) 
-                                        : null,
+                                      child: profile.avatarBase64 == null
+                                          ? Center(
+                                              child: profile.avatar.startsWith('assets/')
+                                                  ? ClipOval(
+                                                      child: Image.asset(
+                                                        profile.avatar,
+                                                        width: 80,
+                                                        height: 80,
+                                                        fit: BoxFit.cover,
+                                                      ),
+                                                    )
+                                                  : Text(
+                                                      profile.avatar.isNotEmpty ? profile.avatar : '👦',
+                                                      style: const TextStyle(fontSize: 40),
+                                                    ),
+                                            )
+                                          : null,
                                     ),
                                     Positioned(
-                                      bottom: -4, right: -4,
+                                      bottom: -2,
+                                      right: -2,
                                       child: GestureDetector(
                                         onTap: () => setState(() => _showCustomization = true),
                                         child: Container(
-                                          width: 32, height: 32,
-                                          decoration: const BoxDecoration(color: Color(0xFFF97316), shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)]),
-                                          child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                                          width: 30,
+                                          height: 30,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF97316),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(color: Colors.white, width: 2),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.2),
+                                                blurRadius: 4,
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Icon(Icons.edit_rounded, color: Colors.white, size: 14),
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 24),
+                                const SizedBox(height: 20),
 
                                 if (_isEditing)
                                   Column(
@@ -467,85 +598,135 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           _nameController.text = profile.name;
                                           setState(() => _isEditing = true);
                                         },
-                                        child: Text(profile.name, style: AppTheme.heading2.copyWith(color: AppTheme.gray900, fontSize: 20)),
+                                        child: Text(
+                                          profile.name,
+                                          style: const TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF0F172A),
+                                            letterSpacing: -0.3,
+                                            fontFamily: 'Nunito',
+                                          ),
+                                        ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 2),
                                       Text(
                                         appState.email ?? '${profile.name.toLowerCase()}@gmail.com',
-                                        style: AppTheme.bodyText.copyWith(color: AppTheme.gray500, fontSize: 12),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF64748B),
+                                          fontFamily: 'Nunito',
+                                        ),
                                       ),
-                                      const SizedBox(height: 16),
+                                      const SizedBox(height: 18),
                                       
-                                      // Follow Stats
+                                      // Duolingo-style Stat Trio
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                         children: [
-                                          GestureDetector(
-                                            onTap: () {
-                                              Navigator.pushNamed(context, '/follows-screen', arguments: {
-                                                'title': 'Pengikut',
-                                                'uids': profile.followers,
-                                              });
-                                            },
-                                            child: _buildStatColumn('Pengikut', profile.followers.length.toString()),
+                                          _buildStatPill(
+                                            label: 'XP Belajar',
+                                            value: '${appState.totalXP}',
+                                            icon: '⭐',
+                                            bgColor: const Color(0xFFEFF6FF),
+                                            borderColor: const Color(0xFFBFDBFE),
+                                            textColor: const Color(0xFF1D4ED8),
                                           ),
-                                          Container(height: 24, width: 1, color: Colors.grey.shade300, margin: const EdgeInsets.symmetric(horizontal: 24)),
-                                          GestureDetector(
-                                            onTap: () {
-                                              Navigator.pushNamed(context, '/follows-screen', arguments: {
-                                                'title': 'Mengikuti',
-                                                'uids': profile.following,
-                                              });
-                                            },
-                                            child: _buildStatColumn('Mengikuti', profile.following.length.toString()),
+                                          _buildStatPill(
+                                            label: 'Hari Seri',
+                                            value: '${appState.currentStreak}',
+                                            icon: '🔥',
+                                            bgColor: const Color(0xFFFFFBEB),
+                                            borderColor: const Color(0xFFFDE68A),
+                                            textColor: const Color(0xFFB45309),
+                                          ),
+                                          _buildStatPill(
+                                            label: 'Level Anak',
+                                            value: 'Lvl ${appState.currentLevel}',
+                                            icon: '🌟',
+                                            bgColor: const Color(0xFFFAF5FF),
+                                            borderColor: const Color(0xFFE9D5FF),
+                                            textColor: const Color(0xFF7E22CE),
                                           ),
                                         ],
                                       ),
                                     ],
                                   ),
 
-                                const SizedBox(height: 24),
+                                const SizedBox(height: 22),
 
-                                // Improved Points Card
+                                // Celengan Bintang & Poin (Golden Amber Card)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
-                                      colors: [Color(0xFF3B82F6), Color(0xFF2563EB)], // Premium Blue
+                                      colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
                                     ),
                                     borderRadius: BorderRadius.circular(24),
                                     boxShadow: [
-                                      BoxShadow(color: const Color(0xFF3B82F6).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))
+                                      BoxShadow(
+                                        color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                                        blurRadius: 14,
+                                        offset: const Offset(0, 6),
+                                      ),
                                     ],
                                   ),
                                   child: Row(
                                     children: [
                                       Container(
-                                        width: 56, height: 56,
-                                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
-                                        child: const Center(child: Text('🏆', style: TextStyle(fontSize: 28))),
+                                        width: 52,
+                                        height: 52,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.25),
+                                          borderRadius: BorderRadius.circular(18),
+                                        ),
+                                        child: const Center(child: Text('💰', style: TextStyle(fontSize: 26))),
                                       ),
-                                      const SizedBox(width: 16),
+                                      const SizedBox(width: 14),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text('Total Poin Kamu', style: AppTheme.bodyText.copyWith(color: Colors.white.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.bold)),
+                                            Text(
+                                              'Celengan Bintang & Poin',
+                                              style: TextStyle(
+                                                color: Colors.white.withValues(alpha: 0.9),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w800,
+                                                fontFamily: 'Nunito',
+                                              ),
+                                            ),
                                             const SizedBox(height: 2),
-                                            Row(
-                                              crossAxisAlignment: CrossAxisAlignment.center,
-                                              children: [
-                                                const Text('💰', style: TextStyle(fontSize: 20)),
-                                                const SizedBox(width: 6),
-                                                Text(
-                                                  AppState.formatCurrency(appState.totalPoints),
-                                                  style: AppTheme.heading1.copyWith(color: Colors.white, fontSize: 28, letterSpacing: -0.5),
-                                                ),
-                                              ],
+                                            Text(
+                                              AppState.formatCurrency(appState.totalPoints),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 26,
+                                                fontWeight: FontWeight.w900,
+                                                letterSpacing: -0.5,
+                                                fontFamily: 'Nunito',
+                                              ),
                                             ),
                                           ],
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        child: const Text(
+                                          'Tukar Hadiah 🎁',
+                                          style: TextStyle(
+                                            color: Color(0xFFB45309),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w900,
+                                            fontFamily: 'Nunito',
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -561,7 +742,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(24),
-                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))],
                                   ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,7 +761,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: List.generate(4, (index) {
-                                          final showcased = profile.showcasedStickers.length > index ? profile.showcasedStickers[index] : '';
+                                          const defaultShowcase = ['eternal-crown', 'celestial-galaxy-dragon', 'hot-streak', 'dragon-emperor'];
+                                          final showcased = (profile.showcasedStickers.length > index && profile.showcasedStickers[index].isNotEmpty)
+                                              ? profile.showcasedStickers[index]
+                                              : (index < defaultShowcase.length ? defaultShowcase[index] : '');
                                           
                                           return ShiningStickerSlot(
                                             stickerId: showcased,
@@ -612,7 +796,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ),
                                       borderRadius: BorderRadius.circular(24),
                                       boxShadow: [
-                                        BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 8)),
+                                        BoxShadow(color: const Color(0xFFA855F7).withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8)),
                                       ],
                                     ),
                                     child: Stack(
@@ -620,11 +804,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         // Background decorations
                                         Positioned(
                                           top: -32, right: -32,
-                                          child: Container(width: 80, height: 80, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle)),
+                                          child: Container(width: 80, height: 80, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle)),
                                         ),
                                         Positioned(
                                           bottom: -24, left: -24,
-                                          child: Container(width: 60, height: 60, decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle)),
+                                          child: Container(width: 60, height: 60, decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), shape: BoxShape.circle)),
                                         ),
 
                                         Padding(
@@ -637,7 +821,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   Container(
                                                     width: 40, height: 40,
                                                     decoration: BoxDecoration(
-                                                      color: Colors.white.withOpacity(0.2),
+                                                      color: Colors.white.withValues(alpha: 0.2),
                                                       borderRadius: BorderRadius.circular(12),
                                                     ),
                                                     child: const Center(child: Text('🎭', style: TextStyle(fontSize: 20))),
@@ -647,7 +831,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                     crossAxisAlignment: CrossAxisAlignment.start,
                                                     children: [
                                                       Text('Kepribadian MBTI', style: AppTheme.heading3.copyWith(color: Colors.white, fontSize: 13)),
-                                                      Text(mbti['type'] ?? 'Unknown', style: AppTheme.bodyText.copyWith(color: Colors.white.withOpacity(0.8), fontSize: 11)),
+                                                      Text(mbti['type'] ?? 'Unknown', style: AppTheme.bodyText.copyWith(color: Colors.white.withValues(alpha: 0.8), fontSize: 11)),
                                                     ],
                                                   ),
                                                 ],
@@ -658,9 +842,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               Container(
                                                 padding: const EdgeInsets.all(16),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.white.withOpacity(0.1),
+                                                  color: Colors.white.withValues(alpha: 0.1),
                                                   borderRadius: BorderRadius.circular(16),
-                                                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                                                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                                                 ),
                                                 child: Column(
                                                   children: [
@@ -671,9 +855,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                         Container(
                                                           width: 72, height: 72,
                                                           decoration: BoxDecoration(
-                                                            color: Colors.white.withOpacity(0.2),
+                                                            color: Colors.white.withValues(alpha: 0.2),
                                                             borderRadius: BorderRadius.circular(16),
-                                                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
+                                                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
                                                           ),
                                                           child: Center(child: Text(mbti['animalEmoji'] ?? appState.testResults.personality.animalEmoji ?? '🦁', style: const TextStyle(fontSize: 40))),
                                                         ),
@@ -684,7 +868,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                             children: [
                                                               Text(mbti['animal'] ?? appState.testResults.personality.animal ?? '', style: AppTheme.heading3.copyWith(color: Colors.white, fontSize: 16)),
                                                               const SizedBox(height: 4),
-                                                              Text(mbti['personality'] ?? '', style: AppTheme.bodyText.copyWith(color: Colors.white.withOpacity(0.9), fontSize: 12)),
+                                                              Text(mbti['personality'] ?? '', style: AppTheme.bodyText.copyWith(color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
                                                               const SizedBox(height: 8),
                                                               // Trait badges
                                                               Wrap(
@@ -698,9 +882,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                                     .map((trait) => Container(
                                                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                                                           decoration: BoxDecoration(
-                                                                            color: Colors.white.withOpacity(0.2),
+                                                                            color: Colors.white.withValues(alpha: 0.2),
                                                                             borderRadius: BorderRadius.circular(8),
-                                                                            border: Border.all(color: Colors.white.withOpacity(0.3)),
+                                                                            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                                                                           ),
                                                                           child: Text(trait.toString().trim(), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500)),
                                                                         ))
@@ -715,7 +899,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                     // Aspect Scores (if personality test completed)
                                                     if (appState.testResults.personality.completed) ...[
                                                       const SizedBox(height: 16),
-                                                      Container(height: 1, color: Colors.white.withOpacity(0.2)),
+                                                      Container(height: 1, color: Colors.white.withValues(alpha: 0.2)),
                                                       const SizedBox(height: 16),
                                                       Row(
                                                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -741,7 +925,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                     backgroundColor: Colors.white,
                                                     foregroundColor: const Color(0xFF9333EA),
                                                     elevation: 4,
-                                                    shadowColor: Colors.black.withOpacity(0.2),
+                                                    shadowColor: Colors.black.withValues(alpha: 0.2),
                                                     padding: const EdgeInsets.symmetric(vertical: 14),
                                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                                   ),
@@ -778,7 +962,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(colors: [Color(0xFFA855F7), Color(0xFFEC4899)]), // purple-500 to pink-500
                                         borderRadius: BorderRadius.circular(16),
-                                        boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))],
+                                        boxShadow: [BoxShadow(color: const Color(0xFFA855F7).withValues(alpha: 0.3), blurRadius: 8, offset: Offset(0, 4))],
                                       ),
                                       child: Container(
                                         alignment: Alignment.center,
@@ -788,7 +972,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           children: const [
                                             Icon(Icons.palette, color: Colors.white, size: 20),
                                             SizedBox(width: 12),
-                                            Text('Kustomisasi Profile', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                                            Text('Kustomisasi Profil', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
                                           ],
                                         ),
                                       ),
@@ -823,10 +1007,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   }
                                 );
                                 
-                                if (result == true || result is String) {
-                                  if (result == 'RESET') {
-                                    await appState.setParentalPin('');
-                                  } else if (result is String && result.isNotEmpty) {
+                                if (result == true || (result is String && result.length == 4)) {
+                                  if (result is String && result.length == 4) {
                                     await appState.setParentalPin(result);
                                   }
                                   appState.setParentMode(true);
@@ -857,6 +1039,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           if (appState.isParentMode) ...[
                             _buildMenuItem(
                               context,
+                              icon: Icons.pin_outlined,
+                              iconBg: const Color(0xFFFEF3C7),
+                              iconColor: const Color(0xFFD97706),
+                              title: 'Ganti / Reset PIN Orang Tua 🔐',
+                              subtitle: 'Ubah kode PIN 4 digit keamanan orang tua',
+                              onTap: () async {
+                                final dynamic result = await Navigator.pushNamed(
+                                  context,
+                                  '/parental-pin',
+                                  arguments: {
+                                    'isSetup': true,
+                                    'currentPin': appState.parentalPin,
+                                  },
+                                );
+                                if (result is String && result.length == 4) {
+                                  await appState.setParentalPin(result);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('PIN orang tua berhasil diperbarui! 🔐'),
+                                        backgroundColor: Color(0xFF10B981),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 12),
+
+                            _buildMenuItem(
+                              context,
                               icon: Icons.timer_outlined,
                               iconBg: const Color(0xFFFCE7F3), // pink-100
                               iconColor: const Color(0xFFDB2777), // pink-600
@@ -884,6 +1097,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: 'Panduan Orang Tua',
                               subtitle: 'Tips dan panduan tumbuh kembang',
                               onTap: () => Navigator.pushNamed(context, '/parent-guide'),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+
+                          // Portal Dokter Zikola (verified doctors only)
+                          if (appState.isDoctor) ...[
+                            _buildMenuItem(
+                              context,
+                              icon: Icons.local_hospital_rounded,
+                              iconBg: const Color(0xFFF3E8FF), // purple-100
+                              iconColor: const Color(0xFF7C3AED), // purple-600
+                              title: 'Portal Dokter Zikola 🩺',
+                              subtitle: 'Dashboard dokter, kelola pasien & rekam medis',
+                              onTap: () => Navigator.pushNamed(context, '/doctor-portal'),
                             ),
                             const SizedBox(height: 12),
                           ],
@@ -948,6 +1175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               }
                             },
                           ),
+                          const SizedBox(height: 100),
                         ],
                       ),
                     ),
@@ -960,6 +1188,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       bottomNavigationBar: const CustomBottomNav(currentIndex: 4),
+    );
+  }
+
+  Widget _buildStatPill({
+    required String label,
+    required String value,
+    required String icon,
+    required Color bgColor,
+    required Color borderColor,
+    required Color textColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: borderColor.withValues(alpha: 0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 4),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: textColor,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: textColor.withValues(alpha: 0.8),
+              fontFamily: 'Nunito',
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -979,19 +1262,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor == Colors.transparent ? AppTheme.gray100 : borderColor, width: borderColor == Colors.transparent ? 1 : 2),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: borderColor == Colors.transparent ? const Color(0xFFF1F5F9) : borderColor,
+            width: borderColor == Colors.transparent ? 1.5 : 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              width: 48, height: 48,
-              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Center(
                 child: icon != null
-                  ? Icon(icon, color: iconColor, size: 24)
-                  : Text(iconText!, style: const TextStyle(fontSize: 20)),
+                    ? Icon(icon, color: iconColor, size: 24)
+                    : Text(iconText!, style: const TextStyle(fontSize: 20)),
               ),
             ),
             const SizedBox(width: 16),
@@ -999,15 +1295,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTheme.heading3.copyWith(color: AppTheme.gray900, fontSize: 14)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(subtitle, style: AppTheme.bodyText.copyWith(color: borderColor != Colors.transparent ? iconColor ?? AppTheme.gray500 : AppTheme.gray500, fontSize: 11)),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: borderColor != Colors.transparent ? iconColor ?? const Color(0xFF64748B) : const Color(0xFF64748B),
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
                   ]
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: AppTheme.gray400, size: 20),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 22),
           ],
         ),
       ),
@@ -1024,14 +1336,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           width: 48, height: 48,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Center(child: Text(emoji, style: const TextStyle(fontSize: 20))),
         ),
         const SizedBox(height: 6),
         Text(score, style: AppTheme.heading3.copyWith(color: Colors.white, fontSize: 14)),
-        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11)),
+        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11)),
       ],
     );
   }
@@ -1104,18 +1416,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showStickerSelector(BuildContext context, AppState appState, int slotIndex) {
+    // Include top premium stickers in selector so user can always showcase celestial & mythical
+    final allCollected = Set<String>.from(appState.collectedStickers)
+      ..addAll(['celestial-galaxy-dragon', 'divine-phoenix-emperor', 'eternal-crown', 'dragon-emperor', 'hot-streak', 'unicorn-magic']);
+    final collectedList = allCollected.toList();
+
     // Group stickers by rarity
     final Map<String, List<String>> groupedStickers = {
-      'semua': appState.collectedStickers,
-      'mythical': appState.collectedStickers.where((id) => StickerDatabase.getSticker(id)?.rarity == 'mythical').toList(),
-      'legendary': appState.collectedStickers.where((id) => ['legend', 'legendary'].contains(StickerDatabase.getSticker(id)?.rarity)).toList(),
-      'epic': appState.collectedStickers.where((id) => StickerDatabase.getSticker(id)?.rarity == 'epic').toList(),
-      'rare': appState.collectedStickers.where((id) => StickerDatabase.getSticker(id)?.rarity == 'rare').toList(),
-      'common': appState.collectedStickers.where((id) => StickerDatabase.getSticker(id)?.rarity == 'common').toList(),
+      'semua': collectedList,
+      'celestial': collectedList.where((id) => StickerDatabase.getSticker(id)?.rarity == 'celestial').toList(),
+      'mythical': collectedList.where((id) => StickerDatabase.getSticker(id)?.rarity == 'mythical').toList(),
+      'legendary': collectedList.where((id) => ['legend', 'legendary'].contains(StickerDatabase.getSticker(id)?.rarity)).toList(),
+      'epic': collectedList.where((id) => StickerDatabase.getSticker(id)?.rarity == 'epic').toList(),
+      'rare': collectedList.where((id) => StickerDatabase.getSticker(id)?.rarity == 'rare').toList(),
+      'common': collectedList.where((id) => StickerDatabase.getSticker(id)?.rarity == 'common').toList(),
     };
 
     final List<Map<String, dynamic>> categories = [
       {'id': 'semua', 'label': 'Semua', 'icon': '✨', 'color': AppTheme.primaryBlue},
+      {'id': 'celestial', 'label': 'Celestial', 'icon': '🌌', 'color': const Color(0xFF8B5CF6)},
       {'id': 'mythical', 'label': 'Mythical', 'icon': '🐉', 'color': const Color(0xFFEF4444)},
       {'id': 'legendary', 'label': 'Legend', 'icon': '👑', 'color': const Color(0xFFF59E0B)},
       {'id': 'epic', 'label': 'Epic', 'icon': '💎', 'color': const Color(0xFFA855F7)},
@@ -1179,7 +1498,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? cat['color'].withOpacity(0.15) : Colors.transparent,
+                          color: isSelected ? cat['color'].withValues(alpha: 0.15) : Colors.transparent,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isSelected ? cat['color'] : AppTheme.gray200,
@@ -1257,7 +1576,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.05),
+              color: color.withValues(alpha: 0.05),
               shape: BoxShape.circle,
             ),
             child: Text(icon, style: const TextStyle(fontSize: 48)),
@@ -1315,39 +1634,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     
     final isSelected = appState.childProfile.showcasedStickers.contains(stickerId);
     final rarity = info.rarity;
+    final isCelestial = rarity == 'celestial';
     final isMythical = rarity == 'mythical';
+    final isSpecial = isCelestial || isMythical;
     final cardColor = _getRarityColor(rarity);
 
     return GestureDetector(
       onTap: () {
+        AudioService().playSparkle();
+        HapticFeedback.lightImpact();
         appState.setShowcasedSticker(slotIndex, stickerId);
         Navigator.pop(context);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: isMythical ? const Color(0xFF1E1E1E) : Colors.white,
+          color: isCelestial 
+              ? const Color(0xFF0F172A)
+              : (isMythical ? const Color(0xFF1E1E1E) : Colors.white),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? cardColor : (isMythical ? Colors.transparent : AppTheme.gray100),
+            color: isSelected ? cardColor : (isSpecial ? Colors.transparent : AppTheme.gray100),
             width: isSelected ? 3 : 1.5,
           ),
           boxShadow: [
             if (isSelected) 
-              BoxShadow(color: cardColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+              BoxShadow(color: cardColor.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4)),
+            if (isCelestial && !isSelected)
+              BoxShadow(color: const Color(0xFF8B5CF6).withValues(alpha: 0.25), blurRadius: 14, spreadRadius: 1.5),
             if (isMythical && !isSelected)
-              BoxShadow(color: cardColor.withOpacity(0.15), blurRadius: 12, spreadRadius: 1),
+              BoxShadow(color: cardColor.withValues(alpha: 0.15), blurRadius: 12, spreadRadius: 1),
           ],
         ),
         child: Stack(
           children: [
-            if (isMythical)
+            if (isCelestial)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: const LinearGradient(
+                      colors: [Color(0x408B5CF6), Color(0x30EC4899), Colors.transparent],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+              )
+            else if (isMythical)
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(24),
                     gradient: LinearGradient(
-                      colors: [cardColor.withOpacity(0.2), Colors.transparent],
+                      colors: [cardColor.withValues(alpha: 0.2), Colors.transparent],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1370,7 +1710,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(
                         fontSize: 10, 
                         fontWeight: FontWeight.w900, 
-                        color: isMythical ? Colors.white : AppTheme.textPrimary,
+                        color: isSpecial ? Colors.white : AppTheme.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1380,7 +1720,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: cardColor.withOpacity(0.1),
+                      color: isCelestial
+                          ? const Color(0xFF8B5CF6).withValues(alpha: 0.25)
+                          : cardColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -1388,7 +1730,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       style: TextStyle(
                         fontSize: 7, 
                         fontWeight: FontWeight.w900, 
-                        color: cardColor,
+                        color: isCelestial ? const Color(0xFFA78BFA) : cardColor,
                         letterSpacing: 0.5,
                       )
                     ),
@@ -1413,6 +1755,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Color _getRarityColor(String rarity) {
     switch (rarity) {
+      case 'celestial': return const Color(0xFF8B5CF6);
       case 'mythical': return const Color(0xFFEF4444);
       case 'legend':
       case 'legendary': return const Color(0xFFF59E0B);
@@ -1422,15 +1765,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Widget _buildStatColumn(String label, String count) {
-    return Column(
-      children: [
-        Text(count, style: AppTheme.heading2.copyWith(fontSize: 18, color: const Color(0xFF1E293B))),
-        const SizedBox(height: 4),
-        Text(label, style: AppTheme.bodyText.copyWith(fontSize: 12, color: const Color(0xFF64748B), fontWeight: FontWeight.w500)),
-      ],
-    );
-  }
 
   void _showDeleteAccountConfirmation(BuildContext context) {
     showDialog(
@@ -1507,31 +1841,53 @@ class ShiningStickerSlot extends StatefulWidget {
   State<ShiningStickerSlot> createState() => _ShiningStickerSlotState();
 }
 
-class _ShiningStickerSlotState extends State<ShiningStickerSlot> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+class _ShiningStickerSlotState extends State<ShiningStickerSlot> with TickerProviderStateMixin {
+  late AnimationController _shimmerController;
+  late AnimationController _pulseController;
+  late AnimationController _tapController;
   late Animation<double> _glowAnimation;
+  late Animation<double> _tapScaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    // Continuous sweeping holographic foil sheen (shining shimmering splendid)
+    _shimmerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
+
+    // Breathing glow aura bloom
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
-    
-    _glowAnimation = Tween<double>(begin: 0.5, end: 1.2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+
+    _glowAnimation = Tween<double>(begin: 0.65, end: 1.25).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
+    );
+
+    // Tactile tap squish feedback
+    _tapController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+    );
+    _tapScaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
+      CurvedAnimation(parent: _tapController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _shimmerController.dispose();
+    _pulseController.dispose();
+    _tapController.dispose();
     super.dispose();
   }
 
   Color _getRarityColor(String rarity) {
     switch (rarity) {
+      case 'celestial': return const Color(0xFF8B5CF6);
       case 'mythical': return const Color(0xFFEF4444);
       case 'legend':
       case 'legendary': return const Color(0xFFF59E0B);
@@ -1545,151 +1901,662 @@ class _ShiningStickerSlotState extends State<ShiningStickerSlot> with SingleTick
   Widget build(BuildContext context) {
     final info = widget.stickerId.isNotEmpty ? StickerDatabase.getSticker(widget.stickerId) : null;
     final rarity = info?.rarity ?? 'none';
+    final isCelestial = rarity == 'celestial';
     final isMythical = rarity == 'mythical';
     final isLegendary = rarity == 'legend' || rarity == 'legendary';
-    final isPremium = isMythical || isLegendary || rarity == 'epic';
-    final cardHeight = widget.isLarge ? 125.0 : 100.0;
-    final emojiSize = widget.isLarge ? 52.0 : 40.0;
+    final isEpic = rarity == 'epic';
+    final isRare = rarity == 'rare';
 
-    return Expanded(
-      flex: widget.isLarge ? 0 : 1,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedBuilder(
-          animation: _glowAnimation,
-          builder: (context, child) {
-            double glowVal = _glowAnimation.value;
-            
-            return Container(
-              height: cardHeight,
-              width: widget.isLarge ? 90 : null,
-              margin: EdgeInsets.only(right: widget.index == 3 ? 0 : 8),
-              decoration: BoxDecoration(
-                color: info != null ? _getSlotBgColor(rarity) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: info != null
-                      ? (isMythical
-                          ? Color.lerp(const Color(0xFFEF4444), const Color(0xFFFF6B6B), glowVal)!
-                          : _getSlotBorderColor(rarity))
-                      : const Color(0xFFE2E8F0),
-                  width: isMythical ? 3.0 + 1.5 * glowVal : (isPremium ? 2.0 : 1.5),
-                ),
-                boxShadow: isPremium && info != null ? [
-                  BoxShadow(
-                    color: _getRarityColor(rarity).withOpacity(
-                      isMythical ? (0.25 + 0.35 * glowVal) : (0.15 + 0.15 * glowVal)
-                    ),
-                    blurRadius: isMythical ? (12 + 12 * glowVal) : (8 + 6 * glowVal),
-                    spreadRadius: isMythical ? (2 + 3 * glowVal) : glowVal,
-                  ),
-                  if (isMythical)
-                    BoxShadow(
-                      color: Colors.red.withOpacity(0.1 * glowVal),
-                      blurRadius: 20,
-                      spreadRadius: 4 * glowVal,
-                    ),
-                ] : info != null ? [
-                  BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2))
-                ] : [],
+    final cardHeight = widget.isLarge ? 134.0 : 116.0;
+    final cardWidth = widget.isLarge ? 96.0 : null;
+    final emojiSize = widget.isLarge ? 40.0 : 32.0;
+    final spriteSize = widget.isLarge ? 84.0 : 66.0;
+
+    Widget cardWidget = AnimatedBuilder(
+      animation: Listenable.merge([_glowAnimation, _shimmerController]),
+      builder: (context, child) {
+        final glowVal = _glowAnimation.value;
+        final shimmerVal = _shimmerController.value;
+
+        // Determine Background Gradient
+        Gradient cardBgGradient;
+        if (info == null) {
+          cardBgGradient = const LinearGradient(
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+        } else if (isCelestial) {
+          cardBgGradient = const LinearGradient(
+            colors: [
+              Color(0xFF09061C),
+              Color(0xFF160A30),
+              Color(0xFF280B4D),
+              Color(0xFF0D0524),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+        } else if (isMythical) {
+          cardBgGradient = const LinearGradient(
+            colors: [
+              Color(0xFF260404),
+              Color(0xFF48090E),
+              Color(0xFF700D15),
+              Color(0xFF350606),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+        } else if (isLegendary) {
+          cardBgGradient = const LinearGradient(
+            colors: [
+              Color(0xFF1E1502),
+              Color(0xFF3B2404),
+              Color(0xFF5C3806),
+              Color(0xFF281803),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+        } else if (isEpic) {
+          cardBgGradient = const LinearGradient(
+            colors: [
+              Color(0xFF190C2B),
+              Color(0xFF2E124D),
+              Color(0xFF4A1A78),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+        } else if (isRare) {
+          cardBgGradient = const LinearGradient(
+            colors: [
+              Color(0xFF091630),
+              Color(0xFF122B5C),
+              Color(0xFF1A3E85),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+        } else {
+          cardBgGradient = const LinearGradient(
+            colors: [Colors.white, Color(0xFFF8FAFC)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
+        }
+
+        // Determine Border
+        Border cardBorder;
+        if (info == null) {
+          cardBorder = Border.all(color: const Color(0xFFCBD5E1), width: 1.5);
+        } else if (isCelestial) {
+          cardBorder = Border.all(
+            color: Color.lerp(const Color(0xFFC084FC), const Color(0xFF38BDF8), glowVal)!,
+            width: 2.5 + 0.8 * glowVal,
+          );
+        } else if (isMythical) {
+          cardBorder = Border.all(
+            color: Color.lerp(const Color(0xFFEF4444), const Color(0xFFFBBF24), glowVal)!,
+            width: 2.5 + 0.8 * glowVal,
+          );
+        } else if (isLegendary) {
+          cardBorder = Border.all(
+            color: Color.lerp(const Color(0xFFF59E0B), const Color(0xFFFEF08A), glowVal)!,
+            width: 2.2 + 0.6 * glowVal,
+          );
+        } else if (isEpic) {
+          cardBorder = Border.all(color: const Color(0xFFA855F7), width: 1.8);
+        } else if (isRare) {
+          cardBorder = Border.all(color: const Color(0xFF3B82F6), width: 1.8);
+        } else {
+          cardBorder = Border.all(color: const Color(0xFFE2E8F0), width: 1.5);
+        }
+
+        // Determine Multi-Layer Glowing Box Shadows
+        List<BoxShadow> cardShadows = [];
+        if (info != null) {
+          if (isCelestial) {
+            cardShadows = [
+              BoxShadow(
+                color: const Color(0xFF8B5CF6).withValues(alpha: (0.40 + 0.35 * glowVal).clamp(0.0, 1.0)),
+                blurRadius: 18 + 14 * glowVal,
+                spreadRadius: 2.0 + 3.0 * glowVal,
               ),
-              child: Stack(
-                children: [
-                  // Shimmer for legendary/mythical
-                  if (info != null && (isMythical || isLegendary))
-                    Positioned.fill(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(18),
-                        child: Transform.translate(
-                          offset: Offset(_controller.value * 180 - 90, -80 + _controller.value * 160),
-                          child: Transform.rotate(
-                            angle: 0.5,
-                            child: Container(
-                              width: 35,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.white.withOpacity(0),
-                                    Colors.white.withOpacity(0.2 * glowVal),
-                                    (isMythical ? Colors.red : Colors.amber).withOpacity(0.06 * glowVal),
-                                    Colors.white.withOpacity(0),
+              BoxShadow(
+                color: const Color(0xFFEC4899).withValues(alpha: (0.30 + 0.25 * glowVal).clamp(0.0, 1.0)),
+                blurRadius: 28 + 12 * glowVal,
+                spreadRadius: 3.0 * glowVal,
+              ),
+              BoxShadow(
+                color: const Color(0xFF38BDF8).withValues(alpha: (0.20 + 0.20 * glowVal).clamp(0.0, 1.0)),
+                blurRadius: 36 + 10 * glowVal,
+                spreadRadius: 3.5 * glowVal,
+              ),
+            ];
+          } else if (isMythical) {
+            cardShadows = [
+              BoxShadow(
+                color: const Color(0xFFEF4444).withValues(alpha: (0.40 + 0.35 * glowVal).clamp(0.0, 1.0)),
+                blurRadius: 18 + 12 * glowVal,
+                spreadRadius: 2.0 + 2.5 * glowVal,
+              ),
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: (0.30 + 0.25 * glowVal).clamp(0.0, 1.0)),
+                blurRadius: 26 + 10 * glowVal,
+                spreadRadius: 3.0 * glowVal,
+              ),
+              BoxShadow(
+                color: const Color(0xFFDC2626).withValues(alpha: (0.20 + 0.15 * glowVal).clamp(0.0, 1.0)),
+                blurRadius: 32 + 8 * glowVal,
+                spreadRadius: 3.0 * glowVal,
+              ),
+            ];
+          } else if (isLegendary) {
+            cardShadows = [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: (0.35 + 0.30 * glowVal).clamp(0.0, 1.0)),
+                blurRadius: 16 + 10 * glowVal,
+                spreadRadius: 2.0 + 2.0 * glowVal,
+              ),
+              BoxShadow(
+                color: const Color(0xFFFBBF24).withValues(alpha: (0.25 + 0.20 * glowVal).clamp(0.0, 1.0)),
+                blurRadius: 24 + 8 * glowVal,
+                spreadRadius: 2.5 * glowVal,
+              ),
+            ];
+          } else if (isEpic) {
+            cardShadows = [
+              BoxShadow(
+                color: const Color(0xFFA855F7).withValues(alpha: 0.25 * glowVal),
+                blurRadius: 12 + 6 * glowVal,
+                spreadRadius: 1.5,
+              ),
+            ];
+          } else if (isRare) {
+            cardShadows = [
+              BoxShadow(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.25 * glowVal),
+                blurRadius: 10 + 4 * glowVal,
+                spreadRadius: 1.2,
+              ),
+            ];
+          } else {
+            cardShadows = [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 4, offset: const Offset(0, 2)),
+            ];
+          }
+        } else {
+          cardShadows = [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 4, offset: const Offset(0, 2)),
+          ];
+        }
+
+        // Shimmer Gradient Colors
+        LinearGradient? shimmerGradient;
+        if (info != null && (isCelestial || isMythical || isLegendary || isEpic)) {
+          if (isCelestial) {
+            shimmerGradient = LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.transparent,
+                Colors.white.withValues(alpha: 0.0),
+                const Color(0xFF38BDF8).withValues(alpha: 0.35 * glowVal),
+                Colors.white.withValues(alpha: 0.75 * glowVal),
+                const Color(0xFFEC4899).withValues(alpha: 0.40 * glowVal),
+                const Color(0xFFA855F7).withValues(alpha: 0.30 * glowVal),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.25, 0.40, 0.50, 0.60, 0.75, 1.0],
+            );
+          } else if (isMythical) {
+            shimmerGradient = LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.transparent,
+                Colors.white.withValues(alpha: 0.0),
+                const Color(0xFFFBBF24).withValues(alpha: 0.35 * glowVal),
+                Colors.white.withValues(alpha: 0.75 * glowVal),
+                const Color(0xFFEF4444).withValues(alpha: 0.35 * glowVal),
+                const Color(0xFFF59E0B).withValues(alpha: 0.25 * glowVal),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.25, 0.40, 0.50, 0.60, 0.75, 1.0],
+            );
+          } else if (isLegendary) {
+            shimmerGradient = LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.transparent,
+                Colors.white.withValues(alpha: 0.0),
+                const Color(0xFFFDE047).withValues(alpha: 0.35 * glowVal),
+                Colors.white.withValues(alpha: 0.70 * glowVal),
+                const Color(0xFFF59E0B).withValues(alpha: 0.30 * glowVal),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.25, 0.42, 0.50, 0.58, 0.75, 1.0],
+            );
+          } else {
+            shimmerGradient = LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.transparent,
+                Colors.white.withValues(alpha: 0.0),
+                Colors.white.withValues(alpha: 0.40 * glowVal),
+                const Color(0xFFA855F7).withValues(alpha: 0.25 * glowVal),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.3, 0.5, 0.7, 1.0],
+            );
+          }
+        }
+
+        return Container(
+          height: cardHeight,
+          width: cardWidth,
+          margin: EdgeInsets.only(right: widget.index == 3 ? 0 : 8),
+          decoration: BoxDecoration(
+            gradient: cardBgGradient,
+            borderRadius: BorderRadius.circular(20),
+            border: cardBorder,
+            boxShadow: cardShadows,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Stack(
+              children: [
+                // 1. Ambient Radial Glow behind the icon
+                if (info != null && (isCelestial || isMythical || isLegendary))
+                  Center(
+                    child: Container(
+                      width: spriteSize + 10,
+                      height: spriteSize + 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            if (isCelestial) ...[
+                              const Color(0xFF8B5CF6).withValues(alpha: 0.45 * glowVal),
+                              const Color(0xFFEC4899).withValues(alpha: 0.20 * glowVal),
+                              Colors.transparent,
+                            ] else if (isMythical) ...[
+                              const Color(0xFFEF4444).withValues(alpha: 0.45 * glowVal),
+                              const Color(0xFFF59E0B).withValues(alpha: 0.20 * glowVal),
+                              Colors.transparent,
+                            ] else ...[
+                              const Color(0xFFF59E0B).withValues(alpha: 0.40 * glowVal),
+                              Colors.transparent,
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 2. Main Content: Pixel Sprite Animation & Emoji
+                Center(
+                  child: info != null
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SizedBox(
+                                width: spriteSize,
+                                height: spriteSize - 8,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    // Smooth Glowing Aura behind emoji (No chunky pixel-art)
+                                    if (isCelestial)
+                                      Container(
+                                        width: spriteSize * 0.92,
+                                        height: spriteSize * 0.92,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              const Color(0xFFC084FC).withValues(alpha: 0.60 * glowVal),
+                                              const Color(0xFF38BDF8).withValues(alpha: 0.35 * glowVal),
+                                              Colors.transparent,
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    else if (isMythical)
+                                      Container(
+                                        width: spriteSize * 0.92,
+                                        height: spriteSize * 0.92,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              const Color(0xFFEF4444).withValues(alpha: 0.55 * glowVal),
+                                              const Color(0xFFF59E0B).withValues(alpha: 0.30 * glowVal),
+                                              Colors.transparent,
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    else if (isLegendary)
+                                      Container(
+                                        width: spriteSize * 0.88,
+                                        height: spriteSize * 0.88,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: RadialGradient(
+                                            colors: [
+                                              const Color(0xFFF59E0B).withValues(alpha: 0.50 * glowVal),
+                                              const Color(0xFFFDE047).withValues(alpha: 0.25 * glowVal),
+                                              Colors.transparent,
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+
+                                    // Foreground Emoji with crisp 3D shadow
+                                    Text(
+                                      info.emoji,
+                                      style: TextStyle(
+                                        fontSize: emojiSize,
+                                        shadows: [
+                                          if (isCelestial)
+                                            Shadow(
+                                              color: const Color(0xFFC084FC).withValues(alpha: 0.9),
+                                              blurRadius: 16,
+                                              offset: const Offset(0, 2),
+                                            )
+                                          else if (isMythical)
+                                            Shadow(
+                                              color: const Color(0xFFEF4444).withValues(alpha: 0.9),
+                                              blurRadius: 16,
+                                              offset: const Offset(0, 2),
+                                            )
+                                          else if (isLegendary)
+                                            Shadow(
+                                              color: const Color(0xFFF59E0B).withValues(alpha: 0.9),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 2),
+                                            )
+                                          else
+                                            Shadow(
+                                              color: Colors.black.withValues(alpha: 0.2),
+                                              blurRadius: 4,
+                                              offset: const Offset(0, 1),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(height: 3),
+
+                              // Bottom Rarity Pill Badge
+                              _buildRarityBadge(rarity, glowVal),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF1F5F9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.add_rounded, color: Color(0xFF94A3B8), size: 24),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Pilih',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+
+                // 3. Accent Corner Vector Sparkle Effect (No chunky pixel-art)
+                if (info != null && isCelestial)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: (0.5 + 0.5 * glowVal).clamp(0.0, 1.0),
+                        child: const Icon(
+                          Icons.auto_awesome,
+                          color: Color(0xFFC084FC),
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                if (info != null && isMythical)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: (0.5 + 0.5 * glowVal).clamp(0.0, 1.0),
+                        child: const Icon(
+                          Icons.local_fire_department_rounded,
+                          color: Color(0xFFEF4444),
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 4. Floating Twinkling Sparkles
+                if (info != null && (isCelestial || isMythical || isLegendary)) ...[
+                  Positioned(
+                    top: 6,
+                    left: 6,
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: (0.40 + 0.60 * glowVal).clamp(0.0, 1.0),
+                        child: Text(
+                          isCelestial ? '✦' : (isMythical ? '🔥' : '⭐'),
+                          style: TextStyle(
+                            fontSize: 8,
+                            color: isCelestial ? const Color(0xFF38BDF8) : (isMythical ? const Color(0xFFF87171) : const Color(0xFFFDE047)),
+                            shadows: [
+                              Shadow(
+                                color: isCelestial ? const Color(0xFF38BDF8) : (isMythical ? const Color(0xFFEF4444) : const Color(0xFFF59E0B)),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 22,
+                    right: 6,
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: (0.35 + 0.65 * glowVal).clamp(0.0, 1.0),
+                        child: Text(
+                          isCelestial ? '✨' : '✦',
+                          style: TextStyle(
+                            fontSize: isCelestial ? 9 : 8,
+                            color: isCelestial ? const Color(0xFFF472B6) : const Color(0xFFFBBF24),
+                            shadows: [
+                              Shadow(
+                                color: isCelestial ? const Color(0xFFEC4899) : const Color(0xFFF59E0B),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // 5. Continuous Sweeping Holographic Foil Shimmer (Shining Shimmering Splendid)
+                if (shimmerGradient != null)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: Transform.translate(
+                        offset: Offset(
+                          -120.0 + shimmerVal * 280.0,
+                          -80.0 + shimmerVal * 220.0,
+                        ),
+                        child: Transform.rotate(
+                          angle: math.pi / 4.5,
+                          child: Container(
+                            width: 44,
+                            decoration: BoxDecoration(
+                              gradient: shimmerGradient,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    
-                  // Main content
-                  Center(
-                    child: info != null 
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(info.emoji, style: TextStyle(fontSize: emojiSize)),
-                            const SizedBox(height: 2),
-                            Text(
-                              info.rarity.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 7,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
-                                color: _getRarityColor(rarity).withOpacity(0.7),
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.add_rounded, color: Color(0xFFCBD5E1), size: 32),
-                            const SizedBox(height: 2),
-                            Text('Pilih', style: TextStyle(fontSize: 8, color: Colors.grey.shade400, fontWeight: FontWeight.w600)),
-                          ],
-                        ),
                   ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
-                  // Mythical sparkle particles
-                  if (info != null && isMythical) ...[
-                    Positioned(
-                      top: 8 + 4 * glowVal, left: 8,
-                      child: Text('✦', style: TextStyle(fontSize: 6, color: Colors.red.withOpacity(0.5 * glowVal))),
-                    ),
-                    Positioned(
-                      bottom: 10 - 2 * glowVal, right: 8,
-                      child: Text('✦', style: TextStyle(fontSize: 7, color: Colors.amber.withOpacity(0.4 * glowVal))),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        ),
+    // Add tactile tap feedback & sound
+    Widget interactiveCard = GestureDetector(
+      onTapDown: (_) => _tapController.forward(),
+      onTapUp: (_) => _tapController.reverse(),
+      onTapCancel: () => _tapController.reverse(),
+      onTap: () {
+        AudioService().playSparkle();
+        HapticFeedback.mediumImpact();
+        widget.onTap();
+      },
+      child: ScaleTransition(
+        scale: _tapScaleAnimation,
+        child: cardWidget,
       ),
+    );
+
+    if (widget.isLarge) {
+      return interactiveCard;
+    }
+
+    return Expanded(
+      child: interactiveCard,
     );
   }
 
-  Color _getSlotBgColor(String rarity) {
-    switch (rarity) {
-      case 'mythical': return const Color(0xFFFEF2F2);
-      case 'legend':
-      case 'legendary': return const Color(0xFFFFFBEB);
-      case 'epic': return const Color(0xFFFAF5FF);
-      case 'rare': return const Color(0xFFEFF6FF);
-      default: return Colors.white;
+  Widget _buildRarityBadge(String rarity, double glowVal) {
+    Widget badgeText(String text, {Color color = Colors.white, double letterSpacing = 0.3}) {
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          text,
+          maxLines: 1,
+          softWrap: false,
+          style: TextStyle(
+            color: color,
+            fontSize: 6.8,
+            fontWeight: FontWeight.w900,
+            letterSpacing: letterSpacing,
+          ),
+        ),
+      );
     }
-  }
 
-  Color _getSlotBorderColor(String rarity) {
     switch (rarity) {
-      case 'mythical': return const Color(0xFFEF4444);
+      case 'celestial':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF7C3AED), Color(0xFFC026D3)],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE879F9), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFC084FC).withValues(alpha: 0.55),
+                blurRadius: 6,
+              ),
+            ],
+          ),
+          child: badgeText('✦ CELESTIAL ✦'),
+        );
+      case 'mythical':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFB91C1C), Color(0xFFD97706)],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFDE047), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.55),
+                blurRadius: 6,
+              ),
+            ],
+          ),
+          child: badgeText('★ MYTHICAL ★'),
+        );
       case 'legend':
-      case 'legendary': return const Color(0xFFF59E0B);
-      case 'epic': return const Color(0xFFA855F7);
-      case 'rare': return const Color(0xFF3B82F6);
-      default: return const Color(0xFFE2E8F0);
+      case 'legendary':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFB45309), Color(0xFFD97706)],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFDE047), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: badgeText('★ LEGEND ★'),
+        );
+      case 'epic':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+          decoration: BoxDecoration(
+            color: const Color(0xFFA855F7).withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFFA855F7), width: 0.8),
+          ),
+          child: badgeText('◆ EPIC ◆', color: const Color(0xFFE9D5FF)),
+        );
+      case 'rare':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFF3B82F6), width: 0.8),
+          ),
+          child: badgeText('● RARE ●', color: const Color(0xFFBAE6FD)),
+        );
+      default:
+        return badgeText(rarity.toUpperCase(), color: _getRarityColor(rarity));
     }
   }
 }

@@ -250,7 +250,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
                    Container(
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16)),
                     child: Row(
                       children: [
                         const Icon(Icons.info_outline, color: Colors.blue),
@@ -277,7 +277,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
                   ),
                   const SizedBox(height: 16),
                   
-                  ...currentTips.map((tip) => _buildTipCard(tip, currentCategoryData, appState)).toList(),
+                  ...currentTips.map((tip) => _buildTipCard(tip, currentCategoryData, appState)),
                   
                   const SizedBox(height: 32),
                   _buildParentInfoCard(),
@@ -297,10 +297,10 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
       body: Stack(
         children: [
           // Background Elements
-          Positioned(top: -50, right: -50, child: Icon(Icons.cloud, color: Colors.white.withOpacity(0.5), size: 150)),
-          Positioned(top: 200, left: -30, child: Icon(Icons.cloud, color: Colors.white.withOpacity(0.4), size: 100)),
-          Positioned(bottom: 100, right: -20, child: Icon(Icons.park, color: Colors.white.withOpacity(0.3), size: 180)),
-          Positioned(bottom: 300, left: 10, child: Icon(Icons.park, color: Colors.white.withOpacity(0.2), size: 120)),
+          Positioned(top: -50, right: -50, child: Icon(Icons.cloud, color: Colors.white.withValues(alpha: 0.5), size: 150)),
+          Positioned(top: 200, left: -30, child: Icon(Icons.cloud, color: Colors.white.withValues(alpha: 0.4), size: 100)),
+          Positioned(bottom: 100, right: -20, child: Icon(Icons.park, color: Colors.white.withValues(alpha: 0.3), size: 180)),
+          Positioned(bottom: 300, left: 10, child: Icon(Icons.park, color: Colors.white.withValues(alpha: 0.2), size: 120)),
           
           SafeArea(
             child: SingleChildScrollView(
@@ -318,7 +318,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(30),
-                          boxShadow: [BoxShadow(color: Colors.green.shade700.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8))]
+                          boxShadow: [BoxShadow(color: Colors.green.shade700.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 8))]
                         ),
                         child: Text(
                           'Peta Petualangan! 🗺️',
@@ -386,7 +386,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -395,7 +395,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Center(child: Text('🎯', style: TextStyle(fontSize: 24))),
@@ -431,7 +431,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
         padding: const EdgeInsets.all(8.0),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
@@ -453,7 +453,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             offset: const Offset(0, 4),
             blurRadius: 10,
           )
@@ -494,7 +494,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
                     Text(
                       category['description'],
                       style: AppTheme.bodyText.copyWith(
-                        color: isSelected ? Colors.white.withOpacity(0.8) : AppTheme.gray500,
+                        color: isSelected ? Colors.white.withValues(alpha: 0.8) : AppTheme.gray500,
                         fontSize: 10,
                       ),
                       textAlign: TextAlign.center,
@@ -526,7 +526,7 @@ class _MotorTipsScreenState extends State<MotorTipsScreen> {
         border: Border.all(color: AppTheme.gray200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             offset: const Offset(0, 4),
             blurRadius: 10,
           )
@@ -741,9 +741,9 @@ class _MapNodeState extends State<_MapNode> with SingleTickerProviderStateMixin 
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: widget.color.withOpacity(0.5), width: 8),
+                border: Border.all(color: widget.color.withValues(alpha: 0.5), width: 8),
                 boxShadow: [
-                  BoxShadow(color: widget.color.withOpacity(0.4), blurRadius: 15, offset: const Offset(0, 10))
+                  BoxShadow(color: widget.color.withValues(alpha: 0.4), blurRadius: 15, offset: const Offset(0, 10))
                 ],
               ),
               child: Center(child: Text(widget.icon, style: const TextStyle(fontSize: 50))),
@@ -773,13 +773,13 @@ class _MapPathPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..strokeWidth = 25
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
       
     final dashPaint = Paint()
-      ..color = Colors.white.withOpacity(0.9)
+      ..color = Colors.white.withValues(alpha: 0.9)
       ..strokeWidth = 5
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;

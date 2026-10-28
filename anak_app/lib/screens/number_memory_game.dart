@@ -94,7 +94,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
       _startTime = DateTime.now();
       _feedback = null;
     });
-    AudioService().playBGM('puzzle_music.mp3');
+    AudioService().playPuzzleBGM();
     
     final config = _levelsConfig[level - 1];
     _generateNumber(config.digitsCount);
@@ -161,7 +161,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
       setState(() {
         _userInput += digit;
       });
-      AudioService().playSFX('bubble.mp3');
+      AudioService().playPop();
 
       if (_userInput.length == _targetNumber.length) {
         Future.delayed(const Duration(milliseconds: 300), () {
@@ -176,7 +176,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
       setState(() {
         _userInput = _userInput.substring(0, _userInput.length - 1);
       });
-      AudioService().playSFX('flip.mp3');
+      AudioService().playClick();
     }
   }
 
@@ -191,11 +191,11 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
       
       if (isCorrect) {
         _score += _targetNumber.length * 15;
-        AudioService().playSFX('correct.mp3');
+        AudioService().playCorrect();
       } else {
         _wrongAnswers++;
         _lives--;
-        AudioService().playSFX('wrong.mp3');
+        AudioService().playWrong();
       }
     });
 
@@ -216,7 +216,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
     _showTimer?.cancel();
     _answerTimer?.cancel();
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playSparkle();
 
     int starsCount = 0;
     if (_lives == 3) {
@@ -279,10 +279,10 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
       },
       subdomainScores: {
         'shortTermMemory': assessScore,
-        'workingMemory': (accuracy / 100.0) * 80.0,
       },
     ));
-    context.read<AppState>().addPointsFromScore(_score);
+    final levelPoints = starsCount * 5;
+    context.read<AppState>().addPoints(levelPoints);
 
     if (_highestUnlocked >= 8 && starsCount == 3) {
       context.read<AppState>().addSticker('number-genius');
@@ -297,7 +297,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
     _showTimer?.cancel();
     _answerTimer?.cancel();
     AudioService().stopBGM();
-    AudioService().playSFX('completion.mp3');
+    AudioService().playGameOver();
 
     int totalTime = DateTime.now().difference(_startTime ?? DateTime.now()).inSeconds;
     int totalQuestions = _correctAnswers + _wrongAnswers;
@@ -344,7 +344,8 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
         'workingMemory': (accuracy / 100.0) * 80.0,
       },
     ));
-    context.read<AppState>().addPointsFromScore(_score);
+    // Completion bonus
+    context.read<AppState>().addPoints(15);
 
     setState(() {
       _gameState = 'completed';
@@ -396,7 +397,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                           onTap: () => Navigator.pop(context),
                           child: Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                             child: const Icon(Icons.arrow_back, color: Colors.white),
                           ),
                         ),
@@ -414,7 +415,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
 
                     Container(
                       padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(24)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(24)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -553,7 +554,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                                   boxShadow: isUnlocked
                                       ? [
                                           BoxShadow(
-                                            color: Colors.cyan.withOpacity(0.3),
+                                            color: Colors.cyan.withValues(alpha: 0.3),
                                             blurRadius: 10,
                                             offset: const Offset(0, 4),
                                           )
@@ -627,7 +628,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                       },
                       child: Container(
                         padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
                         child: const Icon(Icons.arrow_back, color: Colors.white),
                       ),
                     ),
@@ -652,7 +653,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(16)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(3, (index) => Padding(
@@ -740,8 +741,9 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
                                 
                                 return ElevatedButton(
                                   onPressed: submitDisabled ? null : () {
-                                    if (isBackspace) _handleBackspace();
-                                    else if (isSubmit) _checkAnswer(_userInput);
+                                    if (isBackspace) {
+                                      _handleBackspace();
+                                    } else if (isSubmit) _checkAnswer(_userInput);
                                     else _handleNumberInput(num);
                                   },
                                   style: ElevatedButton.styleFrom(
@@ -794,7 +796,7 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: Colors.blue.withOpacity(0.25),
+                color: Colors.blue.withValues(alpha: 0.25),
                 blurRadius: 30,
                 spreadRadius: 5,
               )
@@ -832,9 +834,9 @@ class _NumberMemoryGameState extends State<NumberMemoryGame> with TickerProvider
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:confetti/confetti.dart';
 import '../services/app_state.dart';
 import '../theme/app_theme.dart';
 
@@ -11,9 +13,21 @@ class TestRoomScreen extends StatefulWidget {
 }
 
 class _TestRoomScreenState extends State<TestRoomScreen> {
-  // We can add a "results" phase if we want to show the final results screen
-  // For now, we mainly replicate the "intro" phase layout
+  late ConfettiController _confettiController;
   bool _showResults = false;
+  bool _hasCelebrated = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
+  }
+
+  @override
+  void dispose() {
+    _confettiController.dispose();
+    super.dispose();
+  }
 
   void _navigateToTest(String routeName, String testId) async {
     await Navigator.pushNamed(context, routeName);
@@ -74,35 +88,45 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
     int completedCount = testPhases.where((t) => t['completed'] == true).length;
     bool allCompleted = completedCount == testPhases.length;
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)], // slate-200 to slate-300
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Premium Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4)]),
-                        child: const Icon(Icons.arrow_back, color: Color(0xFF475569), size: 20),
-                      ),
-                    ),
-                    const Expanded(child: SizedBox()),
-                  ],
-                ),
+    if (allCompleted && !_hasCelebrated) {
+      _hasCelebrated = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _confettiController.play();
+        HapticFeedback.vibrate();
+      });
+    }
+
+    return Stack(
+      children: [
+        Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)], // slate-200 to slate-300
               ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Premium Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4)]),
+                            child: const Icon(Icons.arrow_back, color: Color(0xFF475569), size: 20),
+                          ),
+                        ),
+                        const Expanded(child: SizedBox()),
+                      ],
+                    ),
+                  ),
 
               Expanded(
                 child: SingleChildScrollView(
@@ -138,7 +162,7 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -146,7 +170,11 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Text('👩‍⚕️', style: TextStyle(fontSize: 40)),
+                            Image.asset(
+                              allCompleted ? 'assets/images/stickers/hebat.png' : 'assets/images/stickers/hai.png',
+                              width: 80,
+                              height: 80,
+                            ),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Stack(
@@ -159,7 +187,9 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
-                                      'Halo! Yuk, ikuti 3 petualangan seru untuk mengetahui seberapa hebat kemampuanmu! 🌟',
+                                      allCompleted 
+                                        ? 'Wah, kamu luar biasa! Semua petualangan sudah selesai! 🎉'
+                                        : 'Halo! Yuk, ikuti 3 petualangan seru untuk mengetahui seberapa hebat kemampuanmu! 🌟',
                                       style: AppTheme.bodyText.copyWith(color: const Color(0xFF065F46), fontWeight: FontWeight.w500, fontSize: 13),
                                     ),
                                   ),
@@ -191,7 +221,7 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -248,7 +278,7 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                               borderRadius: BorderRadius.circular(24),
                               boxShadow: [
                                 BoxShadow(
-                                  color: (phase['colors'] as List<Color>)[1].withOpacity(0.3),
+                                  color: (phase['colors'] as List<Color>)[1].withValues(alpha: 0.3),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 )
@@ -286,7 +316,7 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                                             if (isLocked)
                                               Container(
                                                 decoration: BoxDecoration(
-                                                  color: Colors.black.withOpacity(0.3),
+                                                  color: Colors.black.withValues(alpha: 0.3),
                                                   shape: BoxShape.circle,
                                                 ),
                                                 child: const Center(
@@ -305,13 +335,13 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                                             Text(
                                               phase['title'] as String,
                                                style: AppTheme.heading3.copyWith(color: Colors.white, fontSize: 15),
-                                               maxLines: 1,
+                                               maxLines: 2,
                                                overflow: TextOverflow.ellipsis,
                                              ),
                                              const SizedBox(height: 4),
                                              Text(
                                                phase['description'] as String,
-                                               style: AppTheme.bodyText.copyWith(color: Colors.white.withOpacity(0.9), fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis,
+                                               style: AppTheme.bodyText.copyWith(color: Colors.white.withValues(alpha: 0.9), fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis,
                                              ),
                                             const SizedBox(height: 8),
                                             Wrap(
@@ -388,7 +418,7 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                               borderRadius: BorderRadius.circular(32),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.orange500.withOpacity(0.3),
+                                  color: AppTheme.orange500.withValues(alpha: 0.3),
                                   blurRadius: 15,
                                   offset: const Offset(0, 8),
                                 )
@@ -411,7 +441,18 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
             ],
           ),
         ),
-      ),
+        ), // Close Container
+        ), // Close Scaffold,
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive,
+            shouldLoop: false,
+            colors: const [Colors.green, Colors.blue, Colors.pink, Colors.orange, Colors.purple],
+          ),
+        ),
+      ],
     );
   }
 
@@ -497,7 +538,7 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 15,
                               offset: const Offset(0, 8),
                             ),
@@ -569,7 +610,7 @@ class _TestRoomScreenState extends State<TestRoomScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

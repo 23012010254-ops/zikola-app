@@ -71,6 +71,7 @@ class FirestoreService {
   Future<void> updateTotalPoints(String uid, int points) async {
     try {
       await _db.collection('users').doc(uid).set({
+        'totalPoints': points,
         'progress': {'totalPoints': points},
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -90,6 +91,7 @@ class FirestoreService {
       await _db.collection('users').doc(uid).set({
         'name': profile.name,
         'schemaVersion': 2,
+        'totalPoints': points,
         'profile': {
           'gender': profile.gender,
           'age': profile.age,
@@ -433,6 +435,7 @@ class FirestoreService {
       final query = await _db
           .collection('users')
           .where('userIdentity', isEqualTo: identityString)
+          .limit(2) // firestore.rules only allow small list queries on users
           .get();
       for (var doc in query.docs) {
         if (doc.id != currentUid) {
@@ -501,155 +504,20 @@ class FirestoreService {
     return null;
   }
 
-  // Seed Dummy Doctors if empty
-  Future<void> seedDummyDoctors() async {
-    final doctor1Doc = await _db.collection('doctors').doc('doctor_1').get();
-    
-    bool needsSchemaUpdate = false;
-    if (doctor1Doc.exists) {
-      final data = doctor1Doc.data() as Map<String, dynamic>;
-      // Check if critical professional fields exist or if old emoji image is used
-      if (!data.containsKey('experience') || !data.containsKey('bio') || data['image'] == '👨\u200d⚕️') {
-        needsSchemaUpdate = true;
+  // Delete Chat Session (Messages subcollection & parent doc)
+  Future<void> deleteChatSession(String chatId) async {
+    try {
+      final messagesSnap = await _db.collection('chats').doc(chatId).collection('messages').get();
+      final batch = _db.batch();
+      for (var doc in messagesSnap.docs) {
+        batch.delete(doc.reference);
       }
-    }
-
-    // Re-seed if doctor_1 is missing OR needs schema update
-    if (!doctor1Doc.exists || needsSchemaUpdate) {
-      final doctors = [
-        {
-          'id': 'doctor_1',
-          'name': 'Dr. Andi Saputra, Sp.A',
-          'specialty': 'Dokter Spesialis Anak',
-          'hospital': 'RS Mitra Keluarga',
-          'rating': 4.9,
-          'reviews': 124,
-          'price': 150000,
-          'image': 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=256&h=256&fit=crop',
-          'available': true,
-          'experience': 12,
-          'licenseNumber': 'SIP/DKI/2019/04521',
-          'practiceLocation': 'RS Mitra Keluarga Kemayoran, Jl. HBR Motik No.4, Jakarta Pusat',
-          'education': 'Universitas Indonesia - Fakultas Kedokteran',
-          'bio': 'Berpengalaman menangani tumbuh kembang anak, alergi anak, dan imunisasi. Aktif sebagai pembicara di seminar parenting dan kesehatan anak.',
-          'schedule': 'Senin - Jumat, 09:00 - 15:00',
-        },
-        {
-          'id': 'doctor_2',
-          'name': 'Budi Santoso, M.Psi',
-          'specialty': 'Psikolog Anak & Remaja',
-          'hospital': 'Klinik Tumbuh Kembang',
-          'rating': 4.8,
-          'reviews': 89,
-          'price': 200000,
-          'image': 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=256&h=256&fit=crop',
-          'available': true,
-          'experience': 8,
-          'licenseNumber': 'SIPP/DKI/2020/08832',
-          'practiceLocation': 'Klinik Tumbuh Kembang Anak, Jl. Gatot Subroto Kav.21, Jakarta Selatan',
-          'education': 'Universitas Gadjah Mada - Magister Psikologi Klinis',
-          'bio': 'Spesialis dalam asesmen perkembangan anak, terapi bermain, dan konseling orang tua. Menangani kasus ADHD, autism, dan gangguan belajar.',
-          'schedule': 'Senin - Sabtu, 10:00 - 17:00',
-        },
-        {
-          'id': 'doctor_3',
-          'name': 'Dr. Anita Wijaya, Sp.A',
-          'specialty': 'Dokter Spesialis Anak',
-          'hospital': 'RS Siloam',
-          'rating': 4.7,
-          'reviews': 210,
-          'price': 125000,
-          'image': 'https://images.unsplash.com/photo-1594824813573-246434de83fb?q=80&w=256&h=256&fit=crop',
-          'available': false,
-          'experience': 15,
-          'licenseNumber': 'SIP/JTG/2017/03108',
-          'practiceLocation': 'RS Siloam Kebon Jeruk, Jl. Perjuangan No.8, Jakarta Barat',
-          'education': 'Universitas Airlangga - Fakultas Kedokteran',
-          'bio': 'Ahli dalam pediatri umum, nutrisi anak, dan penanganan penyakit infeksi pada anak. Pengalaman luas di rumah sakit swasta dan puskesmas.',
-          'schedule': 'Selasa - Sabtu, 08:00 - 14:00',
-        },
-      ];
-      
-      for (var docItem in doctors) {
-        final id = docItem['id'] as String?;
-        if (id != null) {
-          await _db.collection('doctors').doc(id).set(docItem);
-        } else {
-          await _db.collection('doctors').add(docItem);
-        }
-      }
-
-      // Seed credentials for web login
-      await _seedDoctorCredentials();
-
-      // After seeding doctors, seed a demo chat for Andi
-      await _seedDemoChatForAndi();
-    }
-  }
-
-  Future<void> _seedDoctorCredentials() async {
-    final creds = [
-      {
-        'doctorId': 'doctor_1',
-        'username': 'andi-saputra',
-        'email': 'andi@zikola.com',
-        'password': 'ef92b778bafe771e89245b89ecbc054c66c19461d5a915c08a103bcc3f189b2b', // SHA-256 for password123
-        'securityPin': '8d969eee76ec8a32a39a2b15303a446a298225b659c628655c4568f5c822e030', // SHA-256 for 123456
-        'createdAt': DateTime.now().toIso8601String(),
-      },
-      {
-        'doctorId': 'doctor_2',
-        'username': 'budi-santoso',
-        'email': 'budi@zikola.com',
-        'password': 'ef92b778bafe771e89245b89ecbc054c66c19461d5a915c08a103bcc3f189b2b',
-        'securityPin': '8d969eee76ec8a32a39a2b15303a446a298225b659c628655c4568f5c822e030',
-        'createdAt': DateTime.now().toIso8601String(),
-      },
-      {
-        'doctorId': 'doctor_3',
-        'username': 'anita-wijaya',
-        'email': 'anita@zikola.com',
-        'password': 'ef92b778bafe771e89245b89ecbc054c66c19461d5a915c08a103bcc3f189b2b',
-        'securityPin': '8d969eee76ec8a32a39a2b15303a446a298225b659c628655c4568f5c822e030',
-        'createdAt': DateTime.now().toIso8601String(),
-      }
-    ];
-
-    for (var cred in creds) {
-      await _db.collection('doctor_credentials').doc(cred['doctorId'] as String).set(cred);
-    }
-  }
-
-  Future<void> _seedDemoChatForAndi() async {
-    const demoChatId = 'demo_chat_andi_01';
-    final chatRef = _db.collection('chats').doc(demoChatId);
-    final chatSnap = await chatRef.get();
-
-    if (!chatSnap.exists) {
-      // 1. Create the Chat Document
-      await chatRef.set({
-        'doctorId': 'doctor_1',
-        'buyerId': 'demo_user_01',
-        'createdAt': FieldValue.serverTimestamp(),
-        'expiresAt': Timestamp.fromDate(DateTime.now().add(const Duration(hours: 24))), // Extended for demo
-      });
-
-      // 2. Add some messages
-      final msgCol = chatRef.collection('messages');
-      
-      await msgCol.add({
-        'text': 'Halo Dok, saya Bunda Maria. Anak saya (Budi, 3th) sedang panas sejak semalam. Apakah perlu langsung ke RS?',
-        'senderId': 'demo_user_01',
-        'senderType': 'user',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      await msgCol.add({
-        'text': 'Halo Bunda Maria, saya Dr. Andi. Panasnya berapa derajat ya Bun? Ada gejala lain seperti batuk atau pilek?',
-        'senderId': 'doctor_1',
-        'senderType': 'doctor',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      batch.delete(_db.collection('chats').doc(chatId));
+      await batch.commit();
+      debugPrint('[FirestoreService] Successfully deleted chat session: $chatId');
+    } catch (e) {
+      debugPrint('[FirestoreService] Error deleting chat session: $e');
+      rethrow;
     }
   }
 
@@ -1105,20 +973,28 @@ class FirestoreService {
       final userRef = _db.collection('users').doc(uid);
 
       final notes = await userRef.collection('notes').get();
-      for (var d in notes.docs) batch.delete(d.reference);
+      for (var d in notes.docs) {
+        batch.delete(d.reference);
+      }
 
       final emr = await userRef.collection('emr').get();
-      for (var d in emr.docs) batch.delete(d.reference);
+      for (var d in emr.docs) {
+        batch.delete(d.reference);
+      }
 
       final children = await userRef.collection('children').get();
-      for (var d in children.docs) batch.delete(d.reference);
+      for (var d in children.docs) {
+        batch.delete(d.reference);
+      }
 
       final notifications = await userRef.collection('notifications').get();
-      for (var d in notifications.docs) batch.delete(d.reference);
+      for (var d in notifications.docs) {
+        batch.delete(d.reference);
+      }
 
       batch.delete(userRef);
       await batch.commit();
-      debugPrint('[FirestoreService] All data deleted for user: ' + uid);
+      debugPrint('[FirestoreService] All data deleted for user: $uid');
     } catch (e) {
       debugPrint('Error deleting user data: $e');
     }

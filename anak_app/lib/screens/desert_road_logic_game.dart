@@ -149,6 +149,7 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
 
   void _handleSwipe(String direction) {
     if (_gameState != 'playing') return;
+    AudioService().playSwish();
 
     int responseTime = DateTime.now().millisecondsSinceEpoch - _spawnTimeMs;
     bool isCorrect = direction == _correctTarget;
@@ -240,7 +241,8 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
       maxLevelReached: _currentLevel,
     ));
     
-    appState.addPointsFromScore(_score);
+    final levelPoints = starsCount * 5;
+    appState.addPoints(levelPoints);
 
     if (_highestUnlocked >= 8 && starsCount == 3) {
       appState.addSticker('road-master');
@@ -295,7 +297,8 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
       maxLevelReached: _currentLevel,
     ));
     
-    appState.addPointsFromScore(_score);
+    // Bonus tamat permainan
+    appState.addPoints(15);
   }
 
   // ---------------------------------------------------------------------------
@@ -331,7 +334,7 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
                     const SizedBox(height: 48),
                     Container(
                       padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(24)),
+                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(24)),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -450,7 +453,7 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
                                     boxShadow: isUnlocked
                                         ? [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(0.12),
+                                              color: Colors.black.withValues(alpha: 0.12),
                                               blurRadius: 6,
                                               offset: const Offset(2, 2),
                                             )
@@ -701,7 +704,7 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
             border: Border.all(color: Colors.white, width: 4),
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withOpacity(0.35),
+                color: Colors.orange.withValues(alpha: 0.35),
                 blurRadius: 30,
                 spreadRadius: 5,
               )
@@ -739,9 +742,9 @@ class _DesertRoadLogicGameState extends State<DesertRoadLogicGame> {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.3), width: 1.5),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                 ),
                 child: Column(
                   children: [

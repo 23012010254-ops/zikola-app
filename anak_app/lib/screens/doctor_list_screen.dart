@@ -16,12 +16,6 @@ class DoctorListScreen extends StatefulWidget {
 class _DoctorListScreenState extends State<DoctorListScreen> {
   final FirestoreService _firestoreService = FirestoreService();
 
-  @override
-  void initState() {
-    super.initState();
-    _firestoreService.seedDummyDoctors();
-  }
-
   Widget _buildAvatar(String imageStr, {double size = 48}) {
     if (imageStr.startsWith('base64:')) {
       try {
@@ -121,7 +115,10 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
             return const Center(child: CircularProgressIndicator(color: Color(0xFF9333EA)));
           }
           
-          final docs = snapshot.data?.docs ?? [];
+          // Hide doctors still waiting for admin verification.
+          final docs = (snapshot.data?.docs ?? [])
+              .where((d) => (d.data() as Map<String, dynamic>)['verified'] != false)
+              .toList();
           if (docs.isEmpty) {
             return const Center(child: Text('Tidak ada dokter yang tersedia.'));
           }
@@ -142,7 +139,7 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8))
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 8))
                   ],
                 ),
                 child: Material(
