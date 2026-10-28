@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../services/audio_service.dart';
 import '../theme/app_theme.dart';
@@ -186,9 +187,17 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
 
   late AnimationController _floatController;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'bubblePopper', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _gameState = 'menu';
     _floatController = AnimationController(
       vsync: this,
@@ -593,6 +602,7 @@ class _BubblePopperGameScreenState extends State<BubblePopperGameScreen> with Ti
     if (_currentLevel + 1 == _highestUnlocked && _highestUnlocked < 8) {
       _highestUnlocked = _currentLevel + 2;
     }
+    LevelProgressStore.save(context, 'bubblePopper', _starRatings, _highestUnlocked);
 
     // Time bonus
     final timeBonus = (_timeRemaining * 5 * (_currentLevel + 1));

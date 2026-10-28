@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../services/assessment_engine.dart';
 import '../theme/app_theme.dart';
@@ -140,9 +141,17 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
 
 
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'storyBuilder', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _bgFloatCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
     _pageController = PageController();
     _gameState = 'menu';
@@ -316,6 +325,7 @@ class _StoryBuilderGameState extends State<StoryBuilderGame> with TickerProvider
       if (_currentLevel == _highestUnlocked && _highestUnlocked < 8) {
         _highestUnlocked = _currentLevel + 1;
       }
+      LevelProgressStore.save(context, 'storyBuilder', _starRatings, _highestUnlocked);
       
       Future.delayed(const Duration(seconds: 2), () {
         setState(() {

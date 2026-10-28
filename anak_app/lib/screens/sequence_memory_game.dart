@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../services/assessment_engine.dart';
 import '../theme/app_theme.dart';
@@ -64,9 +65,17 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
   final List<int> _starRatings = List.filled(8, 0);
   int _highestUnlocked = 1;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'sequenceMemory', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _bgAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
   }
 
@@ -191,6 +200,7 @@ class _SequenceMemoryGameState extends State<SequenceMemoryGame> with TickerProv
     if (_currentLevel == _highestUnlocked && _currentLevel < 8) {
       _highestUnlocked = _currentLevel + 1;
     }
+    LevelProgressStore.save(context, 'sequenceMemory', _starRatings, _highestUnlocked);
 
     int totalTime = DateTime.now().difference(_startTime ?? DateTime.now()).inSeconds;
     int totalQuestions = _correctAnswers + _wrongAnswers + 1; // including this correct one

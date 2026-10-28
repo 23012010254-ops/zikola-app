@@ -1,4 +1,7 @@
 import 'package:flutter/services.dart';
+import '../services/level_progress_store.dart';
+import '../services/age_difficulty.dart';
+import '../widgets/age_mode_chip.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -74,57 +77,94 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
       WordData(word: 'PILOT', hint: 'Orang yang mengemudikan pesawat', category: 'Profesi', difficulty: 'easy', emoji: '👨‍✈️', themeColor: const Color(0xFF0EA5E9)),
       WordData(word: 'MEJA', hint: 'Tempat menaruh buku atau makanan', category: 'Rumah', difficulty: 'easy', emoji: '🪑', themeColor: const Color(0xFF10B981)),
       WordData(word: 'BOLA', hint: 'Mainan berbentuk bulat untuk ditendang', category: 'Mainan', difficulty: 'easy', emoji: '⚽', themeColor: const Color(0xFFF59E0B)),
+      WordData(word: 'IKAN', hint: 'Hewan yang berenang di dalam air', category: 'Hewan', difficulty: 'easy', emoji: '🐟', themeColor: const Color(0xFF0EA5E9)),
+      WordData(word: 'SAPI', hint: 'Hewan penghasil susu', category: 'Hewan', difficulty: 'easy', emoji: '🐄', themeColor: const Color(0xFF10B981)),
+      WordData(word: 'ROTI', hint: 'Sarapan lembut yang bisa diberi selai', category: 'Makanan', difficulty: 'easy', emoji: '🍞', themeColor: const Color(0xFFF59E0B)),
+      WordData(word: 'TOPI', hint: 'Pelindung kepala dari panas', category: 'Pakaian', difficulty: 'easy', emoji: '🧢', themeColor: const Color(0xFF6366F1)),
     ],
     2: [
       WordData(word: 'KAPAL', hint: 'Kendaraan besar yang berjalan di atas air', category: 'Lautan', difficulty: 'easy', emoji: '🚢', themeColor: const Color(0xFF6366F1)),
       WordData(word: 'ROKET', hint: 'Kendaraan untuk pergi ke luar angkasa', category: 'Luar Angkasa', difficulty: 'easy', emoji: '🚀', themeColor: const Color(0xFF3B82F6)),
       WordData(word: 'POHON', hint: 'Tumbuhan kayu besar berdaun rindang', category: 'Alam', difficulty: 'easy', emoji: '🌳', themeColor: const Color(0xFF10B981)),
       WordData(word: 'RUMAH', hint: 'Tempat tinggal dan berteduh kita', category: 'Rumah', difficulty: 'easy', emoji: '🏠', themeColor: const Color(0xFFEC4899)),
+      WordData(word: 'GAJAH', hint: 'Hewan besar berbelalai panjang', category: 'Hewan', difficulty: 'easy', emoji: '🐘', themeColor: const Color(0xFF64748B)),
+      WordData(word: 'JERUK', hint: 'Buah oranye yang segar', category: 'Makanan', difficulty: 'easy', emoji: '🍊', themeColor: const Color(0xFFF97316)),
+      WordData(word: 'HUJAN', hint: 'Air yang turun dari langit', category: 'Alam', difficulty: 'easy', emoji: '🌧️', themeColor: const Color(0xFF3B82F6)),
+      WordData(word: 'BALON', hint: 'Ditiup lalu bisa melayang', category: 'Mainan', difficulty: 'easy', emoji: '🎈', themeColor: const Color(0xFFEF4444)),
     ],
     3: [
       WordData(word: 'DOKTER', hint: 'Orang yang memeriksa dan menyembuhkan pasien', category: 'Profesi', difficulty: 'easy', emoji: '👨‍⚕️', themeColor: const Color(0xFF10B981)),
       WordData(word: 'TOMAT', hint: 'Buah bulat berwarna merah yang segar', category: 'Makanan', difficulty: 'easy', emoji: '🍅', themeColor: const Color(0xFFEF4444)),
       WordData(word: 'SEPATU', hint: 'Alas kaki untuk berpergian atau sekolah', category: 'Pakaian', difficulty: 'easy', emoji: '👟', themeColor: const Color(0xFF8B5CF6)),
       WordData(word: 'PENSIL', hint: 'Alat tulis berinti karbon hitam', category: 'Sekolah', difficulty: 'easy', emoji: '✏️', themeColor: const Color(0xFFF59E0B)),
+      WordData(word: 'KERETA', hint: 'Kendaraan panjang di atas rel', category: 'Kendaraan', difficulty: 'easy', emoji: '🚆', themeColor: const Color(0xFF0EA5E9)),
+      WordData(word: 'MONYET', hint: 'Hewan lincah yang suka memanjat', category: 'Hewan', difficulty: 'easy', emoji: '🐒', themeColor: const Color(0xFFA16207)),
+      WordData(word: 'PAYUNG', hint: 'Melindungi kita dari hujan', category: 'Rumah', difficulty: 'easy', emoji: '☂️', themeColor: const Color(0xFF8B5CF6)),
     ],
     4: [
       WordData(word: 'BINTANG', hint: 'Cahaya kecil yang bersinar di langit malam', category: 'Luar Angkasa', difficulty: 'easy', emoji: '⭐', themeColor: const Color(0xFFF59E0B)),
       WordData(word: 'PISANG', hint: 'Buah kuning kesukaan monyet', category: 'Makanan', difficulty: 'easy', emoji: '🍌', themeColor: const Color(0xFFEAB308)),
       WordData(word: 'TAMAN', hint: 'Tempat bermain yang asri dengan banyak bunga', category: 'Alam', difficulty: 'easy', emoji: '🏡', themeColor: const Color(0xFF10B981)),
       WordData(word: 'SEPEDA', hint: 'Kendaraan beroda dua yang dikayuh pedal', category: 'Kendaraan', difficulty: 'easy', emoji: '🚲', themeColor: const Color(0xFF06B6D4)),
+      WordData(word: 'KOMODO', hint: 'Kadal raksasa asli Indonesia', category: 'Hewan', difficulty: 'easy', emoji: '🦎', themeColor: const Color(0xFF16A34A)),
+      WordData(word: 'JAGUNG', hint: 'Bijinya kuning, enak dibakar', category: 'Makanan', difficulty: 'easy', emoji: '🌽', themeColor: const Color(0xFFEAB308)),
+      WordData(word: 'KAMERA', hint: 'Alat untuk memotret', category: 'Elektronik', difficulty: 'easy', emoji: '📷', themeColor: const Color(0xFF475569)),
     ],
     5: [
       WordData(word: 'TERUMBU', hint: 'Rumah bagi ikan-ikan kecil di laut', category: 'Lautan', difficulty: 'medium', emoji: '🪸', themeColor: const Color(0xFFEC4899)),
       WordData(word: 'KEPITING', hint: 'Hewan laut bercapit keras yang berjalan miring', category: 'Hewan', difficulty: 'medium', emoji: '🦀', themeColor: const Color(0xFFEF4444)),
       WordData(word: 'KELINCI', hint: 'Hewan berbulu telinga panjang suka wortel', category: 'Hewan', difficulty: 'medium', emoji: '🐰', themeColor: const Color(0xFFF472B6)),
-      WordData(word: 'JIRAPAH', hint: 'Hewan darat tertinggi dengan leher sangat panjang', category: 'Hewan', difficulty: 'medium', emoji: '🦒', themeColor: const Color(0xFFD97706)),
+      WordData(word: 'JERAPAH', hint: 'Hewan darat tertinggi dengan leher sangat panjang', category: 'Hewan', difficulty: 'medium', emoji: '🦒', themeColor: const Color(0xFFD97706)),
+      WordData(word: 'PESAWAT', hint: 'Kendaraan yang terbang di langit', category: 'Kendaraan', difficulty: 'medium', emoji: '✈️', themeColor: const Color(0xFF0284C7)),
+      WordData(word: 'PELANGI', hint: 'Lengkungan warna-warni setelah hujan', category: 'Alam', difficulty: 'medium', emoji: '🌈', themeColor: const Color(0xFFEC4899)),
+      WordData(word: 'NELAYAN', hint: 'Orang yang mencari ikan di laut', category: 'Profesi', difficulty: 'medium', emoji: '🎣', themeColor: const Color(0xFF0EA5E9)),
     ],
     6: [
       WordData(word: 'ASTRONOT', hint: 'Orang yang pergi ke luar angkasa', category: 'Profesi', difficulty: 'medium', emoji: '👩‍🚀', themeColor: const Color(0xFF8B5CF6)),
       WordData(word: 'HARIMAU', hint: 'Kucing besar pemangsa bermotif loreng', category: 'Hewan', difficulty: 'medium', emoji: '🐯', themeColor: const Color(0xFFD97706)),
       WordData(word: 'BELALANG', hint: 'Serangga pelompat berwarna hijau pemakan daun', category: 'Hewan', difficulty: 'medium', emoji: '🦗', themeColor: const Color(0xFF22C55E)),
       WordData(word: 'SEMANGKA', hint: 'Buah besar berkulit hijau dengan daging merah berair', category: 'Makanan', difficulty: 'medium', emoji: '🍉', themeColor: const Color(0xFFEF4444)),
+      WordData(word: 'STROBERI', hint: 'Buah merah kecil berbintik', category: 'Makanan', difficulty: 'medium', emoji: '🍓', themeColor: const Color(0xFFEF4444)),
+      WordData(word: 'KANGGURU', hint: 'Hewan pelompat berkantong dari Australia', category: 'Hewan', difficulty: 'medium', emoji: '🦘', themeColor: const Color(0xFFD97706)),
+      WordData(word: 'PETANI', hint: 'Orang yang menanam padi dan sayur', category: 'Profesi', difficulty: 'medium', emoji: '👨‍🌾', themeColor: const Color(0xFF16A34A)),
     ],
     7: [
       WordData(word: 'KOMPUTER', hint: 'Mesin elektronik untuk mengolah data dan belajar', category: 'Elektronik', difficulty: 'hard', emoji: '💻', themeColor: const Color(0xFF3B82F6)),
       WordData(word: 'MATAHARI', hint: 'Bintang pusat tata surya yang menyinari bumi', category: 'Luar Angkasa', difficulty: 'hard', emoji: '☀️', themeColor: const Color(0xFFF59E0B)),
       WordData(word: 'KACAMATA', hint: 'Alat bantu visual yang dipakai di mata', category: 'Aksesoris', difficulty: 'hard', emoji: '👓', themeColor: const Color(0xFF64748B)),
       WordData(word: 'BINATANG', hint: 'Makhluk hidup yang bernapas dan bergerak bebas', category: 'Alam', difficulty: 'hard', emoji: '🦁', themeColor: const Color(0xFF8B5CF6)),
+      WordData(word: 'DINOSAURUS', hint: 'Hewan purba raksasa yang sudah punah', category: 'Hewan', difficulty: 'hard', emoji: '🦕', themeColor: const Color(0xFF22C55E)),
+      WordData(word: 'TELESKOP', hint: 'Alat untuk melihat bintang dari jauh', category: 'Luar Angkasa', difficulty: 'hard', emoji: '🔭', themeColor: const Color(0xFF6366F1)),
+      WordData(word: 'PEMADAM', hint: 'Petugas yang memadamkan kebakaran', category: 'Profesi', difficulty: 'hard', emoji: '🧑‍🚒', themeColor: const Color(0xFFEF4444)),
     ],
     8: [
       WordData(word: 'HELIKOPTER', hint: 'Pesawat terbang bersayap putar di atasnya', category: 'Kendaraan', difficulty: 'hard', emoji: '🚁', themeColor: const Color(0xFF0EA5E9)),
       WordData(word: 'PERPUSTAKAAN', hint: 'Tempat menyimpan dan membaca banyak buku', category: 'Sekolah', difficulty: 'hard', emoji: '📚', themeColor: const Color(0xFF6366F1)),
       WordData(word: 'DIRGANTARA', hint: 'Hal yang berhubungan dengan ruang udara atau langit', category: 'Alam', difficulty: 'hard', emoji: '✈️', themeColor: const Color(0xFF0284C7)),
+      WordData(word: 'KUPUKUPU', hint: 'Serangga cantik bersayap warna-warni', category: 'Hewan', difficulty: 'hard', emoji: '🦋', themeColor: const Color(0xFFA855F7)),
+      WordData(word: 'ENSIKLOPEDIA', hint: 'Buku tebal berisi banyak pengetahuan', category: 'Sekolah', difficulty: 'hard', emoji: '📕', themeColor: const Color(0xFF0F766E)),
+      WordData(word: 'KALKULATOR', hint: 'Alat untuk menghitung angka', category: 'Elektronik', difficulty: 'hard', emoji: '🧮', themeColor: const Color(0xFF475569)),
     ],
   };
 
   List<WordData> _sessionWords = [];
+  // Leading letters placed for younger children; they can't be removed.
+  int _revealCount = 0;
+  late AgeDifficulty _age;
   final List<int> _starRatings = List.filled(8, 0);
   int _highestUnlocked = 1;
+
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'wordPuzzle', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
 
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _shakeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _bgAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
   }
@@ -139,9 +179,10 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
   }
 
   void _startLevel(int level) {
+    _age = AgeDifficulty.of(context);
     final pool = _levelWordPools[level] ?? [];
     _sessionWords = List<WordData>.from(pool)..shuffle();
-    _sessionWords = _sessionWords.take(3).toList();
+    _sessionWords = _sessionWords.take(_age.pick(toddler: 3, preschool: 4, school: 5)).toList();
 
     setState(() {
       _gameState = 'playing';
@@ -173,11 +214,27 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
       wordLetters.add(LetterTile(letter: word.word[i], id: i, correctPosition: i));
     }
     wordLetters.shuffle(Random());
-    
+
+    // Age help: toddlers get all but two letters, preschoolers the first
+    // letter of long words. Toddlers also see the hint straight away.
+    final len = word.word.length;
+    _revealCount = _age.pick(
+      toddler: max(0, len - 2),
+      preschool: len >= 6 ? 1 : 0,
+      school: 0,
+    );
+    final placed = List<LetterTile?>.filled(len, null);
+    for (var pos = 0; pos < _revealCount; pos++) {
+      final tile = wordLetters.firstWhere((t) => !t.isPlaced && t.letter == word.word[pos]);
+      tile.isPlaced = true;
+      tile.currentPosition = pos;
+      placed[pos] = tile;
+    }
+
     setState(() {
       _letters = wordLetters;
-      _placedLetters = List.filled(word.word.length, null);
-      _showHint = false;
+      _placedLetters = placed;
+      _showHint = _age.band == AgeBand.toddler;
       _isProcessingWord = false;
     });
   }
@@ -200,7 +257,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
 
   void _handlePlacedLetterClick(int position) {
     var letter = _placedLetters[position];
-    if (letter == null || _isProcessingWord) return;
+    if (letter == null || _isProcessingWord || position < _revealCount) return;
 
     setState(() {
       letter.isPlaced = false;
@@ -283,6 +340,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
     if (_currentLevel == _highestUnlocked && _currentLevel < 8) {
       _highestUnlocked = _currentLevel + 1;
     }
+    LevelProgressStore.save(context, 'wordPuzzle', _starRatings, _highestUnlocked);
 
     int totalQuestions = _sessionWords.length;
     int correctWords = _currentWordIndex + 1; // Since we completed the last one
@@ -483,6 +541,7 @@ class _WordPuzzleGameScreenState extends State<WordPuzzleGameScreen> with Ticker
                   ],
                 ),
               ),
+              const AgeModeChip(color: Color(0xFF6D28D9)),
               const SizedBox(height: 20),
               Expanded(
                 child: Padding(

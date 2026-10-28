@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/audio_service.dart';
 import '../services/app_state.dart';
 import '../services/assessment_engine.dart';
+import '../services/age_difficulty.dart';
+import '../widgets/age_mode_chip.dart';
 import '../theme/app_theme.dart';
 
 class SpellBeeGame extends StatefulWidget {
@@ -29,6 +32,12 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
       {'word': 'TAS', 'image': '🎒', 'hint': 'Tempat membawa buku sekolah'},
       {'word': 'BUS', 'image': '🚌', 'hint': 'Kendaraan umum berukuran besar'},
       {'word': 'CAT', 'image': '🎨', 'hint': 'Cairan pewarna untuk menggambar atau mewarnai'},
+      {'word': 'API', 'image': '🔥', 'hint': 'Panas dan menyala, jangan disentuh'},
+      {'word': 'KUE', 'image': '🍰', 'hint': 'Makanan manis saat ulang tahun'},
+      {'word': 'JAM', 'image': '⏰', 'hint': 'Menunjukkan waktu'},
+      {'word': 'TEH', 'image': '🍵', 'hint': 'Minuman hangat dari daun'},
+      {'word': 'SUP', 'image': '🥣', 'hint': 'Makanan berkuah dimakan dengan sendok'},
+      {'word': 'IBU', 'image': '👩', 'hint': 'Orang yang melahirkan dan menyayangi kita'},
     ],
     2: [
       {'word': 'MEJA', 'image': '🪑', 'hint': 'Tempat menaruh buku atau makanan'},
@@ -37,12 +46,21 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
       {'word': 'TOPI', 'image': '🧢', 'hint': 'Pelindung kepala dari panas matahari'},
       {'word': 'DAUN', 'image': '🍃', 'hint': 'Bagian pohon yang berwarna hijau'},
       {'word': 'AWAN', 'image': '☁️', 'hint': 'Benda putih atau abu-abu di langit'},
+      {'word': 'SAPI', 'image': '🐄', 'hint': 'Hewan penghasil susu'},
+      {'word': 'BAJU', 'image': '👕', 'hint': 'Dipakai untuk menutupi badan'},
+      {'word': 'KAKI', 'image': '🦶', 'hint': 'Dipakai untuk berjalan'},
+      {'word': 'ROTI', 'image': '🍞', 'hint': 'Sarapan lembut yang bisa diberi selai'},
     ],
     3: [
       {'word': 'MADU', 'image': '🍯', 'hint': 'Cairan manis hasil lebah'},
       {'word': 'RATU', 'image': '👑', 'hint': 'Pemimpin para lebah atau kerajaan'},
       {'word': 'APEL', 'image': '🍎', 'hint': 'Buah merah yang manis dan renyah'},
       {'word': 'IKAN', 'image': '🐟', 'hint': 'Berenang di dalam air'},
+      {'word': 'ULAR', 'image': '🐍', 'hint': 'Hewan panjang tanpa kaki'},
+      {'word': 'SUSU', 'image': '🥛', 'hint': 'Minuman putih yang menyehatkan tulang'},
+      {'word': 'KUDA', 'image': '🐴', 'hint': 'Hewan yang bisa ditunggangi dan berlari cepat'},
+      {'word': 'GIGI', 'image': '🦷', 'hint': 'Dipakai untuk mengunyah, rajin disikat ya'},
+      {'word': 'LAUT', 'image': '🌊', 'hint': 'Air asin yang sangat luas'},
       {'word': 'LEBAH', 'image': '🐝', 'hint': 'Serangga rajin penghasil madu'},
     ],
     4: [
@@ -51,36 +69,59 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
       {'word': 'MOBIL', 'image': '🚗', 'hint': 'Kendaraan darat beroda empat'},
       {'word': 'BUNGA', 'image': '🌻', 'hint': 'Tempat lebah mencari nektar manis'},
       {'word': 'MANIS', 'image': '🍭', 'hint': 'Rasa khas dari madu atau permen'},
+      {'word': 'GAJAH', 'image': '🐘', 'hint': 'Hewan besar berbelalai panjang'},
+      {'word': 'TOMAT', 'image': '🍅', 'hint': 'Buah merah untuk saus dan sambal'},
+      {'word': 'KAPAL', 'image': '🚢', 'hint': 'Kendaraan besar yang berlayar di laut'},
+      {'word': 'HUJAN', 'image': '🌧️', 'hint': 'Air yang turun dari langit'},
+      {'word': 'JERUK', 'image': '🍊', 'hint': 'Buah oranye yang segar dan asam manis'},
     ],
     5: [
       {'word': 'KUCING', 'image': '🐱', 'hint': 'Hewan peliharaan lucu berbulu yang mengeong'},
       {'word': 'ANJING', 'image': '🐶', 'hint': 'Hewan setia penjaga rumah yang menggonggong'},
       {'word': 'BURUNG', 'image': '🐦', 'hint': 'Hewan bersayap yang bisa terbang bebas'},
       {'word': 'SEPATU', 'image': '👟', 'hint': 'Alas kaki untuk berpergian atau sekolah'},
+      {'word': 'KERETA', 'image': '🚆', 'hint': 'Kendaraan panjang yang berjalan di atas rel'},
+      {'word': 'KELAPA', 'image': '🥥', 'hint': 'Buah berair segar dari pohon tinggi di pantai'},
+      {'word': 'KOMODO', 'image': '🦎', 'hint': 'Kadal raksasa asli Indonesia'},
+      {'word': 'JAGUNG', 'image': '🌽', 'hint': 'Bijinya kuning, enak direbus atau dibakar'},
     ],
     6: [
       {'word': 'PENSIL', 'image': '✏️', 'hint': 'Alat tulis berinti karbon hitam'},
       {'word': 'SEPEDA', 'image': '🚲', 'hint': 'Kendaraan beroda dua yang dikayuh pedal'},
       {'word': 'TAMAN', 'image': '🏡', 'hint': 'Tempat indah bermain yang penuh bunga'},
       {'word': 'PISANG', 'image': '🍌', 'hint': 'Buah kuning kesukaan monyet'},
+      {'word': 'KAMERA', 'image': '📷', 'hint': 'Alat untuk memotret'},
+      {'word': 'TELUR', 'image': '🥚', 'hint': 'Dihasilkan ayam, bisa digoreng atau direbus'},
+      {'word': 'MONYET', 'image': '🐒', 'hint': 'Hewan lincah yang suka memanjat pohon'},
+      {'word': 'PAYUNG', 'image': '☂️', 'hint': 'Melindungi kita dari hujan'},
+      {'word': 'BALON', 'image': '🎈', 'hint': 'Ditiup lalu bisa melayang'},
     ],
     7: [
       {'word': 'KELINCI', 'image': '🐰', 'hint': 'Hewan berbulu telinga panjang suka wortel'},
       {'word': 'KEPITING', 'image': '🦀', 'hint': 'Hewan laut bercapit keras berjalan miring'},
       {'word': 'HARIMAU', 'image': '🐯', 'hint': 'Kucing besar pemangsa bermotif loreng'},
-      {'word': 'JIRAPAH', 'image': '🦒', 'hint': 'Hewan darat tertinggi dengan leher sangat panjang'},
+      {'word': 'JERAPAH', 'image': '🦒', 'hint': 'Hewan darat tertinggi dengan leher sangat panjang'},
+      {'word': 'PESAWAT', 'image': '✈️', 'hint': 'Kendaraan yang terbang di langit'},
+      {'word': 'BINTANG', 'image': '⭐', 'hint': 'Berkelip di langit malam'},
+      {'word': 'GURITA', 'image': '🐙', 'hint': 'Hewan laut berkaki delapan'},
     ],
     8: [
       {'word': 'MATAHARI', 'image': '☀️', 'hint': 'Bintang pusat tata surya yang menyinari bumi'},
       {'word': 'KACAMATA', 'image': '👓', 'hint': 'Alat bantu visual yang dipakai di mata'},
       {'word': 'BELALANG', 'image': '🦗', 'hint': 'Serangga pelompat berwarna hijau pemakan daun'},
       {'word': 'KOMPUTER', 'image': '💻', 'hint': 'Mesin elektronik untuk mengolah data dan belajar'},
+      {'word': 'SEMANGKA', 'image': '🍉', 'hint': 'Buah besar hijau di luar, merah di dalam'},
+      {'word': 'STROBERI', 'image': '🍓', 'hint': 'Buah merah kecil berbintik'},
+      {'word': 'ASTRONOT', 'image': '🧑‍🚀', 'hint': 'Orang yang terbang ke luar angkasa'},
     ],
   };
 
   List<Map<String, dynamic>> _sessionWords = [];
   late List<String> _shuffledLetters;
   late List<String?> _slots;
+  // Slots filled in advance as help for younger children.
+  Set<int> _prefilled = {};
+  late AgeDifficulty _age;
   late Map<String, dynamic> _currentWordData;
 
   final List<int> _starRatings = List.filled(8, 0);
@@ -88,9 +129,17 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
 
   late AnimationController _bgAnimCtrl;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'spellBee', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _bgAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
   }
 
@@ -102,9 +151,10 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
   }
 
   void _startLevel(int level) {
+    _age = AgeDifficulty.of(context);
     final pool = _levelWordPools[level] ?? [];
     _sessionWords = List<Map<String, dynamic>>.from(pool)..shuffle();
-    _sessionWords = _sessionWords.take(3).toList();
+    _sessionWords = _sessionWords.take(_age.pick(toddler: 3, preschool: 4, school: 5)).toList();
 
     setState(() {
       _gameState = 'playing';
@@ -123,10 +173,32 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
 
   void _startNewWord() {
     _currentWordData = _sessionWords[_currentWordIndex];
-    String word = _currentWordData['word'];
-    _shuffledLetters = word.split('')..shuffle();
-    _slots = List.filled(word.length, null);
+    _setupWord();
     setState(() {});
+  }
+
+  /// Lays out slots and letter tiles for the current word, scaled to age:
+  /// toddlers only fill in the last 1–2 letters, preschoolers get the first
+  /// letter on long words, school-age kids get extra decoy letters.
+  void _setupWord() {
+    final word = _currentWordData['word'] as String;
+    final letters = word.split('');
+    final reveal = _age.pick(
+      toddler: max(0, letters.length - 2),
+      preschool: letters.length >= 6 ? 1 : 0,
+      school: 0,
+    );
+    _prefilled = {for (var i = 0; i < reveal; i++) i};
+    _slots = List<String?>.generate(letters.length, (i) => _prefilled.contains(i) ? letters[i] : null);
+
+    final pool = [for (var i = 0; i < letters.length; i++) if (!_prefilled.contains(i)) letters[i]];
+    final decoys = _age.pick(toddler: 0, preschool: 0, school: 2);
+    const alphabet = 'ABCDEGHIJKLMNOPRSTUW';
+    final rnd = Random();
+    for (var i = 0; i < decoys; i++) {
+      pool.add(alphabet[rnd.nextInt(alphabet.length)]);
+    }
+    _shuffledLetters = pool..shuffle();
   }
 
   void _onLetterDrop(int slotIndex, String letter, int letterIndex) {
@@ -142,11 +214,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
   }
 
   void _resetCurrentWord() {
-    setState(() {
-      String word = _currentWordData['word'];
-      _shuffledLetters = word.split('')..shuffle();
-      _slots = List.filled(word.length, null);
-    });
+    setState(_setupWord);
     AudioService().playFlip();
   }
 
@@ -206,6 +274,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
     if (_currentLevel == _highestUnlocked && _currentLevel < 8) {
       _highestUnlocked = _currentLevel + 1;
     }
+    LevelProgressStore.save(context, 'spellBee', _starRatings, _highestUnlocked);
 
     final appState = context.read<AppState>();
     int totalTime = _gameStartTime != null ? DateTime.now().difference(_gameStartTime!).inSeconds : 0;
@@ -215,7 +284,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
     int avgRespMs = _correctAnswers > 0 ? ((totalTime * 1000) / _correctAnswers).round() : 0;
 
     final double assessScore = AssessmentEngine.calculateGameScore(
-      totalItems: 3,
+      totalItems: _sessionWords.length,
       correct: _correctAnswers,
       avgResponseMs: avgRespMs,
       idealTimeMs: 15000,
@@ -227,7 +296,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
 
     appState.updateTestResults('linguistic', {
       'score': _correctAnswers,
-      'total': 3,
+      'total': _sessionWords.length,
       'percentage': accuracy,
       'timeSpent': totalTime,
       'gameMode': 'Spelling Bee',
@@ -239,7 +308,7 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
       score: _score,
       timeSpent: totalTime,
       errors: _errors,
-      totalItems: 3,
+      totalItems: _sessionWords.length,
       correctAnswers: _correctAnswers,
       avgResponseTimeMs: avgRespMs,
       maxLevelReached: _currentLevel,
@@ -403,6 +472,8 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
                   ],
                 ),
               ),
+              const AgeModeChip(),
+              const SizedBox(height: 8),
               const SizedBox(height: 20),
               Expanded(
                 child: Padding(
@@ -574,32 +645,44 @@ class _SpellBeeGameState extends State<SpellBeeGame> with TickerProviderStateMix
       children: [
         Text(_currentWordData['image'], style: const TextStyle(fontSize: 80)),
         const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_slots.length, (i) {
-            return DragTarget<Map<String, dynamic>>(
-              onAcceptWithDetails: (details) => _onLetterDrop(i, details.data['letter'], details.data['index']),
-              builder: (context, candidateData, rejectedData) {
-                return Container(
-                  width: 55,
-                  height: 65,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: _slots[i] == null ? 0.35 : 1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: Center(
-                    child: Text(
-                      _slots[i] ?? '',
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+        // Slot size shrinks so 8-letter words still fit on narrow phones.
+        LayoutBuilder(builder: (context, constraints) {
+          final n = _slots.length;
+          final slotW = ((constraints.maxWidth - 8.0 * n) / n).clamp(30.0, 55.0);
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(n, (i) {
+              final given = _prefilled.contains(i);
+              return DragTarget<Map<String, dynamic>>(
+                onAcceptWithDetails: (details) => _onLetterDrop(i, details.data['letter'], details.data['index']),
+                builder: (context, candidateData, rejectedData) {
+                  return Container(
+                    width: slotW,
+                    height: slotW * 1.18,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: given
+                          ? const Color(0xFFFEF3C7)
+                          : Colors.white.withValues(alpha: _slots[i] == null ? 0.35 : 1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
-                  ),
-                );
-              },
-            );
-          }),
-        ),
+                    child: Center(
+                      child: Text(
+                        _slots[i] ?? '',
+                        style: TextStyle(
+                          fontSize: slotW * 0.58,
+                          fontWeight: FontWeight.bold,
+                          color: given ? const Color(0xFFB45309).withValues(alpha: 0.6) : const Color(0xFF92400E),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }),
+          );
+        }),
       ],
     );
   }

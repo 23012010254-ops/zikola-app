@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
@@ -61,9 +62,17 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
   int _highestUnlocked = 1;
   final List<int> _starRatings = List.filled(8, 0);
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'shapeSorting', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _bgAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
   }
 
@@ -299,6 +308,7 @@ class _ShapeSortingGameState extends State<ShapeSortingGame> with TickerProvider
       if (_currentLevel == _highestUnlocked && _highestUnlocked < 8) {
         _highestUnlocked = _currentLevel + 1;
       }
+      LevelProgressStore.save(context, 'shapeSorting', _starRatings, _highestUnlocked);
 
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (!mounted) return;

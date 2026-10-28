@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:math';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
+import '../services/age_difficulty.dart';
+import '../widgets/age_mode_chip.dart';
 
 class CardData {
   final int id;
@@ -74,9 +77,17 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
     MemoryLevelConfig(level: 8, cardCount: 20, crossAxisCount: 5, star3Moves: 18, star2Moves: 25, timeLimit: 45),
   ];
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'memory', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _confettiController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
   }
 
@@ -88,8 +99,28 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
     super.dispose();
   }
 
+  /// Level config scaled to the child's age: fewer cards and no/looser
+  /// timers for younger children, with star thresholds scaled to match.
+  MemoryLevelConfig _effectiveConfig(int level) {
+    final base = _levelsConfig[level - 1];
+    final age = AgeDifficulty.of(context);
+    final cap = age.pick(toddler: 8, preschool: 12, school: 20);
+    final cards = min(base.cardCount, cap);
+    final ratio = cards / base.cardCount;
+    return MemoryLevelConfig(
+      level: base.level,
+      cardCount: cards,
+      crossAxisCount: cards <= 4 ? 2 : (cards <= 6 ? 3 : base.crossAxisCount.clamp(2, 4)),
+      timeLimit: base.timeLimit == null
+          ? null
+          : age.pick<int?>(toddler: null, preschool: (base.timeLimit! * 1.5).round(), school: base.timeLimit),
+      star3Moves: max(2, (base.star3Moves * ratio).round()),
+      star2Moves: max(3, (base.star2Moves * ratio).round()),
+    );
+  }
+
   void _startLevel(int level) {
-    final config = _levelsConfig[level - 1];
+    final config = _effectiveConfig(level);
     int pairsCount = config.cardCount ~/ 2;
 
     List<String> selectedEmojis = List.from(_cardEmojis)..shuffle();
@@ -115,6 +146,29 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
 
     AudioService().playBGM('puzzle_music.mp3');
     _startTimer();
+    _previewCardsForYoungKids();
+  }
+
+  /// Younger children see every card face-up for a moment before play.
+  void _previewCardsForYoungKids() {
+    final age = AgeDifficulty.of(context);
+    final ms = age.pick(toddler: 2500, preschool: 1500, school: 0);
+    if (ms == 0) return;
+    setState(() {
+      _isProcessing = true;
+      for (final c in _cards) {
+        c.isFlipped = true;
+      }
+    });
+    Future.delayed(Duration(milliseconds: ms), () {
+      if (!mounted || _gameState != 'playing') return;
+      setState(() {
+        for (final c in _cards) {
+          if (!c.isMatched) c.isFlipped = false;
+        }
+        _isProcessing = false;
+      });
+    });
   }
 
   void _startTimer() {
@@ -123,7 +177,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
       if (_isTimerRunning && _gameState == 'playing') {
         setState(() {
           _gameTime++;
-          final limit = _levelsConfig[_currentLevel - 1].timeLimit;
+          final limit = _effectiveConfig(_currentLevel).timeLimit;
           if (limit != null && _gameTime >= limit) {
             _timer?.cancel();
             _isTimerRunning = false;
@@ -201,7 +255,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
   }
 
   void _checkCompletion() {
-    final config = _levelsConfig[_currentLevel - 1];
+    final config = _effectiveConfig(_currentLevel);
     int totalPairs = config.cardCount ~/ 2;
     if (_matchedPairs == totalPairs) {
       _isTimerRunning = false;
@@ -220,6 +274,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
       if (_currentLevel == _highestUnlocked && _currentLevel < 8) {
         _highestUnlocked = _currentLevel + 1;
       }
+      LevelProgressStore.save(context, 'memory', _starRatings, _highestUnlocked);
 
       // Save Data using updateGameAssessment
       context.read<AppState>().updateGameAssessment('memory', GameSession(score: score, timeSpent: _gameTime, errors: _errors));
@@ -402,6 +457,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                 ],
               ),
             ),
+            const AgeModeChip(color: Color(0xFF0369A1)),
             const SizedBox(height: 20),
             Expanded(
               child: Padding(
@@ -513,7 +569,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
   }
 
   Widget _buildGameScreen() {
-    final config = _levelsConfig[_currentLevel - 1];
+    final config = _effectiveConfig(_currentLevel);
     int totalPairs = config.cardCount ~/ 2;
 
     String displayTime;
@@ -683,7 +739,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
   }
 
   Widget _buildLevelComplete() {
-    final config = _levelsConfig[_currentLevel - 1];
+    final config = _effectiveConfig(_currentLevel);
     int starsCount = _getStarRatingForLevel(_moves, config);
     int score = _calculateScoreForLevel(starsCount, _gameTime, _errors, config);
 
@@ -825,7 +881,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> with TickerProvider
                   decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
                   child: Column(
                     children: [
-                      _rowStat('Pasangan Ditemukan', '$_matchedPairs/${_levelsConfig[_currentLevel - 1].cardCount ~/ 2}'),
+                      _rowStat('Pasangan Ditemukan', '$_matchedPairs/${_effectiveConfig(_currentLevel).cardCount ~/ 2}'),
                       const Divider(),
                       _rowStat('Jumlah Gerakan', '$_moves'),
                       const Divider(),

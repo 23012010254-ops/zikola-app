@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../services/audio_service.dart';
 import 'dart:math' as math;
@@ -155,9 +156,17 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
   int _earnedStars = 0;
   int _earnedScore = 0;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'pipePuzzle', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     AudioService().playMysteryBGM();
   }
 
@@ -564,6 +573,7 @@ class _PipePuzzleGameScreenState extends State<PipePuzzleGameScreen>
     if (level.level < 8 && level.level >= _highestUnlocked) {
       _highestUnlocked = level.level + 1;
     }
+    LevelProgressStore.save(context, 'pipePuzzle', _starRatings, _highestUnlocked);
 
     // Save to AppState
     final appState = context.read<AppState>();

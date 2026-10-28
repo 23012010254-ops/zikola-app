@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
@@ -41,9 +42,17 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
   late AnimationController _introAnimCtrl;
   late AnimationController _resultsAnimCtrl;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'motorTest', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _introAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat();
     _resultsAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
   }
@@ -234,6 +243,7 @@ class _MotorTestGameScreenState extends State<MotorTestGameScreen> with TickerPr
     if (_currentLevel == _highestUnlocked && _currentLevel < _maxLevels) {
       _highestUnlocked = _currentLevel + 1;
     }
+    LevelProgressStore.save(context, 'motorTest', _starRatings, _highestUnlocked);
 
     final percentage = (accuracy * 100).round();
     int avgReactionTime = 0;

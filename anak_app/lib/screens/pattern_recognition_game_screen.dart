@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
@@ -77,9 +78,17 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
 
   late AnimationController _bgAnimCtrl;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'patternRecognition', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _bgAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
   }
 
@@ -242,6 +251,7 @@ class _PatternRecognitionGameScreenState extends State<PatternRecognitionGameScr
     if (_currentLevel == _highestUnlocked && _currentLevel < 8) {
       _highestUnlocked = _currentLevel + 1;
     }
+    LevelProgressStore.save(context, 'patternRecognition', _starRatings, _highestUnlocked);
 
     int totalTimeSecs = DateTime.now().difference(_gameStartTime!).inSeconds;
     int totalPushed = _correctAnswers + _errors;

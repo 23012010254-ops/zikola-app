@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
@@ -55,9 +56,17 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
 
   late AnimationController _pulseAnimCtrl;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'motorTrace', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _pulseAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat(reverse: true);
   }
 
@@ -189,6 +198,7 @@ class _MotorTraceGameScreenState extends State<MotorTraceGameScreen> with Ticker
     if (_currentLevel + 1 == _highestUnlocked && _currentLevel + 1 < _pathBlueprints.length) {
       _highestUnlocked = _currentLevel + 2;
     }
+    LevelProgressStore.save(context, 'motorTrace', _starRatings, _highestUnlocked);
 
     final percentage = (100 - (_driftErrors * 10)).clamp(0, 100);
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../services/audio_service.dart';
 import 'dart:math' as math;
@@ -224,9 +225,17 @@ class _MazeGameScreenState extends State<MazeGameScreen>
   late Animation<double> _pulseAnimation;
   late AnimationController _rotationController;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'maze', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     
     _pulseController = AnimationController(
       vsync: this,
@@ -871,6 +880,7 @@ class _MazeGameScreenState extends State<MazeGameScreen>
     if (_level == _highestUnlocked && _level < _totalLevels) {
       _highestUnlocked = _level + 1;
     }
+    LevelProgressStore.save(context, 'maze', _starRatings, _highestUnlocked);
   }
 
   void _finishGame() {

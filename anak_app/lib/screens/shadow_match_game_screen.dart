@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../services/audio_service.dart';
 import '../services/assessment_engine.dart';
@@ -40,9 +41,17 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
   late AnimationController _successController;
   late AnimationController _bgAnimCtrl;
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'shadowMatch', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _pulseController = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
     _successController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _bgAnimCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
@@ -150,6 +159,7 @@ class _ShadowMatchGameScreenState extends State<ShadowMatchGameScreen> with Tick
     if (_currentLevel == _highestUnlocked && _currentLevel < 8) {
       _highestUnlocked = _currentLevel + 1;
     }
+    LevelProgressStore.save(context, 'shadowMatch', _starRatings, _highestUnlocked);
 
     final appState = context.read<AppState>();
     int totalTime = _gameStartTime != null ? DateTime.now().difference(_gameStartTime!).inSeconds : 0;

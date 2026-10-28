@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/audio_service.dart';
@@ -52,6 +53,19 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
 
   final List<int> _starRatings = List.filled(8, 0);
   int _highestUnlocked = 1;
+
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'desertTank', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreLevelProgress();
+  }
 
   // Emoji pool
   final List<String> _emojiPool = ['🍎', '🍌', '🍉', '🍇', '🍒', '🍓', '🥕', '🌽', '🧀', '🍔'];
@@ -304,6 +318,7 @@ class _DesertTankShooterGameState extends State<DesertTankShooterGame> with Tick
     if (_currentLevel == _highestUnlocked && _currentLevel < 8) {
       _highestUnlocked = _currentLevel + 1;
     }
+    LevelProgressStore.save(context, 'desertTank', _starRatings, _highestUnlocked);
 
     int totalTimeSecs = DateTime.now().difference(_startTime!).inSeconds;
     int totalPushed = _correctAnswers + _errors;

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 import 'dart:math';
+import '../services/level_progress_store.dart';
 import '../services/app_state.dart';
 import '../services/audio_service.dart';
+import '../services/age_difficulty.dart';
+import '../widgets/age_mode_chip.dart';
 import '../services/assessment_engine.dart';
 
 class SequenceChallenge {
@@ -54,9 +57,17 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
   int _highestUnlocked = 1;
   final List<int> _starRatings = List.filled(8, 0);
 
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'numberSequence', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
+
   @override
   void initState() {
     super.initState();
+    _restoreLevelProgress();
     _confettiController = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
     _bgFloatCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
   }
@@ -70,7 +81,56 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
     super.dispose();
   }
 
+  /// Gentler sequences for younger children: counting for 2–4 year olds,
+  /// small +/- steps for 5–6 year olds. Returns null for school age, which
+  /// keeps the original multiplication/Fibonacci/square progression.
+  SequenceChallenge? _generateYoungChallenge(int level) {
+    final age = AgeDifficulty.of(context);
+    if (age.band == AgeBand.school) return null;
+    final rnd = Random();
+    late List<int> sequence;
+    late String description;
+    if (age.band == AgeBand.toddler) {
+      final step = level <= 4 ? 1 : 2;
+      final start = rnd.nextInt(3) + 1;
+      sequence = List.generate(5, (i) => start + i * step);
+      description = '+$step';
+    } else {
+      final subtract = level > 4 && rnd.nextBool();
+      final step = level <= 2 ? 1 : (level <= 5 ? rnd.nextInt(2) + 2 : rnd.nextInt(3) + 3);
+      if (subtract) {
+        final start = rnd.nextInt(10) + 5 * step + 5;
+        sequence = List.generate(5, (i) => start - i * step);
+        description = '-$step';
+      } else {
+        final start = rnd.nextInt(10) + 1;
+        sequence = List.generate(5, (i) => start + i * step);
+        description = '+$step';
+      }
+    }
+    final missingIndex = rnd.nextInt(sequence.length);
+    final missing = sequence[missingIndex];
+    final choiceCount = age.band == AgeBand.toddler ? 3 : 4;
+    final spread = age.band == AgeBand.toddler ? 3 : 5;
+    final choices = <int>[missing];
+    while (choices.length < choiceCount) {
+      final wrong = missing + rnd.nextInt(spread * 2 + 1) - spread;
+      if (wrong > 0 && !choices.contains(wrong)) choices.add(wrong);
+    }
+    choices.shuffle();
+    return SequenceChallenge(
+      sequence: sequence,
+      missing: missing,
+      missingIndex: missingIndex,
+      difficulty: age.band == AgeBand.toddler ? 'easy' : (level <= 4 ? 'easy' : 'medium'),
+      pattern: description,
+      choices: choices,
+    );
+  }
+
   SequenceChallenge _generateChallenge(int level) {
+    final young = _generateYoungChallenge(level);
+    if (young != null) return young;
     String patternType = '';
     String description = '';
     String difficulty = '';
@@ -226,6 +286,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
         if (_currentLevel == _highestUnlocked && _highestUnlocked < 8) {
           _highestUnlocked = _currentLevel + 1;
         }
+        LevelProgressStore.save(context, 'numberSequence', _starRatings, _highestUnlocked);
 
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (!mounted) return;
@@ -544,6 +605,7 @@ class _NumberSequenceGameScreenState extends State<NumberSequenceGameScreen> wit
                   ],
                 ),
               ),
+              const AgeModeChip(color: Color(0xFF1E3A8A)),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {

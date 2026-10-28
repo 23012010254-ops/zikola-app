@@ -1596,6 +1596,9 @@ class AppState extends ChangeNotifier {
     await _prefs!.setString('last_active_date_$uid', todayStr);
   }
 
+  /// Stable id for the account's original child profile (no children doc).
+  static const _mainChildId = 'main';
+
   Future<void> loadChildren() async {
     final uid = _uid;
     if (uid == null) return;
@@ -1611,8 +1614,10 @@ class AppState extends ChangeNotifier {
         _childProfile = activeChild;
         _activeChildId = activeChild.id;
       } else {
-        // Fallback: put our current single child in list
+        // Fallback: put our current single child in list. Its id used to be
+        // a fresh timestamp on every launch, so give it a stable one.
         if (_childProfile.name.isNotEmpty) {
+          _childProfile = _childProfile.copyWith(id: _mainChildId);
           _children = [_childProfile];
           _activeChildId = _childProfile.id;
         } else {
@@ -1623,6 +1628,7 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error loading children: $e');
       if (_childProfile.name.isNotEmpty) {
+        _childProfile = _childProfile.copyWith(id: _mainChildId);
         _children = [_childProfile];
         _activeChildId = _childProfile.id;
       }

@@ -1,3 +1,4 @@
+import '../services/level_progress_store.dart';
 import '../widgets/space_background.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -67,6 +68,19 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
   
   final List<int> _starRatings = List.filled(8, 0);
   int _highestUnlocked = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreLevelProgress();
+  }
+
+  /// Restores saved stars and unlocked levels for this child.
+  Future<void> _restoreLevelProgress() async {
+    final unlocked = await LevelProgressStore.load(context, 'alienShooter', _starRatings);
+    if (!mounted) return;
+    setState(() => _highestUnlocked = unlocked > _highestUnlocked ? unlocked : _highestUnlocked);
+  }
 
   Timer? _gameTimer;
   Timer? _spawnTimer;
@@ -407,6 +421,7 @@ class _AlienShooterGameState extends State<AlienShooterGame> with TickerProvider
     if (_currentLevel == _highestUnlocked && _currentLevel < 8) {
       _highestUnlocked = _currentLevel + 1;
     }
+    LevelProgressStore.save(context, 'alienShooter', _starRatings, _highestUnlocked);
 
     int totalTime = _startTime != null ? DateTime.now().difference(_startTime!).inSeconds : 0;
     int accuracy = _totalQuestions > 0 ? ((_correctAnswers / _totalQuestions) * 100).round() : 0;
